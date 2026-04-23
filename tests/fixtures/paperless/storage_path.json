@@ -1,0 +1,1 @@
+{"id": 2, "slug": "invoices-year", "name": "Invoices by Year", "path": "Invoices/{created_year}/", "match": "", "matching_algorithm": 0, "is_insensitive": true, "document_count": 120, "owner": null, "user_can_change": true}
