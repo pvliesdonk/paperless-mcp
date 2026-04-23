@@ -1,0 +1,41 @@
+# Example deployment wiring paperless-mcp into an existing Paperless-NGX stack.
+# Copy this into a sibling service in your compose.yml and adjust the env vars.
+
+services:
+  paperless-mcp:
+    image: ghcr.io/pvliesdonk/paperless-mcp:latest
+    restart: unless-stopped
+    depends_on:
+      - paperless-ngx
+    env_file: .env
+    environment:
+      # Required
+      PAPERLESS_MCP_PAPERLESS_URL: http://paperless-ngx:8000
+      # PAPERLESS_MCP_API_TOKEN comes from .env
+
+      # Optional
+      PAPERLESS_MCP_READ_ONLY: "false"
+      PAPERLESS_MCP_HTTP_TIMEOUT_SECONDS: "30"
+
+      # Transport (inherited from template — HTTP example)
+      PAPERLESS_MCP_TRANSPORT: http
+      PAPERLESS_MCP_HOST: 0.0.0.0
+      PAPERLESS_MCP_PORT: "8080"
+      PAPERLESS_MCP_BASE_URL: https://paperless-mcp.example.org
+
+      # OIDC (inherited from template — Authelia example)
+      PAPERLESS_MCP_OIDC_CONFIG_URL: https://auth.example.org/.well-known/openid-configuration
+      PAPERLESS_MCP_OIDC_CLIENT_ID: paperless-mcp
+      PAPERLESS_MCP_OIDC_CLIENT_SECRET: ${PAPERLESS_MCP_OIDC_CLIENT_SECRET}
+      PAPERLESS_MCP_OIDC_REQUIRED_SCOPES: openid
+    networks:
+      - paperless-net
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.paperless-mcp.rule=Host(`paperless-mcp.example.org`)
+      - traefik.http.routers.paperless-mcp.entrypoints=websecure
+      - traefik.http.services.paperless-mcp.loadbalancer.server.port=8080
+
+networks:
+  paperless-net:
+    external: true
