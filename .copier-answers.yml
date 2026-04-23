@@ -1,0 +1,12 @@
+# Changes here will be overwritten by `copier update`.
+_commit: v1.1.11
+_src_path: gh:pvliesdonk/fastmcp-server-template
+docker_registry: ghcr.io/pvliesdonk
+domain_description: 'Paperless-NGX document management over MCP: search, tag, upload,
+    and read documents; manage tags, correspondents, document types, and custom fields.'
+env_prefix: PAPERLESS_MCP
+github_org: pvliesdonk
+human_name: Paperless MCP
+project_name: paperless-mcp
+pypi_name: pvliesdonk-paperless-mcp
+python_module: paperless_mcp

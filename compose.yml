@@ -1,0 +1,23 @@
+services:
+  paperless-mcp:
+    image: ghcr.io/pvliesdonk/paperless-mcp:latest
+    build: .
+    # Named volume permissions are fixed automatically by the entrypoint.
+    # For bind-mount UID/GID mismatch, set PUID/PGID in your .env file:
+    #   PUID=1001
+    #   PGID=1001
+    env_file: .env
+    volumes:
+      - service-data:/data/service
+      - state-data:/data/state
+    environment:
+      FASTMCP_HOME: /data/state/fastmcp
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.paperless-mcp.rule=Host(`${PAPERLESS_MCP_HOST:-paperless-mcp.local}`)"
+      - "traefik.http.services.paperless-mcp.loadbalancer.server.port=8000"
+
+volumes:
+  service-data:
+  state-data:
