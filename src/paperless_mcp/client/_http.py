@@ -100,8 +100,21 @@ class PaperlessHTTP:
     async def patch_json(self, path: str, *, json: Any | None = None) -> Any:
         return await self._request_json("PATCH", path, json=json)
 
-    async def delete(self, path: str) -> None:
-        await self._request("DELETE", path)
+    async def delete(self, path: str, *, params: dict[str, Any] | None = None) -> None:
+        await self._request("DELETE", path, params=params)
+
+    async def upload_multipart(
+        self,
+        path: str,
+        *,
+        data: dict[str, Any],
+        files: dict[str, Any],
+    ) -> Any:
+        """POST a multipart/form-data request (e.g. document upload)."""
+        response = await self._request("POST", path, data=data, files=files)
+        if response.status_code == 204 or not response.content:
+            return None
+        return response.json()
 
     async def stream_bytes(
         self, path: str, *, params: dict[str, Any] | None = None
@@ -170,13 +183,15 @@ class PaperlessHTTP:
         path: str,
         *,
         json: Any | None = None,
+        data: dict[str, Any] | None = None,
+        files: dict[str, Any] | None = None,
         params: dict[str, Any] | None = None,
     ) -> httpx.Response:
         attempt = 0
         while True:
             try:
                 response = await self._client.request(
-                    method, path, json=json, params=params
+                    method, path, json=json, data=data, files=files, params=params
                 )
             except httpx.RequestError as exc:
                 if method in _IDEMPOTENT_METHODS and attempt < self._max_retries:

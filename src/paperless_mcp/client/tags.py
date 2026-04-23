@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
+
 from paperless_mcp.client._http import PaperlessHTTP
 from paperless_mcp.models.common import BulkEditResult, Paginated
 from paperless_mcp.models.tag import Tag, TagCreate, TagPatch
@@ -93,7 +95,7 @@ class TagsClient:
         self,
         *,
         operation: str,
-        ids: list[int],
+        ids: Sequence[int],
         parameters: dict[str, object] | None = None,
     ) -> BulkEditResult:
         """Perform a bulk edit operation on multiple tags.

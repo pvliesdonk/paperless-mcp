@@ -1,3 +1,5 @@
+"""Saved views resource client."""
+
 from __future__ import annotations
 
 from paperless_mcp.client._http import PaperlessHTTP
@@ -6,6 +8,8 @@ from paperless_mcp.models.saved_view import SavedView
 
 
 class SavedViewsClient:
+    """Async operations against ``/api/saved_views/``."""
+
     def __init__(self, http: PaperlessHTTP) -> None:
         self._http = http
 

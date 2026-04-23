@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 import httpx
 import pytest
 import respx
@@ -40,8 +42,6 @@ async def test_update_sends_only_set_fields(
     assert doc.title == "Renamed"
     # only set fields should be in the payload
     payload = route.calls.last.request.content
-    import json
-
     assert json.loads(payload) == {"title": "Renamed"}
 
 
@@ -86,8 +86,6 @@ async def test_bulk_edit(documents: DocumentsClient) -> None:
             parameters={"tag": 5},
         )
     assert result.result == "OK"
-    import json
-
     body = json.loads(route.calls.last.request.content)
     assert body == {
         "documents": [1, 2, 3],
@@ -98,15 +96,16 @@ async def test_bulk_edit(documents: DocumentsClient) -> None:
 
 @pytest.mark.asyncio
 async def test_add_note(documents: DocumentsClient) -> None:
-    returned = {"id": 9, "note": "new", "created": "2026-04-23T10:00:00Z", "user": 1}
+    existing = {"id": 1, "note": "old", "created": "2026-04-01T10:00:00Z", "user": 1}
+    newest = {"id": 9, "note": "new", "created": "2026-04-23T10:00:00Z", "user": 1}
     async with respx.mock(base_url="http://paperless.test") as mock:
         route = mock.post("/api/documents/1/notes/").mock(
-            return_value=httpx.Response(200, json=[returned])
+            return_value=httpx.Response(200, json=[existing, newest])
         )
         note = await documents.add_note(1, "new")
+    # add_note returns the last item in the list (newest note, not the first)
+    assert note.id == 9
     assert note.note == "new"
-    import json
-
     body = json.loads(route.calls.last.request.content)
     assert body == {"note": "new"}
 

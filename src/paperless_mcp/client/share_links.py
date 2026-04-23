@@ -1,3 +1,5 @@
+"""Share links resource client."""
+
 from __future__ import annotations
 
 from paperless_mcp.client._http import PaperlessHTTP
@@ -6,6 +8,8 @@ from paperless_mcp.models.share_link import ShareLink
 
 
 class ShareLinksClient:
+    """Async operations against ``/api/share_links/``."""
+
     def __init__(self, http: PaperlessHTTP) -> None:
         self._http = http
 

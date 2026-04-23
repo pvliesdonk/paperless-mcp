@@ -36,20 +36,22 @@ async def test_list_all(tasks: TasksClient, load_fixture) -> None:
 @pytest.mark.asyncio
 async def test_get_by_uuid_uses_list_filter(tasks: TasksClient, load_fixture) -> None:
     async with respx.mock(base_url="http://paperless.test") as mock:
-        mock.get("/api/tasks/").mock(
+        route = mock.get("/api/tasks/").mock(
             return_value=httpx.Response(200, json=[load_fixture("task_success.json")])
         )
         task = await tasks.get("abc-123-success")
     assert task is not None
     assert task.status is TaskStatus.SUCCESS
+    assert route.calls.last.request.url.params.get("task_id") == "abc-123-success"
 
 
 @pytest.mark.asyncio
 async def test_get_unknown_returns_none(tasks: TasksClient) -> None:
     async with respx.mock(base_url="http://paperless.test") as mock:
-        mock.get("/api/tasks/").mock(return_value=httpx.Response(200, json=[]))
+        route = mock.get("/api/tasks/").mock(return_value=httpx.Response(200, json=[]))
         task = await tasks.get("nope")
     assert task is None
+    assert route.calls.last.request.url.params.get("task_id") == "nope"
 
 
 @pytest.mark.asyncio

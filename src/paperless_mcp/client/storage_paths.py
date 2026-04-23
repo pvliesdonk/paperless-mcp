@@ -1,3 +1,5 @@
+"""Storage paths resource client."""
+
 from __future__ import annotations
 
 from paperless_mcp.client._http import PaperlessHTTP
@@ -6,6 +8,8 @@ from paperless_mcp.models.storage_path import StoragePath
 
 
 class StoragePathsClient:
+    """Async operations against ``/api/storage_paths/``."""
+
     def __init__(self, http: PaperlessHTTP) -> None:
         self._http = http
 

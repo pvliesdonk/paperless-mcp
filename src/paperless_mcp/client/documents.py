@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import builtins
+from collections.abc import Sequence
+
 from paperless_mcp.client._http import PaperlessHTTP
 from paperless_mcp.models.common import (
     BulkEditOperation,
@@ -20,6 +23,8 @@ from paperless_mcp.models.document import (
 
 
 class DocumentsClient:
+    """Async operations against ``/api/documents/``."""
+
     def __init__(self, http: PaperlessHTTP) -> None:
         self._http = http
 
@@ -29,7 +34,7 @@ class DocumentsClient:
         page: int = 1,
         page_size: int = 25,
         ordering: str | None = None,
-        tags: list[int] | None = None,
+        tags: Sequence[int] | None = None,
         correspondent: int | None = None,
         document_type: int | None = None,
         storage_path: int | None = None,
@@ -38,7 +43,7 @@ class DocumentsClient:
         params: dict[str, object] = {"page": page, "page_size": page_size}
         if ordering:
             params["ordering"] = ordering
-        if tags:
+        if tags is not None:
             params["tags__id__in"] = ",".join(str(t) for t in tags)
         if correspondent is not None:
             params["correspondent__id"] = correspondent
@@ -93,11 +98,13 @@ class DocumentsClient:
         body = await self._http.get_json(f"/api/documents/{document_id}/metadata/")
         return DocumentMetadata.model_validate(body)
 
-    async def get_notes(self, document_id: int) -> list[DocumentNote]:
+    async def get_notes(self, document_id: int) -> builtins.list[DocumentNote]:
         body = await self._http.get_json(f"/api/documents/{document_id}/notes/")
         return [DocumentNote.model_validate(n) for n in body]
 
-    async def get_history(self, document_id: int) -> list[DocumentHistoryEntry]:
+    async def get_history(
+        self, document_id: int
+    ) -> builtins.list[DocumentHistoryEntry]:
         body = await self._http.get_json(f"/api/documents/{document_id}/history/")
         return [DocumentHistoryEntry.model_validate(h) for h in body]
 
@@ -137,10 +144,10 @@ class DocumentsClient:
         title: str | None = None,
         correspondent: int | None = None,
         document_type: int | None = None,
-        tags: list[int] | None = None,
+        tags: Sequence[int] | None = None,
         created: str | None = None,
         archive_serial_number: str | int | None = None,
-        custom_fields: list[int] | None = None,
+        custom_fields: Sequence[int] | None = None,
     ) -> UploadTaskAcknowledgement:
         """Upload a new document via multipart form POST.
 
@@ -158,7 +165,9 @@ class DocumentsClient:
         Returns:
             An :class:`UploadTaskAcknowledgement` containing the task UUID.
         """
-        files = {"document": (filename, content, "application/octet-stream")}
+        files: dict[str, object] = {
+            "document": (filename, content, "application/octet-stream")
+        }
         data: dict[str, object] = {}
         if title is not None:
             data["title"] = title
@@ -166,27 +175,18 @@ class DocumentsClient:
             data["correspondent"] = correspondent
         if document_type is not None:
             data["document_type"] = document_type
-        if tags:
+        if tags is not None:
             data["tags"] = [str(t) for t in tags]
         if created is not None:
             data["created"] = created
         if archive_serial_number is not None:
             data["archive_serial_number"] = str(archive_serial_number)
-        if custom_fields:
+        if custom_fields is not None:
             data["custom_fields"] = [str(cf) for cf in custom_fields]
 
-        response = await self._http._client.request(
-            "POST",
-            "/api/documents/post_document/",
-            data=data,
-            files=files,
+        body = await self._http.upload_multipart(
+            "/api/documents/post_document/", data=data, files=files
         )
-        if not response.is_success:
-            from paperless_mcp.client._errors import error_from_response
-
-            raise error_from_response(response)
-
-        body = response.json()
         if isinstance(body, str):
             return UploadTaskAcknowledgement(task_id=body)
         if isinstance(body, dict) and "task_id" in body:
@@ -197,7 +197,7 @@ class DocumentsClient:
     async def bulk_edit(
         self,
         *,
-        document_ids: list[int],
+        document_ids: Sequence[int],
         method: BulkEditOperation,
         parameters: dict[str, object] | None = None,
     ) -> BulkEditResult:
@@ -236,7 +236,7 @@ class DocumentsClient:
         if not notes:
             msg = "add_note: empty notes list returned"
             raise RuntimeError(msg)
-        return notes[0]
+        return notes[-1]
 
     async def delete_note(self, document_id: int, note_id: int) -> None:
         """Delete a note from a document.
@@ -245,4 +245,6 @@ class DocumentsClient:
             document_id: ID of the document.
             note_id: ID of the note to delete.
         """
-        await self._http.delete(f"/api/documents/{document_id}/notes/?id={note_id}")
+        await self._http.delete(
+            f"/api/documents/{document_id}/notes/", params={"id": note_id}
+        )
