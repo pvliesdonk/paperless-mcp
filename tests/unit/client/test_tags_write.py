@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 import httpx
 import pytest
 import respx
@@ -41,8 +43,6 @@ async def test_update(tags: TagsClient, load_fixture) -> None:
         )
         result = await tags.update(1, TagPatch(name="Renamed"))
     assert result.id == 1
-    import json
-
     assert json.loads(route.calls.last.request.content) == {"name": "Renamed"}
 
 
@@ -64,8 +64,6 @@ async def test_bulk_edit(tags: TagsClient) -> None:
             operation="set_permissions", ids=[1, 2], parameters={}
         )
     assert result.result == "OK"
-    import json
-
     body = json.loads(route.calls.last.request.content)
     assert body["object_type"] == "tags"
     assert body["objects"] == [1, 2]

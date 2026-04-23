@@ -13,9 +13,19 @@ class SystemClient:
         self._http = http
 
     async def statistics(self) -> Statistics:
+        """Fetch document and storage statistics from Paperless-NGX.
+
+        Returns:
+            :class:`Statistics` with counts and storage metrics.
+        """
         body = await self._http.get_json("/api/statistics/")
         return Statistics.model_validate(body)
 
     async def remote_version(self) -> RemoteVersion:
+        """Fetch the latest available Paperless-NGX version from the remote.
+
+        Returns:
+            :class:`RemoteVersion` with current and latest version strings.
+        """
         body = await self._http.get_json("/api/remote_version/")
         return RemoteVersion.model_validate(body)

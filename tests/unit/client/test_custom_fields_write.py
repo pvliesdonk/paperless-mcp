@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 import httpx
 import pytest
 import respx
@@ -47,8 +49,6 @@ async def test_update(custom_fields, load_fixture) -> None:
         )
         r = await custom_fields.update(2, CustomFieldPatch(name="Renamed"))
     assert r.id == 2
-    import json
-
     assert json.loads(route.calls.last.request.content) == {"name": "Renamed"}
 
 
@@ -70,8 +70,6 @@ async def test_bulk_edit(custom_fields) -> None:
         )
         result = await custom_fields.bulk_edit(operation="set_permissions", ids=[2])
     assert result.result == "OK"
-    import json
-
     assert (
         json.loads(route.calls.last.request.content)["object_type"] == "custom_fields"
     )

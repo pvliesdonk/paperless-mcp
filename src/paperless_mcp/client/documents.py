@@ -40,6 +40,21 @@ class DocumentsClient:
         storage_path: int | None = None,
         custom_field: int | None = None,
     ) -> Paginated[Document]:
+        """List documents with optional server-side filtering.
+
+        Args:
+            page: Page number (1-based).
+            page_size: Number of results per page.
+            ordering: Field name to order by (prefix with ``-`` for descending).
+            tags: Filter to documents containing all of these tag IDs.
+            correspondent: Filter by correspondent ID.
+            document_type: Filter by document type ID.
+            storage_path: Filter by storage path ID.
+            custom_field: Filter by custom field ID.
+
+        Returns:
+            Paginated list of matching :class:`Document` objects.
+        """
         params: dict[str, object] = {"page": page, "page_size": page_size}
         if ordering:
             params["ordering"] = ordering
@@ -64,6 +79,17 @@ class DocumentsClient:
         page_size: int = 25,
         more_like: int | None = None,
     ) -> Paginated[Document]:
+        """Full-text search for documents.
+
+        Args:
+            query: Search query string.
+            page: Page number (1-based).
+            page_size: Number of results per page.
+            more_like: Return documents similar to this document ID.
+
+        Returns:
+            Paginated list of matching :class:`Document` objects.
+        """
         params: dict[str, object] = {"page": page, "page_size": page_size}
         if more_like is not None:
             params["more_like_id"] = more_like
@@ -73,42 +99,115 @@ class DocumentsClient:
         return Paginated[Document].model_validate(body)
 
     async def get(self, document_id: int) -> Document:
+        """Fetch a single document by ID.
+
+        Args:
+            document_id: ID of the document to retrieve.
+
+        Returns:
+            The matching :class:`Document`.
+        """
         body = await self._http.get_json(f"/api/documents/{document_id}/")
         return Document.model_validate(body)
 
     async def get_content(self, document_id: int) -> str:
+        """Return the plain-text content of a document.
+
+        Args:
+            document_id: ID of the document.
+
+        Returns:
+            Extracted text content, or an empty string if none.
+        """
         doc = await self.get(document_id)
         return doc.content or ""
 
     async def get_thumbnail(self, document_id: int) -> tuple[bytes, str]:
+        """Download the thumbnail image for a document.
+
+        Args:
+            document_id: ID of the document.
+
+        Returns:
+            Tuple of ``(image_bytes, content_type)``.
+        """
         return await self._http.stream_bytes(f"/api/documents/{document_id}/thumb/")
 
     async def get_preview(self, document_id: int) -> tuple[bytes, str]:
+        """Download the preview PDF for a document.
+
+        Args:
+            document_id: ID of the document.
+
+        Returns:
+            Tuple of ``(pdf_bytes, content_type)``.
+        """
         return await self._http.stream_bytes(f"/api/documents/{document_id}/preview/")
 
     async def download(
         self, document_id: int, *, original: bool = False
     ) -> tuple[bytes, str]:
+        """Download the document file.
+
+        Args:
+            document_id: ID of the document.
+            original: If ``True``, download the original (unarchived) file.
+
+        Returns:
+            Tuple of ``(file_bytes, content_type)``.
+        """
         params = {"original": "true"} if original else None
         return await self._http.stream_bytes(
             f"/api/documents/{document_id}/download/", params=params
         )
 
     async def get_metadata(self, document_id: int) -> DocumentMetadata:
+        """Fetch metadata for a document.
+
+        Args:
+            document_id: ID of the document.
+
+        Returns:
+            :class:`DocumentMetadata` for the document.
+        """
         body = await self._http.get_json(f"/api/documents/{document_id}/metadata/")
         return DocumentMetadata.model_validate(body)
 
     async def get_notes(self, document_id: int) -> builtins.list[DocumentNote]:
+        """List all notes attached to a document.
+
+        Args:
+            document_id: ID of the document.
+
+        Returns:
+            List of :class:`DocumentNote` objects, oldest first.
+        """
         body = await self._http.get_json(f"/api/documents/{document_id}/notes/")
         return [DocumentNote.model_validate(n) for n in body]
 
     async def get_history(
         self, document_id: int
     ) -> builtins.list[DocumentHistoryEntry]:
+        """Fetch the audit history for a document.
+
+        Args:
+            document_id: ID of the document.
+
+        Returns:
+            List of :class:`DocumentHistoryEntry` objects.
+        """
         body = await self._http.get_json(f"/api/documents/{document_id}/history/")
         return [DocumentHistoryEntry.model_validate(h) for h in body]
 
     async def get_suggestions(self, document_id: int) -> DocumentSuggestions:
+        """Fetch classifier suggestions for a document.
+
+        Args:
+            document_id: ID of the document.
+
+        Returns:
+            :class:`DocumentSuggestions` with tag, correspondent, and type hints.
+        """
         body = await self._http.get_json(f"/api/documents/{document_id}/suggestions/")
         return DocumentSuggestions.model_validate(body)
 

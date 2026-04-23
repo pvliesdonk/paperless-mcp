@@ -16,6 +16,16 @@ class StoragePathsClient:
     async def list(
         self, *, page: int = 1, page_size: int = 100, ordering: str | None = None
     ) -> Paginated[StoragePath]:
+        """List storage paths.
+
+        Args:
+            page: Page number (1-based).
+            page_size: Number of results per page.
+            ordering: Field name to order by (prefix with ``-`` for descending).
+
+        Returns:
+            Paginated list of :class:`StoragePath` objects.
+        """
         params: dict[str, object] = {"page": page, "page_size": page_size}
         if ordering:
             params["ordering"] = ordering
@@ -23,5 +33,13 @@ class StoragePathsClient:
         return Paginated[StoragePath].model_validate(body)
 
     async def get(self, storage_path_id: int) -> StoragePath:
+        """Fetch a single storage path by ID.
+
+        Args:
+            storage_path_id: ID of the storage path.
+
+        Returns:
+            The matching :class:`StoragePath`.
+        """
         body = await self._http.get_json(f"/api/storage_paths/{storage_path_id}/")
         return StoragePath.model_validate(body)

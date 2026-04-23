@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 import httpx
 import pytest
 import respx
@@ -41,8 +43,6 @@ async def test_update(document_types, load_fixture) -> None:
         )
         r = await document_types.update(3, DocumentTypePatch(name="Renamed"))
     assert r.id == 3
-    import json
-
     assert json.loads(route.calls.last.request.content) == {"name": "Renamed"}
 
 
@@ -64,8 +64,6 @@ async def test_bulk_edit(document_types) -> None:
         )
         result = await document_types.bulk_edit(operation="set_permissions", ids=[3])
     assert result.result == "OK"
-    import json
-
     assert (
         json.loads(route.calls.last.request.content)["object_type"] == "document_types"
     )

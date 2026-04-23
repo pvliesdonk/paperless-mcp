@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 import httpx
 import pytest
 import respx
@@ -61,8 +63,6 @@ async def test_bulk_edit(correspondents) -> None:
         )
         result = await correspondents.bulk_edit(operation="set_permissions", ids=[1])
     assert result.result == "OK"
-    import json
-
     assert (
         json.loads(route.calls.last.request.content)["object_type"] == "correspondents"
     )
