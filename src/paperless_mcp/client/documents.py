@@ -1,8 +1,22 @@
 """Documents resource client for Paperless-NGX."""
+
 from __future__ import annotations
+
 from paperless_mcp.client._http import PaperlessHTTP
-from paperless_mcp.models.common import Paginated
-from paperless_mcp.models.document import Document, DocumentHistoryEntry, DocumentMetadata, DocumentNote, DocumentSuggestions
+from paperless_mcp.models.common import (
+    BulkEditOperation,
+    BulkEditResult,
+    Paginated,
+    UploadTaskAcknowledgement,
+)
+from paperless_mcp.models.document import (
+    Document,
+    DocumentHistoryEntry,
+    DocumentMetadata,
+    DocumentNote,
+    DocumentPatch,
+    DocumentSuggestions,
+)
 
 class DocumentsClient:
     def __init__(self, http: PaperlessHTTP) -> None:
@@ -59,3 +73,147 @@ class DocumentsClient:
     async def get_suggestions(self, document_id: int) -> DocumentSuggestions:
         body = await self._http.get_json(f"/api/documents/{document_id}/suggestions/")
         return DocumentSuggestions.model_validate(body)
+
+    async def update(self, document_id: int, patch: DocumentPatch) -> Document:
+        """Partially update a document via PATCH.
+
+        Args:
+            document_id: ID of the document to update.
+            patch: Fields to update; unset fields are excluded from the payload.
+
+        Returns:
+            The updated Document.
+        """
+        payload = patch.model_dump(exclude_unset=True, mode="json")
+        body = await self._http.patch_json(
+            f"/api/documents/{document_id}/", json=payload
+        )
+        return Document.model_validate(body)
+
+    async def delete(self, document_id: int) -> None:
+        """Delete a document by ID.
+
+        Args:
+            document_id: ID of the document to delete.
+        """
+        await self._http.delete(f"/api/documents/{document_id}/")
+
+    async def upload(
+        self,
+        *,
+        filename: str,
+        content: bytes,
+        title: str | None = None,
+        correspondent: int | None = None,
+        document_type: int | None = None,
+        tags: list[int] | None = None,
+        created: str | None = None,
+        archive_serial_number: str | int | None = None,
+        custom_fields: list[int] | None = None,
+    ) -> UploadTaskAcknowledgement:
+        """Upload a new document via multipart form POST.
+
+        Args:
+            filename: Original filename to attach to the upload.
+            content: Raw document bytes.
+            title: Optional title to set on the document.
+            correspondent: Optional correspondent ID.
+            document_type: Optional document type ID.
+            tags: Optional list of tag IDs.
+            created: Optional ISO-8601 created date string.
+            archive_serial_number: Optional archive serial number.
+            custom_fields: Optional list of custom field IDs.
+
+        Returns:
+            An :class:`UploadTaskAcknowledgement` containing the task UUID.
+        """
+        files = {"document": (filename, content, "application/octet-stream")}
+        data: dict[str, object] = {}
+        if title is not None:
+            data["title"] = title
+        if correspondent is not None:
+            data["correspondent"] = correspondent
+        if document_type is not None:
+            data["document_type"] = document_type
+        if tags:
+            data["tags"] = [str(t) for t in tags]
+        if created is not None:
+            data["created"] = created
+        if archive_serial_number is not None:
+            data["archive_serial_number"] = str(archive_serial_number)
+        if custom_fields:
+            data["custom_fields"] = [str(cf) for cf in custom_fields]
+
+        response = await self._http._client.request(
+            "POST",
+            "/api/documents/post_document/",
+            data=data,
+            files=files,
+        )
+        if not response.is_success:
+            from paperless_mcp.client._errors import error_from_response
+
+            raise error_from_response(response)
+
+        body = response.json()
+        if isinstance(body, str):
+            return UploadTaskAcknowledgement(task_id=body)
+        if isinstance(body, dict) and "task_id" in body:
+            return UploadTaskAcknowledgement.model_validate(body)
+        msg = f"unexpected upload response shape: {body!r}"
+        raise TypeError(msg)
+
+    async def bulk_edit(
+        self,
+        *,
+        document_ids: list[int],
+        method: BulkEditOperation,
+        parameters: dict[str, object] | None = None,
+    ) -> BulkEditResult:
+        """Perform a bulk edit operation on multiple documents.
+
+        Args:
+            document_ids: List of document IDs to act on.
+            method: The bulk edit operation to perform.
+            parameters: Optional extra parameters for the operation.
+
+        Returns:
+            A :class:`BulkEditResult` with the operation result.
+        """
+        payload: dict[str, object] = {
+            "documents": document_ids,
+            "method": method.value,
+            "parameters": parameters or {},
+        }
+        body = await self._http.post_json("/api/documents/bulk_edit/", json=payload)
+        return BulkEditResult.model_validate(body)
+
+    async def add_note(self, document_id: int, note: str) -> DocumentNote:
+        """Add a note to a document.
+
+        Args:
+            document_id: ID of the document.
+            note: Text content of the note.
+
+        Returns:
+            The newly created :class:`DocumentNote`.
+        """
+        body = await self._http.post_json(
+            f"/api/documents/{document_id}/notes/", json={"note": note}
+        )
+        notes = [DocumentNote.model_validate(n) for n in body]
+        if not notes:
+            msg = "add_note: empty notes list returned"
+            raise RuntimeError(msg)
+        return notes[0]
+
+    async def delete_note(self, document_id: int, note_id: int) -> None:
+        """Delete a note from a document.
+
+        Args:
+            document_id: ID of the document.
+            note_id: ID of the note to delete.
+        """
+        await self._http.delete(
+            f"/api/documents/{document_id}/notes/?id={note_id}"
+        )
