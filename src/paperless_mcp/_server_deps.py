@@ -10,9 +10,20 @@ from typing import Any, TypedDict
 from fastmcp.dependencies import CurrentContext
 from fastmcp.server.context import Context
 
-from paperless_mcp.domain import Service
-
 logger = logging.getLogger(__name__)
+
+
+class Service:
+    """Template placeholder — starts/stops with the server lifespan."""
+
+    def __init__(self) -> None:
+        self._ready = False
+
+    async def start(self) -> None:
+        self._ready = True
+
+    async def stop(self) -> None:
+        self._ready = False
 
 
 class LifespanState(TypedDict):
