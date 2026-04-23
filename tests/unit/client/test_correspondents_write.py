@@ -11,7 +11,9 @@ from paperless_mcp.models.correspondent import CorrespondentCreate, Corresponden
 
 @pytest.fixture
 async def http():
-    client = PaperlessHTTP(base_url="http://paperless.test", api_token="t", max_retries=0)
+    client = PaperlessHTTP(
+        base_url="http://paperless.test", api_token="t", max_retries=0
+    )
     yield client
     await client.aclose()
 
@@ -44,7 +46,9 @@ async def test_update(correspondents, load_fixture) -> None:
 @pytest.mark.asyncio
 async def test_delete(correspondents) -> None:
     async with respx.mock(base_url="http://paperless.test") as mock:
-        route = mock.delete("/api/correspondents/1/").mock(return_value=httpx.Response(204))
+        route = mock.delete("/api/correspondents/1/").mock(
+            return_value=httpx.Response(204)
+        )
         await correspondents.delete(1)
     assert route.called
 
@@ -58,4 +62,7 @@ async def test_bulk_edit(correspondents) -> None:
         result = await correspondents.bulk_edit(operation="set_permissions", ids=[1])
     assert result.result == "OK"
     import json
-    assert json.loads(route.calls.last.request.content)["object_type"] == "correspondents"
+
+    assert (
+        json.loads(route.calls.last.request.content)["object_type"] == "correspondents"
+    )

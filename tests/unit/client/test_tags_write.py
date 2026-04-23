@@ -11,7 +11,9 @@ from paperless_mcp.models.tag import TagCreate, TagPatch
 
 @pytest.fixture
 async def http():
-    client = PaperlessHTTP(base_url="http://paperless.test", api_token="t", max_retries=0)
+    client = PaperlessHTTP(
+        base_url="http://paperless.test", api_token="t", max_retries=0
+    )
     yield client
     await client.aclose()
 
@@ -24,7 +26,7 @@ def tags(http: PaperlessHTTP) -> TagsClient:
 @pytest.mark.asyncio
 async def test_create(tags: TagsClient, load_fixture) -> None:
     async with respx.mock(base_url="http://paperless.test") as mock:
-        route = mock.post("/api/tags/").mock(
+        mock.post("/api/tags/").mock(
             return_value=httpx.Response(201, json=load_fixture("tag.json"))
         )
         result = await tags.create(TagCreate(name="New"))
@@ -40,6 +42,7 @@ async def test_update(tags: TagsClient, load_fixture) -> None:
         result = await tags.update(1, TagPatch(name="Renamed"))
     assert result.id == 1
     import json
+
     assert json.loads(route.calls.last.request.content) == {"name": "Renamed"}
 
 
@@ -62,6 +65,7 @@ async def test_bulk_edit(tags: TagsClient) -> None:
         )
     assert result.result == "OK"
     import json
+
     body = json.loads(route.calls.last.request.content)
     assert body["object_type"] == "tags"
     assert body["objects"] == [1, 2]

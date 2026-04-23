@@ -1,10 +1,15 @@
 from __future__ import annotations
+
 import pytest
+
 from paperless_mcp.client import PaperlessClient
+
 
 @pytest.mark.asyncio
 async def test_facade_exposes_sub_clients() -> None:
-    client = PaperlessClient(base_url="http://paperless.test", api_token="t", max_retries=0)
+    client = PaperlessClient(
+        base_url="http://paperless.test", api_token="t", max_retries=0
+    )
     try:
         assert client.documents is not None
         assert client.tags is not None
@@ -19,7 +24,10 @@ async def test_facade_exposes_sub_clients() -> None:
     finally:
         await client.aclose()
 
+
 @pytest.mark.asyncio
 async def test_facade_is_async_context_manager() -> None:
-    async with PaperlessClient(base_url="http://paperless.test", api_token="t", max_retries=0) as client:
+    async with PaperlessClient(
+        base_url="http://paperless.test", api_token="t", max_retries=0
+    ) as client:
         assert client.documents is not None

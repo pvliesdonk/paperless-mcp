@@ -1,6 +1,8 @@
 from __future__ import annotations
+
 from paperless_mcp.client._http import PaperlessHTTP
 from paperless_mcp.models.system import RemoteVersion, Statistics
+
 
 class SystemClient:
     def __init__(self, http: PaperlessHTTP) -> None:

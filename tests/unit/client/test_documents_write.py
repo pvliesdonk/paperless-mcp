@@ -14,7 +14,9 @@ from paperless_mcp.models.document import DocumentPatch
 
 @pytest.fixture
 async def http():
-    client = PaperlessHTTP(base_url="http://paperless.test", api_token="t", max_retries=0)
+    client = PaperlessHTTP(
+        base_url="http://paperless.test", api_token="t", max_retries=0
+    )
     yield client
     await client.aclose()
 
@@ -39,15 +41,14 @@ async def test_update_sends_only_set_fields(
     # only set fields should be in the payload
     payload = route.calls.last.request.content
     import json
+
     assert json.loads(payload) == {"title": "Renamed"}
 
 
 @pytest.mark.asyncio
 async def test_delete(documents: DocumentsClient) -> None:
     async with respx.mock(base_url="http://paperless.test") as mock:
-        route = mock.delete("/api/documents/1/").mock(
-            return_value=httpx.Response(204)
-        )
+        route = mock.delete("/api/documents/1/").mock(return_value=httpx.Response(204))
         await documents.delete(1)
     assert route.called
 
@@ -86,6 +87,7 @@ async def test_bulk_edit(documents: DocumentsClient) -> None:
         )
     assert result.result == "OK"
     import json
+
     body = json.loads(route.calls.last.request.content)
     assert body == {
         "documents": [1, 2, 3],
@@ -104,6 +106,7 @@ async def test_add_note(documents: DocumentsClient) -> None:
         note = await documents.add_note(1, "new")
     assert note.note == "new"
     import json
+
     body = json.loads(route.calls.last.request.content)
     assert body == {"note": "new"}
 

@@ -6,12 +6,18 @@ import respx
 
 from paperless_mcp.client._http import PaperlessHTTP
 from paperless_mcp.client.custom_fields import CustomFieldsClient
-from paperless_mcp.models.custom_field import CustomFieldCreate, CustomFieldDataType, CustomFieldPatch
+from paperless_mcp.models.custom_field import (
+    CustomFieldCreate,
+    CustomFieldDataType,
+    CustomFieldPatch,
+)
 
 
 @pytest.fixture
 async def http():
-    client = PaperlessHTTP(base_url="http://paperless.test", api_token="t", max_retries=0)
+    client = PaperlessHTTP(
+        base_url="http://paperless.test", api_token="t", max_retries=0
+    )
     yield client
     await client.aclose()
 
@@ -42,13 +48,16 @@ async def test_update(custom_fields, load_fixture) -> None:
         r = await custom_fields.update(2, CustomFieldPatch(name="Renamed"))
     assert r.id == 2
     import json
+
     assert json.loads(route.calls.last.request.content) == {"name": "Renamed"}
 
 
 @pytest.mark.asyncio
 async def test_delete(custom_fields) -> None:
     async with respx.mock(base_url="http://paperless.test") as mock:
-        route = mock.delete("/api/custom_fields/2/").mock(return_value=httpx.Response(204))
+        route = mock.delete("/api/custom_fields/2/").mock(
+            return_value=httpx.Response(204)
+        )
         await custom_fields.delete(2)
     assert route.called
 
@@ -62,4 +71,7 @@ async def test_bulk_edit(custom_fields) -> None:
         result = await custom_fields.bulk_edit(operation="set_permissions", ids=[2])
     assert result.result == "OK"
     import json
-    assert json.loads(route.calls.last.request.content)["object_type"] == "custom_fields"
+
+    assert (
+        json.loads(route.calls.last.request.content)["object_type"] == "custom_fields"
+    )

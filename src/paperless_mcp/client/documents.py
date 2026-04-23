@@ -18,25 +18,52 @@ from paperless_mcp.models.document import (
     DocumentSuggestions,
 )
 
+
 class DocumentsClient:
     def __init__(self, http: PaperlessHTTP) -> None:
         self._http = http
 
-    async def list(self, *, page: int = 1, page_size: int = 25, ordering: str | None = None, tags: list[int] | None = None, correspondent: int | None = None, document_type: int | None = None, storage_path: int | None = None, custom_field: int | None = None) -> Paginated[Document]:
+    async def list(
+        self,
+        *,
+        page: int = 1,
+        page_size: int = 25,
+        ordering: str | None = None,
+        tags: list[int] | None = None,
+        correspondent: int | None = None,
+        document_type: int | None = None,
+        storage_path: int | None = None,
+        custom_field: int | None = None,
+    ) -> Paginated[Document]:
         params: dict[str, object] = {"page": page, "page_size": page_size}
-        if ordering: params["ordering"] = ordering
-        if tags: params["tags__id__in"] = ",".join(str(t) for t in tags)
-        if correspondent is not None: params["correspondent__id"] = correspondent
-        if document_type is not None: params["document_type__id"] = document_type
-        if storage_path is not None: params["storage_path__id"] = storage_path
-        if custom_field is not None: params["custom_fields__id"] = custom_field
+        if ordering:
+            params["ordering"] = ordering
+        if tags:
+            params["tags__id__in"] = ",".join(str(t) for t in tags)
+        if correspondent is not None:
+            params["correspondent__id"] = correspondent
+        if document_type is not None:
+            params["document_type__id"] = document_type
+        if storage_path is not None:
+            params["storage_path__id"] = storage_path
+        if custom_field is not None:
+            params["custom_fields__id"] = custom_field
         body = await self._http.get_json("/api/documents/", params=params)
         return Paginated[Document].model_validate(body)
 
-    async def search(self, query: str, *, page: int = 1, page_size: int = 25, more_like: int | None = None) -> Paginated[Document]:
+    async def search(
+        self,
+        query: str,
+        *,
+        page: int = 1,
+        page_size: int = 25,
+        more_like: int | None = None,
+    ) -> Paginated[Document]:
         params: dict[str, object] = {"page": page, "page_size": page_size}
-        if more_like is not None: params["more_like_id"] = more_like
-        if query: params["query"] = query
+        if more_like is not None:
+            params["more_like_id"] = more_like
+        if query:
+            params["query"] = query
         body = await self._http.get_json("/api/documents/", params=params)
         return Paginated[Document].model_validate(body)
 
@@ -54,9 +81,13 @@ class DocumentsClient:
     async def get_preview(self, document_id: int) -> tuple[bytes, str]:
         return await self._http.stream_bytes(f"/api/documents/{document_id}/preview/")
 
-    async def download(self, document_id: int, *, original: bool = False) -> tuple[bytes, str]:
+    async def download(
+        self, document_id: int, *, original: bool = False
+    ) -> tuple[bytes, str]:
         params = {"original": "true"} if original else None
-        return await self._http.stream_bytes(f"/api/documents/{document_id}/download/", params=params)
+        return await self._http.stream_bytes(
+            f"/api/documents/{document_id}/download/", params=params
+        )
 
     async def get_metadata(self, document_id: int) -> DocumentMetadata:
         body = await self._http.get_json(f"/api/documents/{document_id}/metadata/")
@@ -214,6 +245,4 @@ class DocumentsClient:
             document_id: ID of the document.
             note_id: ID of the note to delete.
         """
-        await self._http.delete(
-            f"/api/documents/{document_id}/notes/?id={note_id}"
-        )
+        await self._http.delete(f"/api/documents/{document_id}/notes/?id={note_id}")
