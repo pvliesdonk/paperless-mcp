@@ -10,6 +10,9 @@ from paperless_mcp.models.tag import Tag, TagCreate, TagPatch
 from paperless_mcp.models.correspondent import Correspondent, CorrespondentCreate, CorrespondentPatch
 from paperless_mcp.models.document_type import DocumentType, DocumentTypeCreate, DocumentTypePatch
 from paperless_mcp.models.custom_field import CustomField, CustomFieldCreate, CustomFieldDataType, CustomFieldPatch
+from paperless_mcp.models.storage_path import StoragePath
+from paperless_mcp.models.saved_view import SavedView
+from paperless_mcp.models.share_link import ShareLink, ShareLinkFileVersion
 __all__ = [
     "BulkEditOperation", "BulkEditResult", "DownloadLink", "ListParams", "Paginated", "UploadTaskAcknowledgement",
     "CustomFieldInstance", "Document", "DocumentHistoryEntry", "DocumentMetadata", "DocumentNote", "DocumentPatch", "DocumentSuggestions",
@@ -17,4 +20,5 @@ __all__ = [
     "Correspondent", "CorrespondentCreate", "CorrespondentPatch",
     "DocumentType", "DocumentTypeCreate", "DocumentTypePatch",
     "CustomField", "CustomFieldCreate", "CustomFieldDataType", "CustomFieldPatch",
+    "StoragePath", "SavedView", "ShareLink", "ShareLinkFileVersion",
 ]

@@ -1,0 +1,1 @@
+{"id": 1, "name": "Inbox", "show_on_dashboard": true, "show_in_sidebar": true, "sort_field": "added", "sort_reverse": true, "filter_rules": [{"rule_type": 29, "value": "2"}], "page_size": 25, "owner": 1}
