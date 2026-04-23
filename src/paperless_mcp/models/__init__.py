@@ -9,10 +9,12 @@ from paperless_mcp.models.document import (
 from paperless_mcp.models.tag import Tag, TagCreate, TagPatch
 from paperless_mcp.models.correspondent import Correspondent, CorrespondentCreate, CorrespondentPatch
 from paperless_mcp.models.document_type import DocumentType, DocumentTypeCreate, DocumentTypePatch
+from paperless_mcp.models.custom_field import CustomField, CustomFieldCreate, CustomFieldDataType, CustomFieldPatch
 __all__ = [
     "BulkEditOperation", "BulkEditResult", "DownloadLink", "ListParams", "Paginated", "UploadTaskAcknowledgement",
     "CustomFieldInstance", "Document", "DocumentHistoryEntry", "DocumentMetadata", "DocumentNote", "DocumentPatch", "DocumentSuggestions",
     "Tag", "TagCreate", "TagPatch",
     "Correspondent", "CorrespondentCreate", "CorrespondentPatch",
     "DocumentType", "DocumentTypeCreate", "DocumentTypePatch",
+    "CustomField", "CustomFieldCreate", "CustomFieldDataType", "CustomFieldPatch",
 ]
