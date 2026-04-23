@@ -1,6 +1,11 @@
+"""Pydantic models for Paperless-NGX system-level resources."""
+
 from __future__ import annotations
+
 from typing import Any
+
 from pydantic import BaseModel, ConfigDict, Field
+
 
 class Statistics(BaseModel):
     model_config = ConfigDict(extra="allow")
@@ -14,6 +19,7 @@ class Statistics(BaseModel):
     document_type_count: int | None = None
     storage_path_count: int | None = None
     current_asn: int | None = None
+
 
 class RemoteVersion(BaseModel):
     model_config = ConfigDict(extra="allow")

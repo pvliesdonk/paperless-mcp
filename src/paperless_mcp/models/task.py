@@ -1,15 +1,21 @@
+"""Pydantic models for Paperless-NGX task resources."""
+
 from __future__ import annotations
+
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
+
 from pydantic import BaseModel, ConfigDict
 
-class TaskStatus(str, Enum):
+
+class TaskStatus(StrEnum):
     PENDING = "PENDING"
     STARTED = "STARTED"
     SUCCESS = "SUCCESS"
     FAILURE = "FAILURE"
     RETRY = "RETRY"
     REVOKED = "REVOKED"
+
 
 class Task(BaseModel):
     model_config = ConfigDict(extra="allow")

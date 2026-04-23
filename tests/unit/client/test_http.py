@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import AsyncIterator
+
 import httpx
 import pytest
 import respx
@@ -11,13 +13,17 @@ from paperless_mcp.client._http import PaperlessHTTP
 
 
 @pytest.fixture
-def http() -> PaperlessHTTP:
-    return PaperlessHTTP(
+async def http() -> AsyncIterator[PaperlessHTTP]:
+    client = PaperlessHTTP(
         base_url="http://paperless.test",
         api_token="test-token",
         timeout_seconds=5.0,
         max_retries=2,
     )
+    try:
+        yield client
+    finally:
+        await client.aclose()
 
 
 @pytest.mark.asyncio

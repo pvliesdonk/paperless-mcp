@@ -85,9 +85,7 @@ class PaperlessHTTP:
     async def aclose(self) -> None:
         await self._client.aclose()
 
-    async def get_json(
-        self, path: str, *, params: dict[str, Any] | None = None
-    ) -> Any:
+    async def get_json(self, path: str, *, params: dict[str, Any] | None = None) -> Any:
         return await self._request_json("GET", path, params=params)
 
     async def post_json(
@@ -180,7 +178,7 @@ class PaperlessHTTP:
                 response = await self._client.request(
                     method, path, json=json, params=params
                 )
-            except httpx.TransportError as exc:
+            except httpx.RequestError as exc:
                 if method in _IDEMPOTENT_METHODS and attempt < self._max_retries:
                     await self._sleep_backoff(attempt)
                     attempt += 1
@@ -195,6 +193,7 @@ class PaperlessHTTP:
                 error.is_retryable()
                 and method in _IDEMPOTENT_METHODS
                 and attempt < self._max_retries
+                # TODO: respect Retry-After header when present
             ):
                 logger.debug(
                     "retryable %s on %s %s (attempt %d/%d)",

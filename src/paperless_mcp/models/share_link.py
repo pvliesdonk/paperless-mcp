@@ -1,11 +1,17 @@
+"""Pydantic models for Paperless-NGX share link resources."""
+
 from __future__ import annotations
+
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
+
 from pydantic import BaseModel, ConfigDict
 
-class ShareLinkFileVersion(str, Enum):
+
+class ShareLinkFileVersion(StrEnum):
     ARCHIVE = "archive"
     ORIGINAL = "original"
+
 
 class ShareLink(BaseModel):
     model_config = ConfigDict(extra="allow")

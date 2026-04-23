@@ -1,5 +1,9 @@
+"""Pydantic models for Paperless-NGX storage path resources."""
+
 from __future__ import annotations
+
 from pydantic import BaseModel, ConfigDict
+
 
 class StoragePath(BaseModel):
     model_config = ConfigDict(extra="allow")

@@ -8,7 +8,7 @@ handles Paperless-specific secrets and complex validation via pydantic-settings.
 
 from __future__ import annotations
 
-from pydantic import Field, SecretStr, field_validator
+from pydantic import Field, SecretStr, ValidationError, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 _ENV_PREFIX = "PAPERLESS_MCP_"
@@ -61,17 +61,13 @@ def load_domain_config() -> DomainConfig:
     """
     try:
         return DomainConfig()  # type: ignore[call-arg]
-    except ValueError as exc:
-        from pydantic import ValidationError as PydanticValidationError
-
-        if isinstance(exc, PydanticValidationError):
-            parts: list[str] = []
-            for error in exc.errors():
-                field = ".".join(str(loc) for loc in error["loc"])
-                if error["type"] == "missing":
-                    env_var = _ENV_PREFIX + field.upper()
-                    parts.append(f"{env_var}: {error['msg']}")
-                else:
-                    parts.append(f"{field}: {error['msg']}")
-            raise ValueError("; ".join(parts)) from exc
-        raise
+    except ValidationError as exc:
+        parts: list[str] = []
+        for error in exc.errors():
+            field = ".".join(str(loc) for loc in error["loc"])
+            if error["type"] == "missing":
+                env_var = _ENV_PREFIX + field.upper()
+                parts.append(f"{env_var}: {error['msg']}")
+            else:
+                parts.append(f"{field}: {error['msg']}")
+        raise ValueError("; ".join(parts)) from exc

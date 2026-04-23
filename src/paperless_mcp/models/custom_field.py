@@ -1,9 +1,14 @@
+"""Pydantic models for Paperless-NGX custom field resources."""
+
 from __future__ import annotations
-from enum import Enum
+
+from enum import StrEnum
 from typing import Any
+
 from pydantic import BaseModel, ConfigDict, Field
 
-class CustomFieldDataType(str, Enum):
+
+class CustomFieldDataType(StrEnum):
     STRING = "string"
     LONGTEXT = "longtext"
     INTEGER = "integer"
@@ -15,6 +20,7 @@ class CustomFieldDataType(str, Enum):
     DOCUMENTLINK = "documentlink"
     SELECT = "select"
 
+
 class CustomField(BaseModel):
     model_config = ConfigDict(extra="allow")
     id: int
@@ -22,11 +28,13 @@ class CustomField(BaseModel):
     data_type: CustomFieldDataType
     extra_data: Any | None = None
 
+
 class CustomFieldCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
     name: str = Field(..., min_length=1)
     data_type: CustomFieldDataType
     extra_data: Any | None = None
+
 
 class CustomFieldPatch(BaseModel):
     model_config = ConfigDict(extra="forbid")

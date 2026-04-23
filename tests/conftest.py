@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import os
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Callable
 from pathlib import Path
 from typing import Any
 
@@ -33,7 +33,7 @@ async def client() -> AsyncIterator[Client]:
 
 
 @pytest.fixture
-def load_fixture():
+def load_fixture() -> Callable[[str], Any]:
     """Load a JSON fixture from tests/fixtures/paperless/."""
 
     def _load(name: str) -> Any:

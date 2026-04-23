@@ -1,6 +1,11 @@
+"""Pydantic models for Paperless-NGX saved view resources."""
+
 from __future__ import annotations
+
 from typing import Any
+
 from pydantic import BaseModel, ConfigDict, Field
+
 
 class SavedView(BaseModel):
     model_config = ConfigDict(extra="allow")

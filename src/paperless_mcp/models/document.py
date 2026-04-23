@@ -1,13 +1,18 @@
 """Pydantic models for Paperless-NGX document-related resources."""
+
 from __future__ import annotations
+
 from datetime import date, datetime
 from typing import Any
+
 from pydantic import BaseModel, ConfigDict, Field
+
 
 class CustomFieldInstance(BaseModel):
     model_config = ConfigDict(extra="allow")
     field: int
     value: Any = None
+
 
 class DocumentNote(BaseModel):
     model_config = ConfigDict(extra="allow")
@@ -15,6 +20,7 @@ class DocumentNote(BaseModel):
     note: str
     created: datetime
     user: int | None = None
+
 
 class Document(BaseModel):
     model_config = ConfigDict(extra="allow")
@@ -38,6 +44,7 @@ class Document(BaseModel):
     custom_fields: list[CustomFieldInstance] = Field(default_factory=list)
     page_count: int | None = None
 
+
 class DocumentPatch(BaseModel):
     model_config = ConfigDict(extra="forbid")
     title: str | None = None
@@ -50,6 +57,7 @@ class DocumentPatch(BaseModel):
     created: datetime | None = None
     created_date: date | None = None
     custom_fields: list[CustomFieldInstance] | None = None
+
 
 class DocumentMetadata(BaseModel):
     model_config = ConfigDict(extra="allow")
@@ -66,11 +74,13 @@ class DocumentMetadata(BaseModel):
     original_metadata: list[dict[str, Any]] | None = None
     archive_metadata: list[dict[str, Any]] | None = None
 
+
 class DocumentHistoryEntry(BaseModel):
     model_config = ConfigDict(extra="allow")
     timestamp: datetime
     action: str
     actor: str | None = None
+
 
 class DocumentSuggestions(BaseModel):
     model_config = ConfigDict(extra="allow")

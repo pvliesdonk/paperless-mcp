@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from paperless_mcp._domain_config import DomainConfig, load_domain_config
+from paperless_mcp._domain_config import load_domain_config
 
 
 def test_required_fields(monkeypatch: pytest.MonkeyPatch) -> None:

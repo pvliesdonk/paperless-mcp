@@ -1,11 +1,17 @@
+"""Pydantic models for Paperless-NGX tag resources."""
+
 from __future__ import annotations
+
 from pydantic import BaseModel, ConfigDict, Field
+
 
 class Tag(BaseModel):
     model_config = ConfigDict(extra="allow")
     id: int
     slug: str | None = None
     name: str
+    # Paperless ≤1.x used integer `colour`; ≥2.x uses hex-string `color`.
+    # Both may be present; accept either to support mixed-version instances.
     colour: int | None = None
     color: str | None = None
     match: str | None = ""
@@ -16,6 +22,7 @@ class Tag(BaseModel):
     owner: int | None = None
     user_can_change: bool = True
 
+
 class TagCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
     name: str = Field(..., min_length=1)
@@ -24,6 +31,7 @@ class TagCreate(BaseModel):
     matching_algorithm: int | None = None
     is_insensitive: bool | None = None
     is_inbox_tag: bool | None = None
+
 
 class TagPatch(BaseModel):
     model_config = ConfigDict(extra="forbid")
