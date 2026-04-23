@@ -1,3 +1,5 @@
+"""Pydantic models for Paperless-NGX document type resources."""
+
 from __future__ import annotations
 
 from pydantic import BaseModel, ConfigDict, Field

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import AsyncIterator
+
 import httpx
 import pytest
 import respx
@@ -9,13 +11,21 @@ import respx
 from paperless_mcp.client._http import PaperlessHTTP
 
 
-@pytest.mark.asyncio
-async def test_paginate_walks_all_pages() -> None:
-    http = PaperlessHTTP(
+@pytest.fixture
+async def http() -> AsyncIterator[PaperlessHTTP]:
+    client = PaperlessHTTP(
         base_url="http://paperless.test",
         api_token="t",
         max_retries=0,
     )
+    try:
+        yield client
+    finally:
+        await client.aclose()
+
+
+@pytest.mark.asyncio
+async def test_paginate_walks_all_pages(http: PaperlessHTTP) -> None:
     page1 = {
         "count": 3,
         "next": "http://paperless.test/api/tags/?page=2",
@@ -37,16 +47,10 @@ async def test_paginate_walks_all_pages() -> None:
         )
         collected = [item async for item in http.paginate("/api/tags/")]
     assert [c["id"] for c in collected] == [1, 2, 3]
-    await http.aclose()
 
 
 @pytest.mark.asyncio
-async def test_paginate_respects_limit() -> None:
-    http = PaperlessHTTP(
-        base_url="http://paperless.test",
-        api_token="t",
-        max_retries=0,
-    )
+async def test_paginate_respects_limit(http: PaperlessHTTP) -> None:
     page1 = {
         "count": 100,
         "next": "http://paperless.test/api/tags/?page=2",
@@ -57,4 +61,3 @@ async def test_paginate_respects_limit() -> None:
         mock.get("/api/tags/").mock(return_value=httpx.Response(200, json=page1))
         collected = [item async for item in http.paginate("/api/tags/", limit=5)]
     assert len(collected) == 5
-    await http.aclose()

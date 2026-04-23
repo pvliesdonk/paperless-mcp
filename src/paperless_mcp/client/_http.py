@@ -149,7 +149,7 @@ class PaperlessHTTP:
                 continue
             parsed = urlparse(next_url)
             next_path = parsed.path
-            next_params = {k: v[0] for k, v in parse_qs(parsed.query).items()}
+            next_params = parse_qs(parsed.query)
 
     async def _request_json(
         self,

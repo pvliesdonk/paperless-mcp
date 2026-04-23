@@ -15,7 +15,7 @@ class Paginated(BaseModel, Generic[T]):
     count: int
     next: str | None = None
     previous: str | None = None
-    all: list[int] | None = None
+    all_ids: list[int] | None = Field(None, alias="all")
     results: list[T] = Field(default_factory=list)
 
 

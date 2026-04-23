@@ -25,11 +25,11 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# PROJECT-EXTRAS-START — add domain-specific optional-dependency groups below; kept across copier update
 docs = [
     "mkdocs-material>=9",
     "mkdocstrings[python]>=0.28",
 ]
-# PROJECT-EXTRAS-START — add domain-specific optional-dependency groups below; kept across copier update
 # PROJECT-EXTRAS-END
 
 dev = [
