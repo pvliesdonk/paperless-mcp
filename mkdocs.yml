@@ -1,6 +1,6 @@
 site_name: paperless-mcp
 site_url: https://pvliesdonk.github.io/paperless-mcp/
-site_description: Paperless-NGX document management over MCP: search, tag, upload, and read documents; manage tags, correspondents, document types, and custom fields.
+site_description: "Paperless-NGX document management over MCP: search, tag, upload, and read documents; manage tags, correspondents, document types, and custom fields."
 repo_url: https://github.com/pvliesdonk/paperless-mcp
 repo_name: pvliesdonk/paperless-mcp
 edit_uri: edit/main/docs/
