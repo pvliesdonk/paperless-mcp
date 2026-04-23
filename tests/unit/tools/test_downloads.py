@@ -6,7 +6,6 @@ import asyncio
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
-import pytest
 from fastmcp import FastMCP
 
 from paperless_mcp.tools import downloads as downloads_mod
@@ -15,9 +14,15 @@ from paperless_mcp.tools._context import ToolContext
 
 def _mock_client() -> Any:
     client = MagicMock()
-    client.documents.download = AsyncMock(return_value=(b"PDF-bytes", "application/pdf"))
-    client.documents.get_preview = AsyncMock(return_value=(b"preview-bytes", "image/png"))
-    client.documents.get_thumbnail = AsyncMock(return_value=(b"thumb-bytes", "image/png"))
+    client.documents.download = AsyncMock(
+        return_value=(b"PDF-bytes", "application/pdf")
+    )
+    client.documents.get_preview = AsyncMock(
+        return_value=(b"preview-bytes", "image/png")
+    )
+    client.documents.get_thumbnail = AsyncMock(
+        return_value=(b"thumb-bytes", "image/png")
+    )
     client.documents.get = AsyncMock()
     return client
 

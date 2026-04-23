@@ -82,6 +82,9 @@ ignore = ["E501"]
 "src/paperless_mcp/tools/__init__.py" = ["B008", "TC001", "TC002"]
 "src/paperless_mcp/tools/_registry.py" = ["TC002", "TC003"]
 "src/paperless_mcp/tools/_icons.py" = ["TC002"]
+# Tool submodules: FastMCP, model, and context imports must stay at runtime so
+# @register_tool decorators can reference type annotations during registration.
+"src/paperless_mcp/tools/*.py" = ["TC001", "TC002", "TC003"]
 "src/paperless_mcp/resources.py" = ["B008", "TC001", "TC002"]
 "src/paperless_mcp/prompts.py" = ["B008", "TC002"]
 "tests/**/*.py" = ["TC001", "TC002", "TC003", "ARG001"]

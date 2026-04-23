@@ -11,8 +11,14 @@ from fastmcp import FastMCP
 
 from paperless_mcp.tools import (
     correspondents as correspondents_mod,
+)
+from paperless_mcp.tools import (
     custom_fields as custom_fields_mod,
+)
+from paperless_mcp.tools import (
     document_types as document_types_mod,
+)
+from paperless_mcp.tools import (
     tags as tags_mod,
 )
 from paperless_mcp.tools._context import ToolContext
@@ -69,7 +75,11 @@ def test_read_write_registers_all(module: Any, prefix: str) -> None:
     module.register(mcp, ctx)
     names = _names(mcp)
     expected = {
-        f"list_{prefix}s", f"get_{prefix}", f"create_{prefix}",
-        f"update_{prefix}", f"delete_{prefix}", f"bulk_edit_{prefix}s",
+        f"list_{prefix}s",
+        f"get_{prefix}",
+        f"create_{prefix}",
+        f"update_{prefix}",
+        f"delete_{prefix}",
+        f"bulk_edit_{prefix}s",
     }
     assert expected.issubset(names)

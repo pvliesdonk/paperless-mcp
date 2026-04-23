@@ -11,9 +11,17 @@ from fastmcp import FastMCP
 
 from paperless_mcp.tools import (
     saved_views as saved_views_mod,
+)
+from paperless_mcp.tools import (
     share_links as share_links_mod,
+)
+from paperless_mcp.tools import (
     storage_paths as storage_paths_mod,
+)
+from paperless_mcp.tools import (
     system as system_mod,
+)
+from paperless_mcp.tools import (
     tasks as tasks_mod,
 )
 from paperless_mcp.tools._context import ToolContext
@@ -51,6 +59,8 @@ def _names(mcp: FastMCP) -> set[str]:
 def test_observability_tools_register(module: Any, expected: set[str]) -> None:
     for read_only in (True, False):
         mcp = FastMCP("test")
-        ctx = ToolContext(client=_mock_client(), read_only=read_only, default_page_size=25)
+        ctx = ToolContext(
+            client=_mock_client(), read_only=read_only, default_page_size=25
+        )
         module.register(mcp, ctx)
         assert expected.issubset(_names(mcp))

@@ -49,7 +49,9 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
         return await client.custom_fields.create(body)
 
     @register_tool(mcp, "update_custom_field", read_only_mode=read_only)
-    async def update_custom_field(field_id: int, patch: CustomFieldPatch) -> CustomField:
+    async def update_custom_field(
+        field_id: int, patch: CustomFieldPatch
+    ) -> CustomField:
         """Patch selected fields on a custom field definition."""
         return await client.custom_fields.update(field_id, patch)
 

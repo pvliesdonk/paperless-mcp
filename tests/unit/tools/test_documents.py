@@ -63,11 +63,21 @@ def test_read_write_registers_all(mock_client: Any) -> None:
     documents_mod.register(mcp, ctx)
     names = _registered_names(mcp)
     expected = {
-        "list_documents", "search_documents", "get_document",
-        "get_document_content", "get_document_thumbnail", "get_document_metadata",
-        "get_document_notes", "get_document_history", "get_document_suggestions",
-        "update_document", "delete_document", "upload_document",
-        "bulk_edit_documents", "add_document_note", "delete_document_note",
+        "list_documents",
+        "search_documents",
+        "get_document",
+        "get_document_content",
+        "get_document_thumbnail",
+        "get_document_metadata",
+        "get_document_notes",
+        "get_document_history",
+        "get_document_suggestions",
+        "update_document",
+        "delete_document",
+        "upload_document",
+        "bulk_edit_documents",
+        "add_document_note",
+        "delete_document_note",
     }
     assert expected.issubset(names)
 
