@@ -13,6 +13,7 @@ from paperless_mcp.models.custom_field import CustomField, CustomFieldCreate, Cu
 from paperless_mcp.models.storage_path import StoragePath
 from paperless_mcp.models.saved_view import SavedView
 from paperless_mcp.models.share_link import ShareLink, ShareLinkFileVersion
+from paperless_mcp.models.task import Task, TaskStatus
 __all__ = [
     "BulkEditOperation", "BulkEditResult", "DownloadLink", "ListParams", "Paginated", "UploadTaskAcknowledgement",
     "CustomFieldInstance", "Document", "DocumentHistoryEntry", "DocumentMetadata", "DocumentNote", "DocumentPatch", "DocumentSuggestions",
@@ -21,4 +22,5 @@ __all__ = [
     "DocumentType", "DocumentTypeCreate", "DocumentTypePatch",
     "CustomField", "CustomFieldCreate", "CustomFieldDataType", "CustomFieldPatch",
     "StoragePath", "SavedView", "ShareLink", "ShareLinkFileVersion",
+    "Task", "TaskStatus",
 ]

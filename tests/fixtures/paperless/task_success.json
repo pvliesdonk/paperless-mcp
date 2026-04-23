@@ -1,0 +1,1 @@
+{"id": 99, "task_id": "abc-123-success", "task_file_name": "invoice.pdf", "date_created": "2026-04-23T10:00:00Z", "date_done": "2026-04-23T10:00:05Z", "type": "auto_task", "status": "SUCCESS", "result": "Success. New document id 42 created", "acknowledged": false, "related_document": "42"}

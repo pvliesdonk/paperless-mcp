@@ -1,0 +1,1 @@
+{"id": 100, "task_id": "abc-123-pending", "task_file_name": "receipt.pdf", "date_created": "2026-04-23T10:01:00Z", "date_done": null, "type": "auto_task", "status": "PENDING", "result": null, "acknowledged": false, "related_document": null}
