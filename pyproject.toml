@@ -110,6 +110,9 @@ indent-style = "space"
 testpaths = ["tests"]
 addopts = ["--strict-markers", "-ra"]
 asyncio_mode = "auto"
+markers = [
+    "integration: live Paperless-NGX integration tests (opt-in)",
+]
 
 [tool.coverage.run]
 source = ["src/paperless_mcp"]
