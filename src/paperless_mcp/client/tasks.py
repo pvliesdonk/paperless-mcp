@@ -7,6 +7,7 @@ import builtins
 import time
 
 from paperless_mcp.client._http import PaperlessHTTP
+from paperless_mcp.models.common import Paginated
 from paperless_mcp.models.task import Task, TaskStatus
 
 _TERMINAL_STATUSES = {TaskStatus.SUCCESS, TaskStatus.FAILURE, TaskStatus.REVOKED}
@@ -19,24 +20,55 @@ class TasksClient:
         self._http = http
 
     async def list(
-        self, *, status: TaskStatus | None = None, acknowledged: bool | None = None
-    ) -> builtins.list[Task]:
-        """List tasks with optional server-side filtering.
+        self,
+        *,
+        page: int = 1,
+        page_size: int = 25,
+        status: TaskStatus | None = None,
+        acknowledged: bool | None = None,
+        include_acknowledged: bool = False,
+    ) -> Paginated[Task]:
+        """List Paperless tasks with pagination and optional filtering.
+
+        The ``/api/tasks/`` endpoint returns a bare JSON array (no paginated
+        envelope), so pagination is performed client-side: all matching tasks
+        are fetched in one request and sliced here.
 
         Args:
+            acknowledged: Filter by acknowledged flag.  When ``None`` and
+                ``include_acknowledged`` is ``False``, defaults to ``False``
+                (unacknowledged only).
+            include_acknowledged: When ``True``, do not apply the default
+                ``acknowledged=false`` filter.  Ignored if *acknowledged* is
+                set explicitly.
+            page: Page number (1-based).
+            page_size: Results per page. Tool layer clamps 1-100.
             status: Filter by task status.
-            acknowledged: Filter by acknowledged flag.
 
         Returns:
-            List of matching :class:`Task` objects.
+            A :class:`Paginated` page of :class:`Task` objects.
         """
         params: dict[str, object] = {}
         if status is not None:
             params["status"] = status.value
+        if acknowledged is None and not include_acknowledged:
+            acknowledged = False
         if acknowledged is not None:
             params["acknowledged"] = str(acknowledged).lower()
-        body = await self._http.get_json("/api/tasks/", params=params or None)
-        return [Task.model_validate(entry) for entry in body]
+        body = await self._http.get_json("/api/tasks/", params=params)
+        # /api/tasks/ returns a bare list — paginate client-side.
+        all_tasks = [Task.model_validate(item) for item in body]
+        start = (page - 1) * page_size
+        end = start + page_size
+        return Paginated[Task].model_validate(
+            {
+                "count": len(all_tasks),
+                "next": None,
+                "previous": None,
+                "all": [t.id for t in all_tasks],
+                "results": [t.model_dump() for t in all_tasks[start:end]],
+            }
+        )
 
     async def get(self, task_uuid: str) -> Task | None:
         """Fetch a single task by UUID.

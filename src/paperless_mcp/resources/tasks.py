@@ -15,6 +15,6 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
 
     @mcp.resource(uri="tasks://paperless", mime_type="application/json")
     async def tasks_resource() -> str:
-        """Return all Paperless-NGX tasks as a JSON array."""
-        task_list = await client.tasks.list()
-        return json.dumps([t.model_dump() for t in task_list])
+        """Return Paperless-NGX tasks (first page, unacknowledged) as a JSON array."""
+        page = await client.tasks.list()
+        return json.dumps([t.model_dump() for t in page.results])

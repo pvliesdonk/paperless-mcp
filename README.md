@@ -201,7 +201,7 @@ The following variables are inherited unchanged from [`fastmcp-server-template`]
 | `get_saved_view` | Get a saved view by ID |
 | `list_share_links` | List share links |
 | `get_share_link` | Get a share link by ID |
-| `list_tasks` | List background tasks |
+| `list_tasks` | List background tasks. Paginates (`page`, `page_size` up to 100). By default returns only unacknowledged tasks — pass `include_acknowledged=True` to include acknowledged tasks, or `acknowledged=True` to return only acknowledged ones. |
 | `get_task` | Get a task by ID |
 | `wait_for_task` | Wait until a task completes |
 | `get_statistics` | Get server statistics |

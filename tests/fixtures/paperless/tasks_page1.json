@@ -1,0 +1,4 @@
+[
+  {"id": 1, "task_id": "uuid-1", "status": "SUCCESS", "acknowledged": false, "type": "file", "task_file_name": "a.pdf", "date_created": "2026-01-01T00:00:00Z"},
+  {"id": 2, "task_id": "uuid-2", "status": "FAILURE", "acknowledged": false, "type": "file", "task_file_name": "b.pdf", "date_created": "2026-01-02T00:00:00Z"}
+]
