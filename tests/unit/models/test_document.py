@@ -108,6 +108,37 @@ def test_document_history_entry_accepts_nested_actor_object() -> None:
     assert entry.actor == "peter"
 
 
+def test_user_id_rejects_dict_without_id_key() -> None:
+    """A dict without ``id`` is malformed upstream — surface it, don't drop it silently."""
+    import pytest
+    from pydantic import ValidationError
+
+    with pytest.raises(ValidationError):
+        DocumentNote.model_validate(
+            {
+                "id": 5,
+                "note": "hi",
+                "created": "2026-04-23T10:00:00Z",
+                "user": {"username": "alice"},
+            }
+        )
+
+
+def test_username_rejects_dict_without_username_key() -> None:
+    """Same contract for ``actor``: a dict without ``username`` must raise."""
+    import pytest
+    from pydantic import ValidationError
+
+    with pytest.raises(ValidationError):
+        DocumentHistoryEntry.model_validate(
+            {
+                "timestamp": "2026-04-23T10:00:00Z",
+                "action": "modify",
+                "actor": {"id": 3},
+            }
+        )
+
+
 def test_document_suggestions_accepts_empty_lists() -> None:
     s = DocumentSuggestions.model_validate(
         {"tags": [], "correspondents": [], "document_types": [], "dates": []}
