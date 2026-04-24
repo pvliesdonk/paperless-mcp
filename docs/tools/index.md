@@ -6,9 +6,9 @@ Paperless MCP exposes the following tools to MCP clients.
 
 | Tool | Description |
 |---|---|
-| `list_documents` | List documents with optional filters; OCR `content` stripped by default (`include_content=True` to opt in) |
-| `search_documents` | Full-text and filtered document search; OCR `content` stripped by default (`include_content=True` to opt in) |
-| `get_document` | Retrieve document metadata by ID |
+| `list_documents` | List documents with optional filters; OCR `content` stripped by default (`include_content=True` to opt in). `notes[].note` and `custom_fields[].value` are always stripped — fetch them via single-document endpoints. |
+| `search_documents` | Full-text and filtered document search; OCR `content` stripped by default (`include_content=True` to opt in). `notes[].note` and `custom_fields[].value` are always stripped on hits. |
+| `get_document` | Retrieve document metadata by ID; OCR `content` stripped by default (`include_content=True` to opt in) |
 | `get_document_content` | Retrieve the plain-text content of a document |
 | `create_document` | Upload a new document for ingestion |
 | `update_document` | Patch document metadata (title, tags, correspondent, etc.) |
@@ -20,6 +20,10 @@ Paperless MCP exposes the following tools to MCP clients.
 | `create_download_link` | Generate a time-limited download URL |
 
 `get_document`, `list_documents`, `search_documents`, and `update_document` include a `web_url` field pointing to the document in the Paperless UI (e.g. `https://paperless.example.com/documents/42/`). Set `PAPERLESS_MCP_PAPERLESS_PUBLIC_URL` if the public URL differs from the API URL; otherwise the API URL is used.
+
+### Pagination
+
+All paginated tools return `next`/`previous` as bare `page=N` markers (or `None`). Upstream Paperless URLs are normalised away so the internal hostname never leaks into MCP responses; both server-paginated (documents, tags, ...) and client-paginated (tasks) endpoints now share a single shape. Callers pass `page=N` explicitly to fetch subsequent pages.
 
 ## Tag tools
 

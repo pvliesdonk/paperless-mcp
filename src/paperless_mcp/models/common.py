@@ -2,12 +2,39 @@
 
 from __future__ import annotations
 
+import logging
 from enum import StrEnum
 from typing import Generic, Literal, TypeVar
+from urllib.parse import parse_qs, urlparse
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
+
+
+def _normalise_page_marker(value: str | None) -> str | None:
+    """Return ``page=N`` for any URL or query fragment, ``None`` otherwise.
+
+    Paperless-paginated endpoints echo back upstream URLs like
+    ``http://paperless-ngx:8000/api/documents/?page=2`` which leak the internal
+    hostname and are inconsistent with client-paginated endpoints (see #32).
+    Normalising here guarantees both shapes collapse to ``page=2``.
+    """
+    if value is None:
+        return None
+    # Accept full URL or bare query fragment. ``urlparse`` only populates
+    # ``.query`` when a scheme/netloc is present, so fall back to the raw value.
+    query = urlparse(value).query or value
+    pages = parse_qs(query).get("page")
+    if pages and pages[0].isdigit():
+        return f"page={pages[0]}"
+    # Surface unexpected shapes (cursor/offset pagination, malformed URLs) at
+    # WARNING so the normalised ``None`` — which otherwise silently stops
+    # pagination — is traceable in production.
+    logger.warning("normalise_page_marker unexpected_shape value=%r", value)
+    return None
 
 
 class Paginated(BaseModel, Generic[T]):
@@ -17,6 +44,11 @@ class Paginated(BaseModel, Generic[T]):
     next: str | None = None
     previous: str | None = None
     results: list[T] = Field(default_factory=list)
+
+    @field_validator("next", "previous", mode="after")
+    @classmethod
+    def _strip_upstream_url(cls, value: str | None) -> str | None:
+        return _normalise_page_marker(value)
 
 
 class ListParams(BaseModel):

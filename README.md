@@ -132,16 +132,16 @@ The following variables are inherited unchanged from [`fastmcp-server-template`]
 
 | Tool | Description |
 |---|---|
-| `list_documents` | List documents with optional filtering; OCR `content` stripped by default — pass `include_content=True` for full text |
-| `search_documents` | Full-text search across documents; OCR `content` stripped by default — pass `include_content=True` for full text |
-| `get_document` | Retrieve a document by ID |
+| `list_documents` | List documents with optional filtering; OCR `content` stripped by default (`include_content=True` for full text). `notes[].note` and `custom_fields[].value` are always stripped on listings — use single-document endpoints to fetch them. |
+| `search_documents` | Full-text search across documents; OCR `content` stripped by default (`include_content=True` for full text). `notes[].note` and `custom_fields[].value` are always stripped on search hits. |
+| `get_document` | Retrieve a document by ID; OCR `content` stripped by default (`include_content=True` for full text) |
 | `get_document_content` | Get the extracted text content of a document |
 | `get_document_thumbnail` | Get the thumbnail image of a document |
 | `get_document_metadata` | Get metadata (original filename, checksums, etc.) |
 | `get_document_notes` | List notes attached to a document |
 | `get_document_history` | Get the audit history of a document |
 | `get_document_suggestions` | Get AI-generated tag/correspondent/type suggestions |
-| `update_document` | Update document fields (title, tags, correspondent, etc.) |
+| `update_document` | Update document fields (title, tags, correspondent, etc.); response OCR `content` stripped by default (`include_content=True` to retain) |
 | `delete_document` | Delete a document |
 | `upload_document` | Upload a new document for processing |
 | `bulk_edit_documents` | Apply a bulk operation to multiple documents |
@@ -149,6 +149,8 @@ The following variables are inherited unchanged from [`fastmcp-server-template`]
 | `delete_document_note` | Delete a note from a document |
 
 `get_document`, `list_documents`, `search_documents`, and `update_document` include a `web_url` field pointing to the document in the Paperless UI (e.g. `https://paperless.example.com/documents/42/`). Set `PAPERLESS_MCP_PAPERLESS_PUBLIC_URL` if the public URL differs from the API URL; otherwise the API URL is used.
+
+Paginated tools return `next`/`previous` as bare `page=N` markers (never full URLs) — callers pass `page=N` explicitly when walking pages. `None` means no further page.
 
 ### Tags
 

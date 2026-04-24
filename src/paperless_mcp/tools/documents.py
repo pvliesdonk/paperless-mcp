@@ -58,6 +58,12 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
 
         By default, per-document OCR ``content`` is stripped to keep results
         small.  Pass ``include_content=True`` for the full text on each hit.
+
+        ``notes[].note`` and ``custom_fields[].value`` are **always** stripped
+        from listings regardless of ``include_content`` — the metadata refs
+        (note ids, timestamps, custom-field ids) are retained so callers can
+        detect presence, but to read the actual text use ``get_document``
+        (with ``include_content=True`` if needed) or ``get_document_notes``.
         """
         result = await client.documents.list(
             page=page,
@@ -87,6 +93,10 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
         By default per-hit OCR ``content`` is stripped; pass
         ``include_content=True`` to get full OCR text per hit.
         Use *more_like* for similarity search.
+
+        ``notes[].note`` and ``custom_fields[].value`` are **always** stripped
+        from search hits regardless of ``include_content`` — fetch them via
+        ``get_document`` or ``get_document_notes`` when needed.
         """
         result = await client.documents.search(
             query,
@@ -100,9 +110,19 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
         return result
 
     @register_tool(mcp, "get_document", read_only_mode=read_only)
-    async def get_document(document_id: int) -> Document:
-        """Fetch one document by ID."""
+    async def get_document(
+        document_id: int,
+        include_content: bool = False,
+    ) -> Document:
+        """Fetch one document by ID.
+
+        By default, the OCR ``content`` is stripped to keep responses small.
+        Pass ``include_content=True`` for the full text, or call
+        ``get_document_content`` to retrieve just the text.
+        """
         doc = await client.documents.get(document_id)
+        if not include_content:
+            doc.content = None
         _with_web_url(doc)
         return doc
 
@@ -142,9 +162,19 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
         return await client.documents.get_suggestions(document_id)
 
     @register_tool(mcp, "update_document", read_only_mode=read_only)
-    async def update_document(document_id: int, patch: DocumentPatch) -> Document:
-        """Patch selected fields on a document."""
+    async def update_document(
+        document_id: int,
+        patch: DocumentPatch,
+        include_content: bool = False,
+    ) -> Document:
+        """Patch selected fields on a document.
+
+        The response strips OCR ``content`` by default; pass
+        ``include_content=True`` to get the full text back.
+        """
         doc = await client.documents.update(document_id, patch)
+        if not include_content:
+            doc.content = None
         _with_web_url(doc)
         return doc
 

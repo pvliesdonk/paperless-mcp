@@ -7781,11 +7781,3 @@ Plan complete and saved to `docs/superpowers/plans/2026-04-23-paperless-mcp.md`.
 **2. Inline Execution** — run tasks in the current session with checkpoints. Useful for Phase A (scaffold verification) and the upstream-issue tasks (B1, C4, G1, J1) where human judgement is involved.
 
 Which approach?
-
-
-
-
-
-
-
-

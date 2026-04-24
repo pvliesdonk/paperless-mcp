@@ -140,6 +140,120 @@ async def test_get_document_populates_web_url(mock_client: Any) -> None:
     assert data["web_url"] == "https://docs.example.com/documents/42/"
 
 
+def test_get_document_and_update_document_expose_include_content(
+    mock_client: Any,
+) -> None:
+    mcp = FastMCP("test")
+    ctx = ToolContext(
+        client=mock_client, read_only=False, default_page_size=25, public_url=""
+    )
+    documents_mod.register(mcp, ctx)
+    tools = {t.name: t for t in asyncio.run(mcp.list_tools())}
+    for name in ("get_document", "update_document"):
+        schema = tools[name].parameters
+        assert "include_content" in schema["properties"], name
+        assert schema["properties"]["include_content"].get("default") is False
+
+
+@pytest.mark.asyncio
+async def test_get_document_strips_content_by_default(mock_client: Any) -> None:
+    mcp = FastMCP("t")
+    ctx = ToolContext(
+        client=mock_client, read_only=True, default_page_size=25, public_url=""
+    )
+    documents_mod.register(mcp, ctx)
+    mock_client.documents.get.return_value = Document(
+        id=42,
+        title="X",
+        created=datetime(2026, 1, 1, tzinfo=UTC),
+        content="A" * 50_000,
+    )
+
+    async with Client(mcp) as c:
+        result = await c.call_tool("get_document", {"document_id": 42})
+
+    data = result.structured_content
+    assert data is not None
+    assert data["content"] is None
+
+
+@pytest.mark.asyncio
+async def test_get_document_keeps_content_when_include_content_true(
+    mock_client: Any,
+) -> None:
+    mcp = FastMCP("t")
+    ctx = ToolContext(
+        client=mock_client, read_only=True, default_page_size=25, public_url=""
+    )
+    documents_mod.register(mcp, ctx)
+    mock_client.documents.get.return_value = Document(
+        id=42,
+        title="X",
+        created=datetime(2026, 1, 1, tzinfo=UTC),
+        content="OCR text",
+    )
+
+    async with Client(mcp) as c:
+        result = await c.call_tool(
+            "get_document", {"document_id": 42, "include_content": True}
+        )
+
+    data = result.structured_content
+    assert data is not None
+    assert data["content"] == "OCR text"
+
+
+@pytest.mark.asyncio
+async def test_update_document_strips_content_by_default(mock_client: Any) -> None:
+    mcp = FastMCP("t")
+    ctx = ToolContext(
+        client=mock_client, read_only=False, default_page_size=25, public_url=""
+    )
+    documents_mod.register(mcp, ctx)
+    mock_client.documents.update.return_value = Document(
+        id=42,
+        title="X",
+        created=datetime(2026, 1, 1, tzinfo=UTC),
+        content="A" * 50_000,
+    )
+
+    async with Client(mcp) as c:
+        result = await c.call_tool(
+            "update_document", {"document_id": 42, "patch": {"title": "Y"}}
+        )
+
+    data = result.structured_content
+    assert data is not None
+    assert data["content"] is None
+
+
+@pytest.mark.asyncio
+async def test_update_document_keeps_content_when_include_content_true(
+    mock_client: Any,
+) -> None:
+    mcp = FastMCP("t")
+    ctx = ToolContext(
+        client=mock_client, read_only=False, default_page_size=25, public_url=""
+    )
+    documents_mod.register(mcp, ctx)
+    mock_client.documents.update.return_value = Document(
+        id=42,
+        title="X",
+        created=datetime(2026, 1, 1, tzinfo=UTC),
+        content="OCR text",
+    )
+
+    async with Client(mcp) as c:
+        result = await c.call_tool(
+            "update_document",
+            {"document_id": 42, "patch": {"title": "Y"}, "include_content": True},
+        )
+
+    data = result.structured_content
+    assert data is not None
+    assert data["content"] == "OCR text"
+
+
 @pytest.mark.asyncio
 async def test_list_documents_populates_web_url(mock_client: Any) -> None:
     mcp = FastMCP("t")
