@@ -30,7 +30,7 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
     @register_tool(mcp, "list_custom_fields", read_only_mode=read_only)
     async def list_custom_fields(
         page: Annotated[int, Field(ge=1)] = 1,
-        page_size: Annotated[int, Field(ge=1, le=100)] = 100,
+        page_size: Annotated[int, Field(ge=1, le=100)] = ctx.default_page_size,
         ordering: str | None = None,
     ) -> Paginated[CustomField]:
         """List custom fields."""

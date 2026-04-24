@@ -26,7 +26,7 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
     @register_tool(mcp, "list_storage_paths", read_only_mode=read_only)
     async def list_storage_paths(
         page: Annotated[int, Field(ge=1)] = 1,
-        page_size: Annotated[int, Field(ge=1, le=100)] = 100,
+        page_size: Annotated[int, Field(ge=1, le=100)] = ctx.default_page_size,
         ordering: str | None = None,
     ) -> Paginated[StoragePath]:
         """List storage paths."""

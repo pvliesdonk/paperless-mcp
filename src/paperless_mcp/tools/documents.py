@@ -40,7 +40,7 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
     @register_tool(mcp, "list_documents", read_only_mode=read_only)
     async def list_documents(
         page: Annotated[int, Field(ge=1)] = 1,
-        page_size: Annotated[int, Field(ge=1, le=100)] = 25,
+        page_size: Annotated[int, Field(ge=1, le=100)] = ctx.default_page_size,
         ordering: str | None = None,
         tags: list[int] | None = None,
         correspondent: int | None = None,
@@ -64,7 +64,7 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
     async def search_documents(
         query: str,
         page: Annotated[int, Field(ge=1)] = 1,
-        page_size: Annotated[int, Field(ge=1, le=100)] = 25,
+        page_size: Annotated[int, Field(ge=1, le=100)] = ctx.default_page_size,
         more_like: int | None = None,
     ) -> Paginated[Document]:
         """Full-text search documents.  Use *more_like* for similarity search."""
@@ -150,13 +150,13 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
 
     @register_tool(mcp, "bulk_edit_documents", read_only_mode=read_only)
     async def bulk_edit_documents(
-        document_ids: list[int],
-        method: BulkEditOperation,
+        ids: list[int],
+        operation: BulkEditOperation,
         parameters: dict[str, object] | None = None,
     ) -> BulkEditResult:
         """Apply a bulk operation to a set of documents."""
         return await client.documents.bulk_edit(
-            document_ids=document_ids, method=method, parameters=parameters
+            document_ids=ids, method=operation, parameters=parameters
         )
 
     @register_tool(mcp, "add_document_note", read_only_mode=read_only)

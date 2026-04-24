@@ -18,6 +18,7 @@ suppresses mypy on the call site.
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Annotated, Literal
 
 from fastmcp import FastMCP
@@ -59,17 +60,20 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
         """
         if variant == "preview":
             data, content_type = await client.documents.get_preview(document_id)
-            suffix = ".preview"
+            is_preview = True
         else:
             data, content_type = await client.documents.download(
                 document_id, original=(variant == "original")
             )
-            suffix = ""
+            is_preview = False
 
         document = await client.documents.get(document_id)
-        base_name = document.original_file_name or f"document-{document_id}"
-        if suffix and not base_name.endswith(suffix):
-            base_name = f"{base_name}{suffix}"
+        raw_name = document.original_file_name or f"document-{document_id}"
+        if is_preview:
+            p = Path(raw_name)
+            base_name = f"{p.stem}-preview{p.suffix}"
+        else:
+            base_name = raw_name
 
         url = await store.put_ephemeral(  # type: ignore[attr-defined]
             data,

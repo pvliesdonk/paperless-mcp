@@ -26,7 +26,7 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
     @register_tool(mcp, "list_saved_views", read_only_mode=read_only)
     async def list_saved_views(
         page: Annotated[int, Field(ge=1)] = 1,
-        page_size: Annotated[int, Field(ge=1, le=100)] = 100,
+        page_size: Annotated[int, Field(ge=1, le=100)] = ctx.default_page_size,
     ) -> Paginated[SavedView]:
         """List saved views."""
         return await client.saved_views.list(page=page, page_size=page_size)

@@ -49,6 +49,10 @@ def test_read_only_registers_read_tools(mock_client: Any) -> None:
     assert "get_document" in names
     assert "get_document_content" in names
     assert "get_document_thumbnail" in names
+    assert "get_document_metadata" in names
+    assert "get_document_notes" in names
+    assert "get_document_history" in names
+    assert "get_document_suggestions" in names
     assert "update_document" not in names
     assert "delete_document" not in names
     assert "upload_document" not in names
