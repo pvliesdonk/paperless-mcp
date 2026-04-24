@@ -19,6 +19,8 @@ Paperless MCP exposes the following tools to MCP clients.
 | `get_document_history` | Retrieve audit log for a document |
 | `create_download_link` | Generate a time-limited download URL |
 
+`get_document`, `list_documents`, `search_documents`, and `update_document` include a `web_url` field pointing to the document in the Paperless UI (e.g. `https://paperless.example.com/documents/42/`). Set `PAPERLESS_MCP_PAPERLESS_PUBLIC_URL` if the public URL differs from the API URL; otherwise the API URL is used.
+
 ## Tag tools
 
 | Tool | Description |
@@ -71,6 +73,18 @@ The `extra_data` field shape depends on the custom field's `data_type`. Refer to
 | `select` | `{"select_options": [{"label": "Low"}, {"label": "Medium"}]}` | **Required** on create. Paperless assigns each option a stable `id` on creation. On update, re-use existing `id` values to preserve document values. |
 
 Unknown shapes are rejected by Paperless with a 400 error.
+
+## Share link tools
+
+| Tool | Description |
+|---|---|
+| `list_share_links` | List share links (optionally filtered by document) |
+| `get_share_link` | Fetch a share link by ID |
+
+Both tools include a `share_url` field of the form `<PAPERLESS_MCP_PAPERLESS_PUBLIC_URL>/share/<slug>`.
+`PAPERLESS_MCP_PAPERLESS_PUBLIC_URL` is used when set; otherwise it defaults to
+`PAPERLESS_MCP_PAPERLESS_URL` via the config layer (see `PAPERLESS_MCP_PAPERLESS_PUBLIC_URL`
+in the README env-var table).
 
 ## Task tools
 

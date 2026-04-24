@@ -148,6 +148,8 @@ The following variables are inherited unchanged from [`fastmcp-server-template`]
 | `add_document_note` | Add a note to a document |
 | `delete_document_note` | Delete a note from a document |
 
+`get_document`, `list_documents`, `search_documents`, and `update_document` include a `web_url` field pointing to the document in the Paperless UI (e.g. `https://paperless.example.com/documents/42/`). Set `PAPERLESS_MCP_PAPERLESS_PUBLIC_URL` if the public URL differs from the API URL; otherwise the API URL is used.
+
 ### Tags
 
 | Tool | Description |
@@ -200,8 +202,8 @@ The following variables are inherited unchanged from [`fastmcp-server-template`]
 | `get_storage_path` | Get a storage path by ID |
 | `list_saved_views` | List saved views |
 | `get_saved_view` | Get a saved view by ID |
-| `list_share_links` | List share links |
-| `get_share_link` | Get a share link by ID |
+| `list_share_links` | List share links (includes `share_url`; uses `PAPERLESS_MCP_PAPERLESS_PUBLIC_URL` if set, otherwise `PAPERLESS_MCP_PAPERLESS_URL`) |
+| `get_share_link` | Get a share link by ID (includes `share_url`; uses `PAPERLESS_MCP_PAPERLESS_PUBLIC_URL` if set, otherwise `PAPERLESS_MCP_PAPERLESS_URL`) |
 | `list_tasks` | List background tasks. Paginates (`page`, `page_size` up to 100). By default returns only unacknowledged tasks — pass `include_acknowledged=True` to include acknowledged tasks, or `acknowledged=True` to return only acknowledged ones. |
 | `get_task` | Get a task by ID |
 | `wait_for_task` | Wait until a task completes |

@@ -23,6 +23,11 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
     client = ctx.client
     read_only = ctx.read_only
 
+    def _with_share_url(link: ShareLink) -> None:
+        """Populate *link*'s ``share_url`` when a public URL is configured."""
+        if ctx.public_url:
+            link.share_url = f"{ctx.public_url}/share/{link.slug}"
+
     @register_tool(mcp, "list_share_links", read_only_mode=read_only)
     async def list_share_links(
         page: Annotated[int, Field(ge=1)] = 1,
@@ -30,11 +35,16 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
         document_id: int | None = None,
     ) -> Paginated[ShareLink]:
         """List share links (optionally filtered by document)."""
-        return await client.share_links.list(
+        result = await client.share_links.list(
             page=page, page_size=page_size, document_id=document_id
         )
+        for link in result.results:
+            _with_share_url(link)
+        return result
 
     @register_tool(mcp, "get_share_link", read_only_mode=read_only)
     async def get_share_link(share_link_id: int) -> ShareLink:
         """Fetch a share link by ID."""
-        return await client.share_links.get(share_link_id)
+        link = await client.share_links.get(share_link_id)
+        _with_share_url(link)
+        return link

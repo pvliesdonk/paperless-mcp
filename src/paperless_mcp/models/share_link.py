@@ -21,3 +21,4 @@ class ShareLink(BaseModel):
     slug: str
     document: int
     file_version: ShareLinkFileVersion
+    share_url: str | None = None
