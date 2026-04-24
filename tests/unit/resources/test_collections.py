@@ -4,6 +4,7 @@ import asyncio
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
+import pytest
 from fastmcp import FastMCP
 
 from paperless_mcp.resources import collections as collections_mod
@@ -23,17 +24,17 @@ def _mock_client() -> Any:
         sub = getattr(client, attr)
         sub.list = AsyncMock(
             return_value=MagicMock(
-                model_dump=MagicMock(return_value={"count": 0, "results": []})
+                model_dump_json=MagicMock(return_value='{"count": 0, "results": []}')
             )
         )
     client.system.statistics = AsyncMock(
         return_value=MagicMock(
-            model_dump=MagicMock(return_value={"documents_total": 0})
+            model_dump_json=MagicMock(return_value='{"documents_total": 0}')
         )
     )
     client.system.remote_version = AsyncMock(
         return_value=MagicMock(
-            model_dump=MagicMock(return_value={"version": "2.7.2"})
+            model_dump_json=MagicMock(return_value='{"version": "2.7.2"}')
         )
     )
     return client
@@ -57,3 +58,16 @@ def test_all_collection_uris_registered() -> None:
     assert "custom-fields://paperless" in uris
     assert "storage-paths://paperless" in uris
     assert "saved-views://paperless" in uris
+
+
+@pytest.mark.asyncio
+async def test_tags_resource_returns_json(monkeypatch: pytest.MonkeyPatch) -> None:
+    """tags://paperless returns a non-empty JSON response."""
+    from fastmcp import Client
+
+    mcp = FastMCP("test")
+    ctx = ToolContext(client=_mock_client(), read_only=False, default_page_size=25)
+    collections_mod.register(mcp, ctx)
+    async with Client(mcp) as client:
+        result = await client.read_resource("tags://paperless")
+    assert result  # non-empty response

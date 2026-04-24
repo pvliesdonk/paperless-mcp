@@ -24,12 +24,15 @@ from fastmcp_pvl_core import (
     wire_middleware_stack,
 )
 
+from paperless_mcp._domain_config import load_domain_config
 from paperless_mcp._server_apps import register_apps
 from paperless_mcp._server_deps import server_lifespan
+from paperless_mcp.client import PaperlessClient
 from paperless_mcp.config import ProjectConfig
 from paperless_mcp.prompts import register_prompts
 from paperless_mcp.resources import register_resources
 from paperless_mcp.tools import register_tools
+from paperless_mcp.tools._context import ToolContext
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +57,19 @@ def make_server(
     """
     config = config or ProjectConfig.from_env()
     configure_logging_from_env()
+
+    domain_cfg = load_domain_config()
+    _client = PaperlessClient(
+        base_url=domain_cfg.paperless_url,
+        api_token=domain_cfg.api_token.get_secret_value(),
+        timeout_seconds=domain_cfg.http_timeout_seconds,
+        max_retries=domain_cfg.http_retries,
+    )
+    _tool_ctx = ToolContext(
+        client=_client,
+        read_only=False,
+        default_page_size=domain_cfg.default_page_size,
+    )
 
     auth = build_auth(config.server)
     auth_mode = resolve_auth_mode(config.server) if auth is not None else "none"
@@ -88,8 +104,8 @@ def make_server(
 
     wire_middleware_stack(mcp)
 
-    register_tools(mcp)
-    register_resources(mcp)
+    register_tools(mcp, _tool_ctx)
+    register_resources(mcp, _tool_ctx)
     register_prompts(mcp)
     register_apps(mcp)
 
