@@ -139,6 +139,97 @@ def test_username_rejects_dict_without_username_key() -> None:
         )
 
 
+def test_document_history_entry_redacts_content_on_create() -> None:
+    # Create events carry ["None", "<blob>"] — keep the marker, redact the blob.
+    entry = DocumentHistoryEntry.model_validate(
+        {
+            "timestamp": "2026-04-23T10:00:00Z",
+            "action": "create",
+            "actor": None,
+            "changes": {
+                "content": ["None", "A" * 50_000],
+                "title": ["None", "Invoice"],
+            },
+        }
+    )
+    assert entry.changes is not None
+    content_change = entry.changes["content"]
+    assert content_change[0] == "None"
+    assert "A" * 50_000 not in content_change[1]
+    assert "redacted" in content_change[1].lower()
+    assert entry.changes["title"] == ["None", "Invoice"]
+
+
+def test_document_history_entry_redacts_both_sides_on_modify() -> None:
+    # Modify events carry ["<old>", "<new>"] — both can be 50+ kB, redact both.
+    entry = DocumentHistoryEntry.model_validate(
+        {
+            "timestamp": "2026-04-23T10:00:00Z",
+            "action": "modify",
+            "actor": "peter",
+            "changes": {"content": ["B" * 50_000, "A" * 50_000]},
+        }
+    )
+    assert entry.changes is not None
+    content_change = entry.changes["content"]
+    assert "B" * 50_000 not in content_change[0]
+    assert "A" * 50_000 not in content_change[1]
+    assert "redacted" in content_change[0].lower()
+    assert "redacted" in content_change[1].lower()
+
+
+def test_document_history_entry_preserves_none_on_delete() -> None:
+    # Delete-style events carry ["<old>", None] — keep the None terminator.
+    entry = DocumentHistoryEntry.model_validate(
+        {
+            "timestamp": "2026-04-23T10:00:00Z",
+            "action": "delete",
+            "actor": "peter",
+            "changes": {"content": ["C" * 50_000, None]},
+        }
+    )
+    assert entry.changes is not None
+    content_change = entry.changes["content"]
+    assert content_change[1] is None
+    assert "C" * 50_000 not in content_change[0]
+    assert "redacted" in content_change[0].lower()
+
+
+def test_document_history_entry_redacts_non_list_content() -> None:
+    # Defensive: if Paperless sends content as a scalar, redact wholesale.
+    entry = DocumentHistoryEntry.model_validate(
+        {
+            "timestamp": "2026-04-23T10:00:00Z",
+            "action": "modify",
+            "actor": "peter",
+            "changes": {"content": "A" * 50_000},
+        }
+    )
+    assert entry.changes is not None
+    assert "A" * 50_000 not in entry.changes["content"]
+    assert "redacted" in entry.changes["content"].lower()
+
+
+def test_document_history_entry_no_changes_field() -> None:
+    """Entries without a ``changes`` dict still parse fine."""
+    entry = DocumentHistoryEntry.model_validate(
+        {"timestamp": "2026-04-23T10:00:00Z", "action": "modify", "actor": "peter"}
+    )
+    assert entry.changes is None
+
+
+def test_document_history_entry_changes_without_content_unchanged() -> None:
+    entry = DocumentHistoryEntry.model_validate(
+        {
+            "timestamp": "2026-04-23T10:00:00Z",
+            "action": "modify",
+            "actor": "peter",
+            "changes": {"title": ["Old", "New"]},
+        }
+    )
+    assert entry.changes == {"title": ["Old", "New"]}
+
+
 def test_document_suggestions_accepts_empty_lists() -> None:
     s = DocumentSuggestions.model_validate(
         {"tags": [], "correspondents": [], "document_types": [], "dates": []}

@@ -5,9 +5,11 @@ from __future__ import annotations
 from datetime import date, datetime
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from paperless_mcp.models._compat import UserId, Username
+
+_CONTENT_REDACTED_MARKER = "<content redacted — use get_document_content>"
 
 
 class CustomFieldInstance(BaseModel):
@@ -83,6 +85,21 @@ class DocumentHistoryEntry(BaseModel):
     timestamp: datetime
     action: str
     actor: Username = None
+    changes: dict[str, Any] | None = None
+
+    @field_validator("changes")
+    @classmethod
+    def _redact_content(cls, value: dict[str, Any] | None) -> dict[str, Any] | None:
+        # Redact OCR blobs from changes.content; preserve None/"None" lifecycle markers.
+        if not value or "content" not in value:
+            return value
+        original = value["content"]
+        if isinstance(original, list) and len(original) == 2:
+            redacted = [
+                v if v in (None, "None") else _CONTENT_REDACTED_MARKER for v in original
+            ]
+            return {**value, "content": redacted}
+        return {**value, "content": _CONTENT_REDACTED_MARKER}
 
 
 class DocumentSuggestions(BaseModel):
