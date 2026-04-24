@@ -60,6 +60,18 @@ Paperless MCP exposes the following tools to MCP clients.
 | `update_custom_field` | Update a custom field |
 | `delete_custom_field` | Delete a custom field |
 
+### extra_data by data_type
+
+The `extra_data` field shape depends on the custom field's `data_type`. Refer to these shapes when using `create_custom_field` and `update_custom_field`:
+
+| `data_type` | `extra_data` shape / example | Notes |
+|---|---|---|
+| `string`, `longtext`, `integer`, `boolean`, `float`, `date`, `url`, `documentlink` | — (unused) | Omit or pass `null` |
+| `monetary` | `{"default_currency": "USD"}` | Optional ISO-4217 currency code; Paperless accepts `null`/absent |
+| `select` | `{"select_options": [{"label": "Low"}, {"label": "Medium"}]}` | **Required** on create. Paperless assigns each option a stable `id` on creation. On update, re-use existing `id` values to preserve document values. |
+
+Unknown shapes are rejected by Paperless with a 400 error.
+
 ## Task tools
 
 | Tool | Description |

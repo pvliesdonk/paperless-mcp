@@ -103,3 +103,16 @@ def test_read_write_registers_all(module: Any, prefix: str) -> None:
         f"bulk_edit_{prefix}s",
     }
     assert expected.issubset(names)
+
+
+def test_custom_field_tool_descriptions_mention_select_options() -> None:
+    """Regression test: docstrings document extra_data.select_options shape."""
+    mcp = FastMCP("test")
+    ctx = ToolContext(client=_mock_client(), read_only=False, default_page_size=25)
+    custom_fields_mod.register(mcp, ctx)
+    tools = {t.name: t for t in asyncio.run(mcp.list_tools())}
+    for name in ("create_custom_field", "update_custom_field"):
+        desc = tools[name].description or ""
+        assert "select_options" in desc, (
+            f"Tool {name!r} description must mention 'select_options'; got: {desc!r}"
+        )
