@@ -1617,7 +1617,7 @@ wheels = [
 
 [[package]]
 name = "pvliesdonk-paperless-mcp"
-version = "1.0.0rc1"
+version = "1.0.0rc2"
 source = { editable = "." }
 dependencies = [
     { name = "fastmcp-pvl-core" },
