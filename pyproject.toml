@@ -26,11 +26,12 @@ dependencies = [
 
 [project.optional-dependencies]
 # PROJECT-EXTRAS-START — add domain-specific optional-dependency groups below; kept across copier update
+# PROJECT-EXTRAS-END
+
 docs = [
     "mkdocs-material>=9",
     "mkdocstrings[python]>=0.28",
 ]
-# PROJECT-EXTRAS-END
 
 dev = [
     "pytest>=8",
@@ -143,6 +144,24 @@ no_implicit_optional = true
 module = ["fastmcp_pvl_core", "fastmcp_pvl_core.*"]
 ignore_missing_imports = true
 
+# Relax strict typing for the existing test suite — predates the template's
+# mypy-on-tests expansion.  Newly scaffolded tests (tests/test_cli.py) remain
+# fully typed; legacy unit tests can be annotated incrementally.  Module
+# names are unqualified (e.g. `client.test_documents_read`) because
+# `tests/` and `tests/unit/` have no `__init__.py`, so mypy resolves
+# packages starting from the nearest `__init__.py` directory.
+[[tool.mypy.overrides]]
+module = [
+    "client.*",
+    "models.*",
+    "resources.*",
+    "tools.*",
+    "integration.*",
+]
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+check_untyped_defs = false
+
 
 [tool.pyright]
 # Point Pyright at the uv-managed venv so editor diagnostics resolve
@@ -150,6 +169,8 @@ ignore_missing_imports = true
 venvPath = "."
 venv = ".venv"
 pythonVersion = "3.11"
+# src-layout editable installs use a .pth shim that Pyright does not execute;
+# point Pyright at src/ directly so IDE import resolution matches runtime.
 extraPaths = ["src"]
 
 [tool.semantic_release]

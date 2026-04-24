@@ -29,7 +29,7 @@ def test_document_full(load_fixture) -> None:
 
 def test_document_forward_compatible(load_fixture) -> None:
     doc = Document.model_validate(load_fixture("document_full.json"))
-    assert doc.some_future_paperless_field == "that we don't know about yet"
+    assert doc.some_future_paperless_field == "that we don't know about yet"  # type: ignore[attr-defined]
 
 
 def test_document_patch_strict_forbids_extra() -> None:

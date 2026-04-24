@@ -37,7 +37,7 @@ def test_paginated_parses_results() -> None:
         }
     )
     assert [r.id for r in page.results] == [1, 2]
-    assert page.results[0].extra == "hi"
+    assert page.results[0].extra == "hi"  # type: ignore[attr-defined]
 
 
 def test_bulk_edit_operation_enum() -> None:

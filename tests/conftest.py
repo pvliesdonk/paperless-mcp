@@ -25,7 +25,7 @@ def _clear_env(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @pytest.fixture
-async def client(monkeypatch: pytest.MonkeyPatch) -> AsyncIterator[Client]:
+async def client(monkeypatch: pytest.MonkeyPatch) -> AsyncIterator[Client[Any]]:
     """Return an in-memory FastMCP client connected to a fresh server."""
     monkeypatch.setenv("PAPERLESS_MCP_PAPERLESS_URL", "http://paperless.test")
     monkeypatch.setenv("PAPERLESS_MCP_API_TOKEN", "test-token-do-not-use-in-prod")
