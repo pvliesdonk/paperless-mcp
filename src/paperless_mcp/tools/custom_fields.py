@@ -52,7 +52,7 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
         - ``string``, ``longtext``, ``integer``, ``boolean``, ``float``,
           ``date``, ``url``, ``documentlink`` — unused; omit or pass ``null``.
         - ``monetary`` — optional ``{"default_currency": "USD"}`` (ISO-4217).
-        - ``select`` — required
+        - ``select`` — ``extra_data`` **required**:
           ``{"select_options": [{"label": "Low"}, {"label": "Medium"}]}``.
           Paperless assigns each option a stable ``id`` on creation.
 
@@ -66,12 +66,16 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
     ) -> CustomField:
         """Patch selected fields on a custom field definition.
 
-        For ``select`` fields, ``extra_data.select_options`` replaces the
-        current list wholesale.  To preserve existing values, include each
-        existing option with its server-assigned ``id``:
-        ``{"select_options": [{"id": "abc", "label": "Low"}, ...]}``.
-        Omitting an option's ``id`` creates a new option; dropping an option
-        from the list deletes it and any document values referencing it.
+        ``extra_data`` shape depends on ``data_type``:
+
+        - ``monetary`` — optional ``{"default_currency": "USD"}`` (ISO-4217).
+        - ``select`` — ``extra_data.select_options`` replaces the current list
+          wholesale.  To preserve existing values, include each existing option
+          with its server-assigned ``id``:
+          ``{"select_options": [{"id": "abc", "label": "Low"}, ...]}``.
+          Omitting an option's ``id`` creates a new option; dropping an option
+          from the list deletes it and any document values referencing it.
+
         See ``create_custom_field`` for the full ``extra_data`` shape table.
         """
         return await client.custom_fields.update(field_id, patch)

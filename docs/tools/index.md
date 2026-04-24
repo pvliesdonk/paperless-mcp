@@ -64,7 +64,7 @@ Paperless MCP exposes the following tools to MCP clients.
 
 The `extra_data` field shape depends on the custom field's `data_type`. Refer to these shapes when using `create_custom_field` and `update_custom_field`:
 
-| `data_type` | Required `extra_data` shape | Notes |
+| `data_type` | `extra_data` shape / example | Notes |
 |---|---|---|
 | `string`, `longtext`, `integer`, `boolean`, `float`, `date`, `url`, `documentlink` | — (unused) | Omit or pass `null` |
 | `monetary` | `{"default_currency": "USD"}` | Optional ISO-4217 currency code; Paperless accepts `null`/absent |
