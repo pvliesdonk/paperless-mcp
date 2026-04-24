@@ -9,29 +9,25 @@ Paperless-NGX document management over MCP: search, tag, upload, and read docume
 ## Features
 
 <!-- DOMAIN-START -->
-<!-- Replace with 3-7 bullets describing what this MCP server does. Kept across copier update. -->
-
-- **[Capability 1]** — one-sentence description of a user-visible feature.
-- **[Capability 2]** — one-sentence description of another capability.
-- **MCP tools** — N LLM-visible tools exposed; see `src/paperless_mcp/tools.py`.
-- **MCP resources** — M resources exposing domain state; see `src/paperless_mcp/resources.py`.
-- **MCP prompts** — K prompt templates; see `src/paperless_mcp/prompts.py`.
+- **Document search & retrieval** — full-text and filtered list queries against Paperless-NGX, plus access to extracted OCR text, metadata, thumbnails, and original-file downloads via short-lived signed URLs.
+- **Tag, correspondent, document-type, custom-field management** — full CRUD and bulk-edit for every classification dimension Paperless exposes.
+- **Document lifecycle** — upload new documents, update fields, attach notes, and inspect audit history and AI-suggested tags/correspondents/types.
+- **Operational introspection** — saved views, storage paths, share links, background tasks (with `wait_for_task`), statistics, and remote Paperless-NGX version.
+- **MCP tools** — 52 LLM-visible tools with Lucide icons and read-only gating; see `src/paperless_mcp/tools/`.
+- **MCP resources** — 20 URIs exposing documents and domain collections; see `src/paperless_mcp/resources/`.
+- **Read-only mode** — flip `PAPERLESS_MCP_READ_ONLY=true` to disable every mutating tool at startup.
 <!-- DOMAIN-END -->
 
 ## What you can do with it
 
 <!-- DOMAIN-START -->
-<!-- Replace with 3-5 concrete "you can ask Claude to X" examples. Kept across copier update. -->
-
 With this server mounted in an MCP client (Claude, etc.), you can:
 
-- **[Task 1]** — "[example user request]." Composes tools `[tool_a]` + `[tool_b]`.
-- **[Task 2]** — "[another example request]." Uses resource `[resource_x]`.
-- **[Task 3]** — "[third example]."
-
-Short, concrete prompts beat abstract feature lists — replace the
-`[Task N]` placeholders with prompts that actually work against your
-server's tool surface.
+- **"Find last quarter's invoices from ACME."** Composes `search_documents` with a correspondent filter, then streams matches via `paperless://documents/{id}/content`.
+- **"Tag these three documents as 'reviewed' and move them to the Accounting correspondent."** Uses `bulk_edit_documents` in a single call.
+- **"Upload this PDF and wait until OCR finishes."** Composes `upload_document` + `wait_for_task` so the assistant only reports back once the document is indexed.
+- **"What changed on document 4213 in the last week?"** Reads `paperless://documents/4213/history` and summarises the audit trail.
+- **"Give me a time-limited link to the original file for document 982."** Calls `create_download_link` — the URL is valid for `PAPERLESS_MCP_DOWNLOAD_LINK_TTL_SECONDS` and does not expose the API token.
 <!-- DOMAIN-END -->
 
 <!-- ===== TEMPLATE-OWNED SECTIONS BELOW — DO NOT EDIT; CHANGES WILL BE OVERWRITTEN ON COPIER UPDATE ===== -->
@@ -47,7 +43,7 @@ pip install pvliesdonk-paperless-mcp
 If you add optional extras via the `PROJECT-EXTRAS-START` / `PROJECT-EXTRAS-END` sentinels in `pyproject.toml`, document them below:
 
 <!-- DOMAIN-START -->
-<!-- List optional extras and their purpose here (e.g. `pip install pvliesdonk-paperless-mcp[embeddings]`). Kept across copier update. -->
+- `pip install pvliesdonk-paperless-mcp[docs]` — pulls in `mkdocs-material` and `mkdocstrings[python]` for building the documentation site locally (`uv run mkdocs serve`).
 <!-- DOMAIN-END -->
 
 ### From source
@@ -311,22 +307,16 @@ When `copier update` introduces new dependencies (e.g. a new extra added to `pyp
 ## Domain configuration
 
 <!-- DOMAIN-START -->
-<!-- Replace with a table of domain-specific env vars. Kept across copier update. -->
-
-Domain environment variables use the `PAPERLESS_MCP_` prefix:
-
-| Variable | Default | Required | Description |
-|---|---|---|---|
-| `PAPERLESS_MCP_EXAMPLE_VAR` | — | **Yes** | Replace this row with your first required setting. |
-| `PAPERLESS_MCP_ANOTHER_VAR` | `default` | No | Replace with an optional setting. |
-
-Domain-config fields are composed inside `src/paperless_mcp/config.py` between the `CONFIG-FIELDS-START` / `CONFIG-FIELDS-END` sentinels; env reads go through `fastmcp_pvl_core.env(_ENV_PREFIX, "SUFFIX", default)` so naming stays consistent.
+The full domain env-var surface is documented under [Configuration](#configuration) above (Required / Optional tables). Those `PAPERLESS_MCP_*` fields are composed inside `src/paperless_mcp/config.py` between the `CONFIG-FIELDS-START` / `CONFIG-FIELDS-END` sentinels; env reads go through `fastmcp_pvl_core.env(_ENV_PREFIX, "SUFFIX", default)` so naming stays consistent.
 <!-- DOMAIN-END -->
 
 ## Key design decisions
 
 <!-- DOMAIN-START -->
-<!-- Replace with 3-6 bullets describing non-obvious architectural decisions. Kept across copier update. -->
-
-_Replace this placeholder with a short list of the non-obvious design calls this service makes — e.g. "writes are append-only", "embeddings cached in SQLite", "auth uses OIDC bearer tokens". Three to six bullets is typically enough; link out to longer ADRs under `docs/decisions/` if you maintain any._
+- **Read-only gating at startup, not per-call.** `PAPERLESS_MCP_READ_ONLY=true` skips registration of every mutating tool so they simply aren't part of the advertised tool surface — clients can't invoke a write that will be refused.
+- **Download links are signed and time-limited.** `create_download_link` mints a short-lived URL (default 300 s, clamped to `[30, 3600]`) that proxies through the MCP server, so the Paperless API token never leaves the host.
+- **HTTP layer retries idempotent reads only.** `PAPERLESS_MCP_HTTP_RETRIES` applies to GETs on 5xx/network errors; writes never retry automatically, to avoid double-applying bulk edits or uploads.
+- **Tool icons come from Lucide.** Every tool carries a Lucide icon hint so MCP clients that render icons (Claude Desktop) get a coherent visual surface — see `src/paperless_mcp/tools/_icons.py`.
+- **Models accept unknown upstream fields.** Pydantic models use lenient validation for list-endpoint responses so newer Paperless-NGX versions don't break the client (the `Document.some_future_paperless_field` test pins this behaviour).
+- **No prompts ship in v1.** `prompts.py` is intentionally empty; prompts land as concrete user-workflow patterns emerge in practice.
 <!-- DOMAIN-END -->
