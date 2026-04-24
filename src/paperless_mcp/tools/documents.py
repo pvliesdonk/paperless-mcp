@@ -150,8 +150,8 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
 
     @register_tool(mcp, "bulk_edit_documents", read_only_mode=read_only)
     async def bulk_edit_documents(
-        ids: list[int],
         operation: BulkEditOperation,
+        ids: list[int],
         parameters: dict[str, object] | None = None,
     ) -> BulkEditResult:
         """Apply a bulk operation to a set of documents."""
