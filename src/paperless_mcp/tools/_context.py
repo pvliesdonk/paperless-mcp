@@ -17,9 +17,12 @@ class ToolContext:
         default_page_size: Default pagination window for list tools.
         artifact_store: Optional artifact store for download links; ``None``
             under stdio transport.
+        public_url: Public Paperless UI base URL.  Used to construct
+            user-visible links (set from ``DomainConfig.paperless_public_url``).
     """
 
     client: PaperlessClient
     read_only: bool
     default_page_size: int
     artifact_store: object | None = None
+    public_url: str = ""
