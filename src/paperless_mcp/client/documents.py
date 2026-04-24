@@ -39,6 +39,7 @@ class DocumentsClient:
         document_type: int | None = None,
         storage_path: int | None = None,
         custom_field: int | None = None,
+        include_content: bool = False,
     ) -> Paginated[Document]:
         """List documents with optional server-side filtering.
 
@@ -51,6 +52,9 @@ class DocumentsClient:
             document_type: Filter by document type ID.
             storage_path: Filter by storage path ID.
             custom_field: Filter by custom field ID.
+            include_content: When ``False`` (default), strips the OCR
+                ``content`` field from every result to keep responses small.
+                Set to ``True`` to retain the full text.
 
         Returns:
             Paginated list of matching :class:`Document` objects.
@@ -69,7 +73,11 @@ class DocumentsClient:
         if custom_field is not None:
             params["custom_fields__id"] = custom_field
         body = await self._http.get_json("/api/documents/", params=params)
-        return Paginated[Document].model_validate(body)
+        result = Paginated[Document].model_validate(body)
+        if not include_content:
+            for doc in result.results:
+                doc.content = None
+        return result
 
     async def search(
         self,
@@ -78,6 +86,7 @@ class DocumentsClient:
         page: int = 1,
         page_size: int = 25,
         more_like: int | None = None,
+        include_content: bool = False,
     ) -> Paginated[Document]:
         """Full-text search for documents.
 
@@ -86,6 +95,9 @@ class DocumentsClient:
             page: Page number (1-based).
             page_size: Number of results per page.
             more_like: Return documents similar to this document ID.
+            include_content: When ``False`` (default), strips the OCR
+                ``content`` field from every hit to keep responses small.
+                Set to ``True`` to retain the full text.
 
         Returns:
             Paginated list of matching :class:`Document` objects.
@@ -96,7 +108,11 @@ class DocumentsClient:
         if query:
             params["query"] = query
         body = await self._http.get_json("/api/documents/", params=params)
-        return Paginated[Document].model_validate(body)
+        result = Paginated[Document].model_validate(body)
+        if not include_content:
+            for doc in result.results:
+                doc.content = None
+        return result
 
     async def get(self, document_id: int) -> Document:
         """Fetch a single document by ID.

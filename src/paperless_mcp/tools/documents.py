@@ -47,8 +47,13 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
         document_type: int | None = None,
         storage_path: int | None = None,
         custom_field: int | None = None,
+        include_content: bool = False,
     ) -> Paginated[Document]:
-        """List documents with optional filters.  Returns one page."""
+        """List documents with optional filters.  Returns one page.
+
+        By default, per-document OCR ``content`` is stripped to keep results
+        small.  Pass ``include_content=True`` for the full text on each hit.
+        """
         return await client.documents.list(
             page=page,
             page_size=page_size,
@@ -58,6 +63,7 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
             document_type=document_type,
             storage_path=storage_path,
             custom_field=custom_field,
+            include_content=include_content,
         )
 
     @register_tool(mcp, "search_documents", read_only_mode=read_only)
@@ -66,10 +72,20 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
         page: Annotated[int, Field(ge=1)] = 1,
         page_size: Annotated[int, Field(ge=1, le=100)] = ctx.default_page_size,
         more_like: int | None = None,
+        include_content: bool = False,
     ) -> Paginated[Document]:
-        """Full-text search documents.  Use *more_like* for similarity search."""
+        """Full-text search documents.
+
+        By default per-hit OCR ``content`` is stripped; pass
+        ``include_content=True`` to get full OCR text per hit.
+        Use *more_like* for similarity search.
+        """
         return await client.documents.search(
-            query, page=page, page_size=page_size, more_like=more_like
+            query,
+            page=page,
+            page_size=page_size,
+            more_like=more_like,
+            include_content=include_content,
         )
 
     @register_tool(mcp, "get_document", read_only_mode=read_only)

@@ -6,7 +6,8 @@ Paperless MCP exposes the following tools to MCP clients.
 
 | Tool | Description |
 |---|---|
-| `search_documents` | Full-text and filtered document search |
+| `list_documents` | List documents with optional filters; OCR `content` stripped by default (`include_content=True` to opt in) |
+| `search_documents` | Full-text and filtered document search; OCR `content` stripped by default (`include_content=True` to opt in) |
 | `get_document` | Retrieve document metadata by ID |
 | `get_document_content` | Retrieve the plain-text content of a document |
 | `create_document` | Upload a new document for ingestion |
