@@ -6,6 +6,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from paperless_mcp.models._compat import UserId
+
 
 class Correspondent(BaseModel):
     model_config = ConfigDict(extra="allow")
@@ -17,7 +19,7 @@ class Correspondent(BaseModel):
     is_insensitive: bool = True
     document_count: int | None = None
     last_correspondence: datetime | None = None
-    owner: int | None = None
+    owner: UserId = None
     user_can_change: bool = True
 
 

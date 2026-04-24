@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from pydantic import BaseModel, ConfigDict
 
+from paperless_mcp.models._compat import UserId
+
 
 class StoragePath(BaseModel):
     model_config = ConfigDict(extra="allow")
@@ -15,5 +17,5 @@ class StoragePath(BaseModel):
     matching_algorithm: int | None = None
     is_insensitive: bool = True
     document_count: int | None = None
-    owner: int | None = None
+    owner: UserId = None
     user_can_change: bool = True

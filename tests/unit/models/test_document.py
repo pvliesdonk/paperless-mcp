@@ -52,6 +52,37 @@ def test_document_note_roundtrip() -> None:
     assert note.id == 5
 
 
+def test_document_note_accepts_nested_user_object() -> None:
+    """Newer Paperless-NGX returns ``user`` as a nested object, not a bare ID."""
+    note = DocumentNote.model_validate(
+        {
+            "id": 5,
+            "note": "hi",
+            "created": "2026-04-23T10:00:00Z",
+            "user": {
+                "id": 3,
+                "username": "peter",
+                "first_name": "Peter",
+                "last_name": "van Liesdonk",
+            },
+        }
+    )
+    assert note.user == 3
+
+
+def test_document_owner_accepts_nested_user_object() -> None:
+    """``owner`` likewise: collapses dict input down to the user ID."""
+    doc = Document.model_validate(
+        {
+            "id": 1,
+            "title": "x",
+            "created": "2026-04-23T10:00:00Z",
+            "owner": {"id": 7, "username": "alice"},
+        }
+    )
+    assert doc.owner == 7
+
+
 def test_document_metadata_accepts_empty() -> None:
     meta = DocumentMetadata.model_validate({})
     assert meta.model_dump(exclude_none=True) == {}
@@ -62,6 +93,19 @@ def test_document_history_entry_roundtrip() -> None:
         {"timestamp": "2026-04-23T10:00:00Z", "action": "modify", "actor": "peter"}
     )
     assert entry.action == "modify"
+    assert entry.actor == "peter"
+
+
+def test_document_history_entry_accepts_nested_actor_object() -> None:
+    """Newer Paperless-NGX returns ``actor`` as a nested user object."""
+    entry = DocumentHistoryEntry.model_validate(
+        {
+            "timestamp": "2026-04-23T10:00:00Z",
+            "action": "modify",
+            "actor": {"id": 3, "username": "peter", "first_name": "Peter"},
+        }
+    )
+    assert entry.actor == "peter"
 
 
 def test_document_suggestions_accepts_empty_lists() -> None:
