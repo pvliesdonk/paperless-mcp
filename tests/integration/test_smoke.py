@@ -57,6 +57,8 @@ async def test_end_to_end(live_client: PaperlessClient) -> None:
         )
         assert result.result == "OK"
     finally:
-        if document_id is not None:
-            await live_client.documents.delete(document_id)
-        await live_client.tags.delete(tag.id)
+        try:
+            if document_id is not None:
+                await live_client.documents.delete(document_id)
+        finally:
+            await live_client.tags.delete(tag.id)
