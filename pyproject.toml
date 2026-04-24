@@ -32,6 +32,11 @@ docs = [
 ]
 # PROJECT-EXTRAS-END
 
+docs = [
+    "mkdocs-material>=9",
+    "mkdocstrings[python]>=0.28",
+]
+
 dev = [
     "pytest>=8",
     "pytest-asyncio>=0.24",
@@ -80,6 +85,7 @@ ignore = ["E501"]
 "src/paperless_mcp/server.py" = ["TC003"]
 "src/paperless_mcp/_server_deps.py" = ["B008", "TC002", "TC003"]
 "src/paperless_mcp/_server_apps.py" = ["B008", "TC001", "TC002"]
+<<<<<<< before updating
 "src/paperless_mcp/tools/__init__.py" = ["B008", "TC001", "TC002"]
 "src/paperless_mcp/tools/_registry.py" = ["TC002", "TC003"]
 "src/paperless_mcp/tools/_icons.py" = ["TC002"]
@@ -97,6 +103,14 @@ ignore = ["E501"]
 "src/paperless_mcp/client/_http.py" = ["TC003"]
 # PaperlessHTTP is stored as self._http at runtime; TracebackType used in __aexit__.
 "src/paperless_mcp/client/*.py" = ["TC001", "TC002", "TC003"]
+=======
+"src/paperless_mcp/tools.py" = ["B008", "TC001", "TC002"]
+"src/paperless_mcp/resources.py" = ["B008", "TC001", "TC002"]
+"src/paperless_mcp/prompts.py" = ["B008", "TC002"]
+"tests/conftest.py" = ["TC002", "TC003"]
+"tests/test_smoke.py" = ["TC002"]
+"tests/test_tools.py" = ["TC002"]
+>>>>>>> after updating
 # Add project-specific overrides below as needed.
 
 [tool.ruff.lint.isort]
@@ -150,6 +164,11 @@ ignore_missing_imports = true
 venvPath = "."
 venv = ".venv"
 pythonVersion = "3.11"
+<<<<<<< before updating
+=======
+# src-layout editable installs use a .pth shim that Pyright does not execute;
+# point Pyright at src/ directly so IDE import resolution matches runtime.
+>>>>>>> after updating
 extraPaths = ["src"]
 
 [tool.semantic_release]
