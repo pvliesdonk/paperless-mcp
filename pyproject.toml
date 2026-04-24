@@ -1,6 +1,6 @@
 [project]
 name = "pvliesdonk-paperless-mcp"
-version = "1.0.0-rc.1"
+version = "1.0.0-rc.2"
 description = "Paperless-NGX document management over MCP: search, tag, upload, and read documents; manage tags, correspondents, document types, and custom fields."
 readme = "README.md"
 license = "LicenseRef-Proprietary"  # starter: TODO update when you pick a license (see LICENSE)
