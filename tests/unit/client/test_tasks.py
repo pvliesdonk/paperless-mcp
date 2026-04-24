@@ -140,3 +140,77 @@ async def test_list_tasks_acknowledged_none_sends_no_filter(
     assert route.called
     call = route.calls[0].request
     assert "acknowledged" not in call.url.params
+
+
+@pytest.mark.asyncio
+async def test_list_tasks_next_previous_indicate_pages(
+    paperless_base_url: str,
+    paperless_api_token: str,
+) -> None:
+    # 30 tasks, page_size=10 → three pages total.
+    bare = [
+        {
+            "id": i,
+            "task_id": f"uuid-{i}",
+            "status": "SUCCESS",
+            "acknowledged": False,
+            "type": "file",
+            "task_file_name": f"doc{i}.pdf",
+            "date_created": "2026-01-01T00:00:00Z",
+        }
+        for i in range(1, 31)
+    ]
+    async with respx.mock(base_url=paperless_base_url) as mock:
+        mock.get("/api/tasks/").mock(return_value=httpx.Response(200, json=bare))
+        client = PaperlessClient(
+            base_url=paperless_base_url, api_token=paperless_api_token
+        )
+        try:
+            page1 = await client.tasks.list(page=1, page_size=10)
+            page2 = await client.tasks.list(page=2, page_size=10)
+            page3 = await client.tasks.list(page=3, page_size=10)
+        finally:
+            await client.aclose()
+
+    # First page: no previous, next present.
+    assert page1.previous is None
+    assert page1.next == "page=2"
+
+    # Middle page: both set.
+    assert page2.previous == "page=1"
+    assert page2.next == "page=3"
+
+    # Last page: previous set, next None.
+    assert page3.previous == "page=2"
+    assert page3.next is None
+
+
+@pytest.mark.asyncio
+async def test_list_tasks_next_previous_single_page(
+    paperless_base_url: str,
+    paperless_api_token: str,
+) -> None:
+    # Fewer tasks than page_size → no next or previous.
+    bare = [
+        {
+            "id": 1,
+            "task_id": "uuid-1",
+            "status": "SUCCESS",
+            "acknowledged": False,
+            "type": "file",
+            "task_file_name": "a.pdf",
+            "date_created": "2026-01-01T00:00:00Z",
+        }
+    ]
+    async with respx.mock(base_url=paperless_base_url) as mock:
+        mock.get("/api/tasks/").mock(return_value=httpx.Response(200, json=bare))
+        client = PaperlessClient(
+            base_url=paperless_base_url, api_token=paperless_api_token
+        )
+        try:
+            page = await client.tasks.list(page=1, page_size=25)
+        finally:
+            await client.aclose()
+
+    assert page.previous is None
+    assert page.next is None

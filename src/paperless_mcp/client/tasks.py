@@ -60,11 +60,14 @@ class TasksClient:
         all_tasks = [Task.model_validate(item) for item in body]
         start = (page - 1) * page_size
         end = start + page_size
+        total = len(all_tasks)
+        next_marker = f"page={page + 1}" if end < total else None
+        previous_marker = f"page={page - 1}" if page > 1 else None
         return Paginated[Task].model_validate(
             {
-                "count": len(all_tasks),
-                "next": None,
-                "previous": None,
+                "count": total,
+                "next": next_marker,
+                "previous": previous_marker,
                 "all": [t.id for t in all_tasks],
                 "results": [t.model_dump() for t in all_tasks[start:end]],
             }
