@@ -22,6 +22,22 @@ from paperless_mcp.models.document import (
 )
 
 
+def _strip_listing_heavy_fields(doc: Document, *, include_content: bool) -> None:
+    """Drop per-document heavy fields from list/search responses (see #30).
+
+    Always strips ``notes[].note`` and ``custom_fields[].value`` — metadata refs
+    (ids, timestamps, field refs) stay intact so callers can still detect
+    presence and dereference via single-document endpoints.  OCR ``content``
+    is only stripped when ``include_content`` is ``False``.
+    """
+    if not include_content:
+        doc.content = None
+    for note in doc.notes:
+        note.note = None
+    for cf in doc.custom_fields:
+        cf.value = None
+
+
 class DocumentsClient:
     """Async operations against ``/api/documents/``."""
 
@@ -54,7 +70,10 @@ class DocumentsClient:
             custom_field: Filter by custom field ID.
             include_content: When ``False`` (default), strips the OCR
                 ``content`` field from every result to keep responses small.
-                Set to ``True`` to retain the full text.
+                Set to ``True`` to retain the full text.  ``notes[].note``
+                and ``custom_fields[].value`` are always stripped on list
+                responses regardless of this flag (see #30); use
+                ``get_document_notes`` and ``get_document`` to fetch them.
 
         Returns:
             Paginated list of matching :class:`Document` objects.
@@ -74,9 +93,8 @@ class DocumentsClient:
             params["custom_fields__id"] = custom_field
         body = await self._http.get_json("/api/documents/", params=params)
         result = Paginated[Document].model_validate(body)
-        if not include_content:
-            for doc in result.results:
-                doc.content = None
+        for doc in result.results:
+            _strip_listing_heavy_fields(doc, include_content=include_content)
         return result
 
     async def search(
@@ -97,7 +115,9 @@ class DocumentsClient:
             more_like: Return documents similar to this document ID.
             include_content: When ``False`` (default), strips the OCR
                 ``content`` field from every hit to keep responses small.
-                Set to ``True`` to retain the full text.
+                Set to ``True`` to retain the full text.  ``notes[].note``
+                and ``custom_fields[].value`` are always stripped on search
+                responses regardless of this flag (see #30).
 
         Returns:
             Paginated list of matching :class:`Document` objects.
@@ -109,9 +129,8 @@ class DocumentsClient:
             params["query"] = query
         body = await self._http.get_json("/api/documents/", params=params)
         result = Paginated[Document].model_validate(body)
-        if not include_content:
-            for doc in result.results:
-                doc.content = None
+        for doc in result.results:
+            _strip_listing_heavy_fields(doc, include_content=include_content)
         return result
 
     async def get(self, document_id: int) -> Document:

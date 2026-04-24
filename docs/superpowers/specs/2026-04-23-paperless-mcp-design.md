@@ -154,11 +154,11 @@ Read-only tools always registered; writable tools skipped when
 `PAPERLESS_MCP_READ_ONLY=true`.
 
 ### Documents
-- `list_documents(page=1, page_size=25, ordering=None, tags=None, correspondent=None, document_type=None, storage_path=None, custom_field=None) -> Paginated[Document]`
-- `search_documents(query, page=1, page_size=25, more_like=None) -> Paginated[Document]`
-- `get_document(id) -> Document`
+- `list_documents(page=1, page_size=25, ordering=None, tags=None, correspondent=None, document_type=None, storage_path=None, custom_field=None, include_content=False) -> Paginated[Document]` — OCR `content` stripped by default; `notes[].note` and `custom_fields[].value` always stripped (see #30)
+- `search_documents(query, page=1, page_size=25, more_like=None, include_content=False) -> Paginated[Document]` — same stripping as `list_documents`
+- `get_document(id, include_content=False) -> Document` — OCR `content` stripped by default (#31); opt in for full text or use `get_document_content`
 - `upload_document(filename, content_base64, title=None, correspondent=None, document_type=None, tags=None, created=None, archive_serial_number=None, custom_fields=None) -> UploadTaskAcknowledgement`
-- `update_document(id, patch: DocumentPatch) -> Document`
+- `update_document(id, patch: DocumentPatch, include_content=False) -> Document` — response OCR `content` stripped by default
 - `delete_document(id) -> None`
 - `bulk_edit_documents(document_ids, method, parameters) -> BulkEditResult`
 - `get_document_content(id) -> str` — OCR'd plain text
@@ -286,7 +286,7 @@ Masking lives in `_http.py` log sanitizer. Candidate for upstream (issue #8).
   `DocumentPatch`, `TagCreate`, `TagPatch` — unknown fields are bugs.
 - Enums: `CustomFieldDataType`, `TaskStatus`, `BulkEditOperation`,
   `ShareLinkFileVersion`.
-- `Paginated[T]`: `count`, `next`, `previous`, `all` (IDs), `results: list[T]`.
+- `Paginated[T]`: `count`, `next`, `previous`, `results: list[T]`. The upstream `all: [...]` id array is dropped (#25). `next`/`previous` are normalised to bare `page=N` markers (or `None`) regardless of whether Paperless returns a full URL or a client-paginated endpoint emits the marker directly — the internal Paperless hostname never leaks into MCP responses (#32).
 
 ### Instructions block
 Built via pvl-core `build_instructions()`. Domain description from

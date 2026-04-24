@@ -21,7 +21,10 @@ class CustomFieldInstance(BaseModel):
 class DocumentNote(BaseModel):
     model_config = ConfigDict(extra="allow")
     id: int
-    note: str
+    # ``note`` is nullable on list/search responses where it's stripped for
+    # payload size (see #30); single-document note endpoints return the full
+    # text.
+    note: str | None = None
     created: datetime
     user: UserId = None
 

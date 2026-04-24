@@ -100,9 +100,19 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
         return result
 
     @register_tool(mcp, "get_document", read_only_mode=read_only)
-    async def get_document(document_id: int) -> Document:
-        """Fetch one document by ID."""
+    async def get_document(
+        document_id: int,
+        include_content: bool = False,
+    ) -> Document:
+        """Fetch one document by ID.
+
+        By default, the OCR ``content`` is stripped to keep responses small.
+        Pass ``include_content=True`` for the full text, or call
+        ``get_document_content`` to retrieve just the text.
+        """
         doc = await client.documents.get(document_id)
+        if not include_content:
+            doc.content = None
         _with_web_url(doc)
         return doc
 
@@ -142,9 +152,19 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
         return await client.documents.get_suggestions(document_id)
 
     @register_tool(mcp, "update_document", read_only_mode=read_only)
-    async def update_document(document_id: int, patch: DocumentPatch) -> Document:
-        """Patch selected fields on a document."""
+    async def update_document(
+        document_id: int,
+        patch: DocumentPatch,
+        include_content: bool = False,
+    ) -> Document:
+        """Patch selected fields on a document.
+
+        The response strips OCR ``content`` by default; pass
+        ``include_content=True`` to get the full text back.
+        """
         doc = await client.documents.update(document_id, patch)
+        if not include_content:
+            doc.content = None
         _with_web_url(doc)
         return doc
 

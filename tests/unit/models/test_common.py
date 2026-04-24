@@ -40,6 +40,60 @@ def test_paginated_parses_results() -> None:
     assert page.results[0].extra == "hi"  # type: ignore[attr-defined]
 
 
+def test_paginated_normalises_full_url_next_to_page_marker() -> None:
+    page = Paginated[_Item].model_validate(
+        {
+            "count": 3,
+            "next": "http://paperless-ngx:8000/api/documents/?page=2",
+            "previous": None,
+            "results": [{"id": 1}],
+        }
+    )
+    assert page.next == "page=2"
+    assert page.previous is None
+
+
+def test_paginated_normalises_previous_url() -> None:
+    page = Paginated[_Item].model_validate(
+        {
+            "count": 3,
+            "next": None,
+            "previous": "http://paperless-ngx:8000/api/documents/?page=1&tag=4",
+            "results": [{"id": 3}],
+        }
+    )
+    assert page.previous == "page=1"
+
+
+def test_paginated_passthrough_bare_page_marker() -> None:
+    # Client-paginated endpoints (tasks) already emit "page=N"; the validator
+    # must leave that shape unchanged.
+    page = Paginated[_Item].model_validate(
+        {"count": 1, "next": "page=2", "previous": None, "results": [{"id": 1}]}
+    )
+    assert page.next == "page=2"
+
+
+def test_paginated_next_without_page_param_becomes_none() -> None:
+    page = Paginated[_Item].model_validate(
+        {
+            "count": 1,
+            "next": "http://paperless-ngx:8000/api/documents/",
+            "previous": None,
+            "results": [{"id": 1}],
+        }
+    )
+    assert page.next is None
+
+
+def test_paginated_next_none_stays_none() -> None:
+    page = Paginated[_Item].model_validate(
+        {"count": 1, "next": None, "previous": None, "results": [{"id": 1}]}
+    )
+    assert page.next is None
+    assert page.previous is None
+
+
 def test_paginated_drops_all_ids_from_upstream() -> None:
     page = Paginated[_Item].model_validate(
         {

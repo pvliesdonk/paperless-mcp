@@ -48,5 +48,5 @@ PAPERLESS_MCP_DEFAULT_PAGE_SIZE=50
 
 ## Log level
 
-Set `FASTMCP_LOG_LEVEL` to `DEBUG`, `INFO`, `WARNING`, or `ERROR`.  
+Set `FASTMCP_LOG_LEVEL` to `DEBUG`, `INFO`, `WARNING`, or `ERROR`.
 Pass `-v` / `--verbose` to the CLI to enable `DEBUG` automatically.
