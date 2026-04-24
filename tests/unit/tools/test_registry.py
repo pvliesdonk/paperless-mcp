@@ -59,5 +59,5 @@ async def test_wrap_catches_pydantic_validation_error() -> None:
     result = await wrapped()
     assert isinstance(result, str)
     assert "Error occurred during tool execution" not in result
-    # Pydantic validation error output mentions the field or the type
-    assert "n" in result or "validation" in result.lower() or "int" in result.lower()
+    assert "validation" in result.lower()
+    assert "int" in result.lower()

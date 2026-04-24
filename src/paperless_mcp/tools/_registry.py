@@ -29,6 +29,13 @@ F = TypeVar("F", bound=Callable[..., object])
 logger = logging.getLogger(__name__)
 
 
+_MAX_ERROR_BODY = 500
+
+
+def _truncate(text: str, max_len: int = _MAX_ERROR_BODY) -> str:
+    return text if len(text) <= max_len else text[:max_len] + "…"
+
+
 def _wrap_with_error_handling(name: str, func: F) -> F:
     @functools.wraps(func)
     async def wrapper(*args: object, **kwargs: object) -> object:
@@ -46,16 +53,16 @@ def _wrap_with_error_handling(name: str, func: F) -> F:
                 exc.response.status_code,
                 exc.request.url,
             )
-            return (
-                f"Paperless API error {exc.response.status_code}: "
-                f"{exc.response.text or exc.response.reason_phrase}"
-            )
+            body = exc.response.text or exc.response.reason_phrase
+            return f"Paperless API error {exc.response.status_code}: {_truncate(body)}"
         except httpx.RequestError as exc:
             logger.warning("tool_network_error tool=%s error=%s", name, exc)
             return f"Network error connecting to Paperless: {exc}"
         except PydanticValidationError as exc:
-            logger.warning("tool_validation_error tool=%s msg=%s", name, exc)
-            return f"Response validation failed: {exc}"
+            logger.warning(
+                "tool_validation_error tool=%s errors=%d", name, exc.error_count()
+            )
+            return f"Response validation failed: {_truncate(str(exc))}"
 
     return wrapper  # type: ignore[return-value]
 
