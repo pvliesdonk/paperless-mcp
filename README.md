@@ -202,8 +202,8 @@ The following variables are inherited unchanged from [`fastmcp-server-template`]
 | `get_storage_path` | Get a storage path by ID |
 | `list_saved_views` | List saved views |
 | `get_saved_view` | Get a saved view by ID |
-| `list_share_links` | List share links (includes `share_url`; uses `PAPERLESS_PUBLIC_URL` if set, otherwise `PAPERLESS_URL`) |
-| `get_share_link` | Get a share link by ID (includes `share_url`; uses `PAPERLESS_PUBLIC_URL` if set, otherwise `PAPERLESS_URL`) |
+| `list_share_links` | List share links (includes `share_url`; uses `PAPERLESS_MCP_PAPERLESS_PUBLIC_URL` if set, otherwise `PAPERLESS_MCP_PAPERLESS_URL`) |
+| `get_share_link` | Get a share link by ID (includes `share_url`; uses `PAPERLESS_MCP_PAPERLESS_PUBLIC_URL` if set, otherwise `PAPERLESS_MCP_PAPERLESS_URL`) |
 | `list_tasks` | List background tasks. Paginates (`page`, `page_size` up to 100). By default returns only unacknowledged tasks — pass `include_acknowledged=True` to include acknowledged tasks, or `acknowledged=True` to return only acknowledged ones. |
 | `get_task` | Get a task by ID |
 | `wait_for_task` | Wait until a task completes |
