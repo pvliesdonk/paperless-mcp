@@ -60,7 +60,10 @@ def test_observability_tools_register(module: Any, expected: set[str]) -> None:
     for read_only in (True, False):
         mcp = FastMCP("test")
         ctx = ToolContext(
-            client=_mock_client(), read_only=read_only, default_page_size=25
+            client=_mock_client(),
+            read_only=read_only,
+            default_page_size=25,
+            public_url="",
         )
         module.register(mcp, ctx)
         assert expected.issubset(_names(mcp))

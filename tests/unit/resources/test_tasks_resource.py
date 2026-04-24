@@ -13,7 +13,9 @@ def test_registers_tasks_uri() -> None:
     client = MagicMock()
     client.tasks.list = AsyncMock(return_value=[])
     mcp = FastMCP("test")
-    ctx = ToolContext(client=client, read_only=False, default_page_size=25)
+    ctx = ToolContext(
+        client=client, read_only=False, default_page_size=25, public_url=""
+    )
     tasks_mod.register(mcp, ctx)
     uris = {str(r.uri) for r in asyncio.run(mcp.list_resources())}
     assert "tasks://paperless" in uris

@@ -39,7 +39,9 @@ def _uris(mcp: FastMCP) -> set[str]:
 
 def test_all_collection_uris_registered() -> None:
     mcp = FastMCP("test")
-    ctx = ToolContext(client=_mock_client(), read_only=False, default_page_size=25)
+    ctx = ToolContext(
+        client=_mock_client(), read_only=False, default_page_size=25, public_url=""
+    )
     collections_mod.register(mcp, ctx)
     uris = _uris(mcp)
     assert "config://paperless" in uris
@@ -59,7 +61,9 @@ async def test_tags_resource_returns_json(monkeypatch: pytest.MonkeyPatch) -> No
     from fastmcp import Client
 
     mcp = FastMCP("test")
-    ctx = ToolContext(client=_mock_client(), read_only=False, default_page_size=25)
+    ctx = ToolContext(
+        client=_mock_client(), read_only=False, default_page_size=25, public_url=""
+    )
     collections_mod.register(mcp, ctx)
     async with Client(mcp) as client:
         result = await client.read_resource("tags://paperless")

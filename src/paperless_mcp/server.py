@@ -72,7 +72,7 @@ def make_server(
         client=_client,
         read_only=False,
         default_page_size=domain_cfg.default_page_size,
-        public_url=domain_cfg.paperless_public_url or domain_cfg.paperless_url,
+        public_url=domain_cfg.public_url,
     )
 
     @asynccontextmanager

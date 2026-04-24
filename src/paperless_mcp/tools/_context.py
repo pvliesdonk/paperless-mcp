@@ -24,5 +24,5 @@ class ToolContext:
     client: PaperlessClient
     read_only: bool
     default_page_size: int
+    public_url: str
     artifact_store: object | None = None
-    public_url: str = ""

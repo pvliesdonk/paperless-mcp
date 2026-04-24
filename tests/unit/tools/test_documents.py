@@ -41,7 +41,9 @@ def _registered_names(mcp: FastMCP) -> set[str]:
 
 def test_read_only_registers_read_tools(mock_client: Any) -> None:
     mcp = FastMCP("test")
-    ctx = ToolContext(client=mock_client, read_only=True, default_page_size=25)
+    ctx = ToolContext(
+        client=mock_client, read_only=True, default_page_size=25, public_url=""
+    )
     documents_mod.register(mcp, ctx)
     names = _registered_names(mcp)
     assert "list_documents" in names
@@ -63,7 +65,9 @@ def test_read_only_registers_read_tools(mock_client: Any) -> None:
 
 def test_read_write_registers_all(mock_client: Any) -> None:
     mcp = FastMCP("test")
-    ctx = ToolContext(client=mock_client, read_only=False, default_page_size=25)
+    ctx = ToolContext(
+        client=mock_client, read_only=False, default_page_size=25, public_url=""
+    )
     documents_mod.register(mcp, ctx)
     names = _registered_names(mcp)
     expected = {
@@ -88,7 +92,9 @@ def test_read_write_registers_all(mock_client: Any) -> None:
 
 def test_all_tools_have_icons(mock_client: Any) -> None:
     mcp = FastMCP("test")
-    ctx = ToolContext(client=mock_client, read_only=False, default_page_size=25)
+    ctx = ToolContext(
+        client=mock_client, read_only=False, default_page_size=25, public_url=""
+    )
     documents_mod.register(mcp, ctx)
     tools = asyncio.run(mcp.list_tools())
     for tool in tools:
@@ -97,7 +103,9 @@ def test_all_tools_have_icons(mock_client: Any) -> None:
 
 def test_list_and_search_expose_include_content(mock_client: Any) -> None:
     mcp = FastMCP("test")
-    ctx = ToolContext(client=mock_client, read_only=True, default_page_size=25)
+    ctx = ToolContext(
+        client=mock_client, read_only=True, default_page_size=25, public_url=""
+    )
     documents_mod.register(mcp, ctx)
     tools = {t.name: t for t in asyncio.run(mcp.list_tools())}
     for name in ("list_documents", "search_documents"):

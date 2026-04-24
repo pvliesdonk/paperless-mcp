@@ -68,6 +68,16 @@ class DomainConfig(BaseSettings):
             self.paperless_public_url = self.paperless_url
         return self
 
+    @property
+    def public_url(self) -> str:
+        """Public-facing Paperless URL, always set (falls back to ``paperless_url``).
+
+        ``_default_public_url`` ensures ``paperless_public_url`` is never ``None``
+        after validation; this property exposes that guarantee as a plain ``str``
+        so callers do not need a type-narrowing guard.
+        """
+        return self.paperless_public_url or self.paperless_url
+
 
 def load_domain_config() -> DomainConfig:
     """Load :class:`DomainConfig` from environment, raising ``ValueError``.

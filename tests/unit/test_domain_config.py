@@ -77,3 +77,15 @@ def test_public_url_empty_string_treated_as_unset(
     monkeypatch.setenv("PAPERLESS_MCP_API_TOKEN", "t")
     cfg = load_domain_config()
     assert cfg.paperless_public_url == "http://paperless.internal:8000"
+
+
+def test_public_url_inherits_stripped_paperless_url(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("PAPERLESS_MCP_PAPERLESS_URL", "http://paperless.internal:8000/")
+    monkeypatch.setenv("PAPERLESS_MCP_API_TOKEN", "t")
+    cfg = load_domain_config()
+    # Trailing slash stripped on paperless_url, then inherited.
+    assert cfg.paperless_url == "http://paperless.internal:8000"
+    assert cfg.paperless_public_url == "http://paperless.internal:8000"
+    assert cfg.public_url == "http://paperless.internal:8000"
