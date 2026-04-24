@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 import asyncio
+from datetime import UTC, datetime
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from fastmcp import FastMCP
+from fastmcp import Client, FastMCP
 
+from paperless_mcp.models.common import Paginated
+from paperless_mcp.models.document import Document
 from paperless_mcp.tools import documents as documents_mod
 from paperless_mcp.tools._context import ToolContext
 
@@ -112,3 +115,130 @@ def test_list_and_search_expose_include_content(mock_client: Any) -> None:
         schema = tools[name].parameters
         assert "include_content" in schema["properties"]
         assert schema["properties"]["include_content"].get("default") is False
+
+
+@pytest.mark.asyncio
+async def test_get_document_populates_web_url(mock_client: Any) -> None:
+    mcp = FastMCP("t")
+    ctx = ToolContext(
+        client=mock_client,
+        read_only=True,
+        default_page_size=25,
+        public_url="https://docs.example.com",
+    )
+    documents_mod.register(mcp, ctx)
+
+    mock_client.documents.get.return_value = Document(
+        id=42, title="X", created=datetime(2026, 1, 1, tzinfo=UTC)
+    )
+
+    async with Client(mcp) as c:
+        result = await c.call_tool("get_document", {"document_id": 42})
+
+    data = result.structured_content
+    assert data is not None
+    assert data["web_url"] == "https://docs.example.com/documents/42/"
+
+
+@pytest.mark.asyncio
+async def test_list_documents_populates_web_url(mock_client: Any) -> None:
+    mcp = FastMCP("t")
+    ctx = ToolContext(
+        client=mock_client,
+        read_only=True,
+        default_page_size=25,
+        public_url="https://docs.example.com",
+    )
+    documents_mod.register(mcp, ctx)
+    page = Paginated[Document].model_validate(
+        {
+            "count": 1,
+            "next": None,
+            "previous": None,
+            "all": [42],
+            "results": [{"id": 42, "title": "X", "created": "2026-01-01T00:00:00Z"}],
+        }
+    )
+    mock_client.documents.list.return_value = page
+
+    async with Client(mcp) as c:
+        result = await c.call_tool("list_documents", {})
+
+    data = result.structured_content
+    assert data is not None
+    assert data["results"][0]["web_url"] == "https://docs.example.com/documents/42/"
+
+
+@pytest.mark.asyncio
+async def test_search_documents_populates_web_url(mock_client: Any) -> None:
+    mcp = FastMCP("t")
+    ctx = ToolContext(
+        client=mock_client,
+        read_only=True,
+        default_page_size=25,
+        public_url="https://docs.example.com",
+    )
+    documents_mod.register(mcp, ctx)
+    page = Paginated[Document].model_validate(
+        {
+            "count": 1,
+            "next": None,
+            "previous": None,
+            "all": [99],
+            "results": [{"id": 99, "title": "Y", "created": "2026-01-01T00:00:00Z"}],
+        }
+    )
+    mock_client.documents.search.return_value = page
+
+    async with Client(mcp) as c:
+        result = await c.call_tool("search_documents", {"query": "foo"})
+
+    data = result.structured_content
+    assert data is not None
+    assert data["results"][0]["web_url"] == "https://docs.example.com/documents/99/"
+
+
+@pytest.mark.asyncio
+async def test_update_document_populates_web_url(mock_client: Any) -> None:
+    mcp = FastMCP("t")
+    ctx = ToolContext(
+        client=mock_client,
+        read_only=False,
+        default_page_size=25,
+        public_url="https://docs.example.com",
+    )
+    documents_mod.register(mcp, ctx)
+    mock_client.documents.update.return_value = Document(
+        id=42, title="X", created=datetime(2026, 1, 1, tzinfo=UTC)
+    )
+
+    async with Client(mcp) as c:
+        result = await c.call_tool(
+            "update_document", {"document_id": 42, "patch": {"title": "Y"}}
+        )
+
+    data = result.structured_content
+    assert data is not None
+    assert data["web_url"] == "https://docs.example.com/documents/42/"
+
+
+@pytest.mark.asyncio
+async def test_web_url_none_when_public_url_empty(mock_client: Any) -> None:
+    mcp = FastMCP("t")
+    ctx = ToolContext(
+        client=mock_client,
+        read_only=True,
+        default_page_size=25,
+        public_url="",
+    )
+    documents_mod.register(mcp, ctx)
+    mock_client.documents.get.return_value = Document(
+        id=42, title="X", created=datetime(2026, 1, 1, tzinfo=UTC)
+    )
+
+    async with Client(mcp) as c:
+        result = await c.call_tool("get_document", {"document_id": 42})
+
+    data = result.structured_content
+    assert data is not None
+    assert data.get("web_url") is None

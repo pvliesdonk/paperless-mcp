@@ -148,6 +148,8 @@ The following variables are inherited unchanged from [`fastmcp-server-template`]
 | `add_document_note` | Add a note to a document |
 | `delete_document_note` | Delete a note from a document |
 
+`get_document`, `list_documents`, `search_documents`, and `update_document` include a `web_url` field pointing to the document in the Paperless UI (e.g. `https://paperless.example.com/documents/42/`). Set `PAPERLESS_MCP_PAPERLESS_PUBLIC_URL` if the public URL differs from the API URL; otherwise the API URL is used.
+
 ### Tags
 
 | Tool | Description |
