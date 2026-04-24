@@ -26,10 +26,6 @@ dependencies = [
 
 [project.optional-dependencies]
 # PROJECT-EXTRAS-START — add domain-specific optional-dependency groups below; kept across copier update
-docs = [
-    "mkdocs-material>=9",
-    "mkdocstrings[python]>=0.28",
-]
 # PROJECT-EXTRAS-END
 
 docs = [
@@ -85,7 +81,6 @@ ignore = ["E501"]
 "src/paperless_mcp/server.py" = ["TC003"]
 "src/paperless_mcp/_server_deps.py" = ["B008", "TC002", "TC003"]
 "src/paperless_mcp/_server_apps.py" = ["B008", "TC001", "TC002"]
-<<<<<<< before updating
 "src/paperless_mcp/tools/__init__.py" = ["B008", "TC001", "TC002"]
 "src/paperless_mcp/tools/_registry.py" = ["TC002", "TC003"]
 "src/paperless_mcp/tools/_icons.py" = ["TC002"]
@@ -103,14 +98,6 @@ ignore = ["E501"]
 "src/paperless_mcp/client/_http.py" = ["TC003"]
 # PaperlessHTTP is stored as self._http at runtime; TracebackType used in __aexit__.
 "src/paperless_mcp/client/*.py" = ["TC001", "TC002", "TC003"]
-=======
-"src/paperless_mcp/tools.py" = ["B008", "TC001", "TC002"]
-"src/paperless_mcp/resources.py" = ["B008", "TC001", "TC002"]
-"src/paperless_mcp/prompts.py" = ["B008", "TC002"]
-"tests/conftest.py" = ["TC002", "TC003"]
-"tests/test_smoke.py" = ["TC002"]
-"tests/test_tools.py" = ["TC002"]
->>>>>>> after updating
 # Add project-specific overrides below as needed.
 
 [tool.ruff.lint.isort]
@@ -157,6 +144,24 @@ no_implicit_optional = true
 module = ["fastmcp_pvl_core", "fastmcp_pvl_core.*"]
 ignore_missing_imports = true
 
+# Relax strict typing for the existing test suite — predates the template's
+# mypy-on-tests expansion.  Newly scaffolded tests (tests/test_cli.py) remain
+# fully typed; legacy unit tests can be annotated incrementally.  Module
+# names are unqualified (e.g. `client.test_documents_read`) because
+# `tests/` and `tests/unit/` have no `__init__.py`, so mypy resolves
+# packages starting from the nearest `__init__.py` directory.
+[[tool.mypy.overrides]]
+module = [
+    "client.*",
+    "models.*",
+    "resources.*",
+    "tools.*",
+    "integration.*",
+]
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+check_untyped_defs = false
+
 
 [tool.pyright]
 # Point Pyright at the uv-managed venv so editor diagnostics resolve
@@ -164,11 +169,8 @@ ignore_missing_imports = true
 venvPath = "."
 venv = ".venv"
 pythonVersion = "3.11"
-<<<<<<< before updating
-=======
 # src-layout editable installs use a .pth shim that Pyright does not execute;
 # point Pyright at src/ directly so IDE import resolution matches runtime.
->>>>>>> after updating
 extraPaths = ["src"]
 
 [tool.semantic_release]

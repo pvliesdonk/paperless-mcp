@@ -54,7 +54,12 @@ async def test_list_documents_passes_filters(
 async def test_search_uses_query_param(
     documents: DocumentsClient, load_fixture
 ) -> None:
-    page = {"count": 0, "next": None, "previous": None, "results": []}
+    page: dict[str, object] = {
+        "count": 0,
+        "next": None,
+        "previous": None,
+        "results": [],
+    }
     async with respx.mock(base_url="http://paperless.test") as mock:
         route = mock.get("/api/documents/").mock(
             return_value=httpx.Response(200, json=page)
@@ -67,7 +72,12 @@ async def test_search_uses_query_param(
 async def test_search_more_like_uses_more_like_id(
     documents: DocumentsClient, load_fixture
 ) -> None:
-    page = {"count": 0, "next": None, "previous": None, "results": []}
+    page: dict[str, object] = {
+        "count": 0,
+        "next": None,
+        "previous": None,
+        "results": [],
+    }
     async with respx.mock(base_url="http://paperless.test") as mock:
         route = mock.get("/api/documents/").mock(
             return_value=httpx.Response(200, json=page)

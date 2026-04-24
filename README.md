@@ -91,7 +91,6 @@ For library usage (embedding the domain logic without the MCP transport), import
 
 ## Configuration
 
-<<<<<<< before updating
 All settings come from environment variables with the `PAPERLESS_MCP_` prefix.
 
 ### Required
@@ -240,27 +239,16 @@ The following variables are inherited unchanged from [`fastmcp-server-template`]
 | `paperless://documents/{document_id}/thumbnail` | Thumbnail image |
 | `paperless://documents/{document_id}/preview` | PDF preview |
 | `paperless://documents/{document_id}/download` | Original file download |
-=======
-Core environment variables shared across all `fastmcp-pvl-core`-based services:
+
+### Shared framework variables
+
+Inherited from `fastmcp-pvl-core` across all services built on the template:
 
 | Variable | Default | Description |
 |---|---|---|
 | `FASTMCP_LOG_LEVEL` | `INFO` | Log level for FastMCP internals and app loggers (`DEBUG` / `INFO` / `WARNING` / `ERROR`). The `-v` CLI flag overrides to `DEBUG`. |
 | `FASTMCP_ENABLE_RICH_LOGGING` | `true` | Set to `false` for plain / structured JSON log output. |
 | `PAPERLESS_MCP_EVENT_STORE_URL` | `memory://` | Event store backend for HTTP session persistence — `memory://` (dev), `file:///path` (survives restarts). |
-
-Domain-specific variables go below under [Domain configuration](#domain-configuration).
-
-## Post-scaffold checklist
-
-After `copier copy` and `gh repo create --push`:
-
-1. **Fill in the DOMAIN blocks** in this README (Features, What you can do with it, Domain configuration, Key design decisions) and in `CLAUDE.md`.
-2. Configure GitHub secrets — see below.
-3. Install dev dependencies: `uv sync --all-extras --dev`.
-4. Install pre-commit hooks: `uv run pre-commit install`.
-5. Run the gate locally: `uv run pytest -x -q && uv run ruff check --fix . && uv run ruff format . && uv run mypy src/ tests/`.
-6. Push the first commit — CI should be green.
 
 ## GitHub secrets
 
@@ -310,7 +298,6 @@ uv sync --all-extras --dev
 ### `uv.lock` refresh after `copier update`
 
 When `copier update` introduces new dependencies (e.g. a new extra added to `pyproject.toml.jinja`), CI runs `uv sync --frozen` which fails against a stale lockfile. Run `uv lock` locally and commit the refreshed `uv.lock` alongside accepting the copier-update PR.
->>>>>>> after updating
 
 ## Links
 
