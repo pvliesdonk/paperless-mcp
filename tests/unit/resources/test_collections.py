@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import AsyncGenerator
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
@@ -11,22 +12,14 @@ from paperless_mcp.resources import collections as collections_mod
 from paperless_mcp.tools._context import ToolContext
 
 
+async def _empty_paginate(*_args: Any, **_kwargs: Any) -> AsyncGenerator[Any, None]:
+    return
+    yield  # pragma: no cover
+
+
 def _mock_client() -> Any:
     client = MagicMock()
-    for attr in (
-        "tags",
-        "correspondents",
-        "document_types",
-        "custom_fields",
-        "storage_paths",
-        "saved_views",
-    ):
-        sub = getattr(client, attr)
-        sub.list = AsyncMock(
-            return_value=MagicMock(
-                model_dump_json=MagicMock(return_value='{"count": 0, "results": []}')
-            )
-        )
+    client.http.paginate = _empty_paginate
     client.system.statistics = AsyncMock(
         return_value=MagicMock(
             model_dump_json=MagicMock(return_value='{"documents_total": 0}')

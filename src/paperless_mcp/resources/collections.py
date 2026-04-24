@@ -37,36 +37,36 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
 
     @mcp.resource(uri="tags://paperless", mime_type="application/json")
     async def tags_resource() -> str:
-        """Return all tags as a paginated JSON object."""
-        body = await client.tags.list(page_size=ctx.default_page_size)
-        return body.model_dump_json()
+        """Return all tags as a JSON array."""
+        items = [item async for item in client.http.paginate("/api/tags/")]
+        return json.dumps(items)
 
     @mcp.resource(uri="correspondents://paperless", mime_type="application/json")
     async def correspondents_resource() -> str:
-        """Return all correspondents as a paginated JSON object."""
-        body = await client.correspondents.list(page_size=ctx.default_page_size)
-        return body.model_dump_json()
+        """Return all correspondents as a JSON array."""
+        items = [item async for item in client.http.paginate("/api/correspondents/")]
+        return json.dumps(items)
 
     @mcp.resource(uri="document-types://paperless", mime_type="application/json")
     async def document_types_resource() -> str:
-        """Return all document types as a paginated JSON object."""
-        body = await client.document_types.list(page_size=ctx.default_page_size)
-        return body.model_dump_json()
+        """Return all document types as a JSON array."""
+        items = [item async for item in client.http.paginate("/api/document_types/")]
+        return json.dumps(items)
 
     @mcp.resource(uri="custom-fields://paperless", mime_type="application/json")
     async def custom_fields_resource() -> str:
-        """Return all custom fields as a paginated JSON object."""
-        body = await client.custom_fields.list(page_size=ctx.default_page_size)
-        return body.model_dump_json()
+        """Return all custom fields as a JSON array."""
+        items = [item async for item in client.http.paginate("/api/custom_fields/")]
+        return json.dumps(items)
 
     @mcp.resource(uri="storage-paths://paperless", mime_type="application/json")
     async def storage_paths_resource() -> str:
-        """Return all storage paths as a paginated JSON object."""
-        body = await client.storage_paths.list(page_size=ctx.default_page_size)
-        return body.model_dump_json()
+        """Return all storage paths as a JSON array."""
+        items = [item async for item in client.http.paginate("/api/storage_paths/")]
+        return json.dumps(items)
 
     @mcp.resource(uri="saved-views://paperless", mime_type="application/json")
     async def saved_views_resource() -> str:
-        """Return all saved views as a paginated JSON object."""
-        body = await client.saved_views.list(page_size=ctx.default_page_size)
-        return body.model_dump_json()
+        """Return all saved views as a JSON array."""
+        items = [item async for item in client.http.paginate("/api/saved_views/")]
+        return json.dumps(items)

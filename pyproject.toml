@@ -77,6 +77,7 @@ ignore = ["E501"]
 # Context/FastMCP/Service imports must stay runtime (not TYPE_CHECKING) for
 # DI resolution — TC001/TC002/TC003.
 "src/paperless_mcp/cli.py" = ["B008"]
+"src/paperless_mcp/server.py" = ["TC003"]
 "src/paperless_mcp/_server_deps.py" = ["B008", "TC002", "TC003"]
 "src/paperless_mcp/_server_apps.py" = ["B008", "TC001", "TC002"]
 "src/paperless_mcp/tools/__init__.py" = ["B008", "TC001", "TC002"]

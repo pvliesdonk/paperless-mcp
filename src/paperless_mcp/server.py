@@ -9,8 +9,11 @@ https://gofastmcp.com/servers for the FastMCP server surface and
 from __future__ import annotations
 
 import logging
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from importlib.metadata import PackageNotFoundError
 from importlib.metadata import version as _pkg_version
+from typing import Any
 
 from fastmcp import FastMCP
 from fastmcp_pvl_core import (
@@ -71,6 +74,15 @@ def make_server(
         default_page_size=domain_cfg.default_page_size,
     )
 
+    @asynccontextmanager
+    async def _lifespan(mcp_arg: object) -> AsyncIterator[dict[str, Any]]:
+        async with server_lifespan(mcp_arg) as state:
+            try:
+                yield state
+            finally:
+                await _client.aclose()
+                logger.info("client_closed")
+
     auth = build_auth(config.server)
     auth_mode = resolve_auth_mode(config.server) if auth is not None else "none"
     if auth_mode == "none":
@@ -98,7 +110,7 @@ def make_server(
             env_prefix=_ENV_PREFIX,
             domain_line="Paperless-NGX document management over MCP: search, tag, upload, and read documents; manage tags, correspondents, document types, and custom fields.",
         ),
-        lifespan=server_lifespan,
+        lifespan=_lifespan,
         auth=auth,
     )
 
