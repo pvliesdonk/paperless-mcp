@@ -1,6 +1,7 @@
-"""Prompt registrations for Paperless MCP.
+"""MCP prompts for paperless-mcp.
 
-See FastMCP prompt docs: https://gofastmcp.com/servers/prompts
+Deliberately minimal for v1 — no prompts ship.  Add as concrete user workflows
+emerge (e.g. "find documents from correspondent X matching Y").
 """
 
 from __future__ import annotations
@@ -8,14 +9,6 @@ from __future__ import annotations
 from fastmcp import FastMCP
 
 
-def register_prompts(mcp: FastMCP) -> None:
-    """Register all domain prompts on *mcp*."""
-
-    @mcp.prompt()
-    async def summarize(context: str) -> str:
-        """Summarize ``context`` in one paragraph.
-
-        See https://gofastmcp.com/servers/prompts#prompt-arguments for
-        the full signature surface.
-        """
-        return f"Summarize the following in one paragraph:\n\n{context}"
+def register_prompts(_mcp: FastMCP) -> None:
+    """No prompts registered in v1."""
+    return

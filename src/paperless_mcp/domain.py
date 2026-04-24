@@ -1,32 +1,32 @@
-"""Domain logic placeholder for Paperless MCP.
+"""Domain-layer re-exports for paperless-mcp consumers.
 
-Real projects replace :class:`Service` with their actual business
-logic (database client, API wrapper, file indexer, etc.).  Keep
-FastMCP types out of this module — domain code should be plain
-Python, easy to unit-test without a server.
+Importers that need a typed Paperless client can do::
+
+    from paperless_mcp.domain import PaperlessClient
+
+instead of reaching into ``paperless_mcp.client`` directly.
 """
 
 from __future__ import annotations
 
+from paperless_mcp.client import (
+    AuthError,
+    ConflictError,
+    NotFoundError,
+    PaperlessAPIError,
+    PaperlessClient,
+    RateLimitError,
+    UpstreamError,
+    ValidationError,
+)
 
-class Service:
-    """Placeholder service.  Replace with real domain logic."""
-
-    def __init__(self) -> None:
-        self._ready = False
-
-    async def start(self) -> None:
-        """Start the service (connect to DB, warm caches, etc.)."""
-        self._ready = True
-
-    async def stop(self) -> None:
-        """Stop the service (close connections, flush state, etc.)."""
-        self._ready = False
-
-    async def ping(self) -> str:
-        """Health check."""
-        return "pong" if self._ready else "not ready"
-
-    async def status(self) -> dict[str, object]:
-        """Structured status payload."""
-        return {"ready": self._ready}
+__all__ = [
+    "AuthError",
+    "ConflictError",
+    "NotFoundError",
+    "PaperlessAPIError",
+    "PaperlessClient",
+    "RateLimitError",
+    "UpstreamError",
+    "ValidationError",
+]
