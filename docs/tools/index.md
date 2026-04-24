@@ -74,6 +74,18 @@ The `extra_data` field shape depends on the custom field's `data_type`. Refer to
 
 Unknown shapes are rejected by Paperless with a 400 error.
 
+## Share link tools
+
+| Tool | Description |
+|---|---|
+| `list_share_links` | List share links (optionally filtered by document) |
+| `get_share_link` | Fetch a share link by ID |
+
+Both tools include a `share_url` field of the form `<PAPERLESS_PUBLIC_URL>/share/<slug>`.
+`PAPERLESS_MCP_PAPERLESS_PUBLIC_URL` is used when set; otherwise it defaults to
+`PAPERLESS_MCP_PAPERLESS_URL` via the config layer (see `PAPERLESS_MCP_PAPERLESS_PUBLIC_URL`
+in the README env-var table).
+
 ## Task tools
 
 | Tool | Description |
