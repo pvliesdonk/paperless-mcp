@@ -45,6 +45,7 @@ class Document(BaseModel):
     notes: list[DocumentNote] = Field(default_factory=list)
     custom_fields: list[CustomFieldInstance] = Field(default_factory=list)
     page_count: int | None = None
+    web_url: str | None = None
 
 
 class DocumentPatch(BaseModel):

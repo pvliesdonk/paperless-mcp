@@ -19,6 +19,8 @@ Paperless MCP exposes the following tools to MCP clients.
 | `get_document_history` | Retrieve audit log for a document |
 | `create_download_link` | Generate a time-limited download URL |
 
+`get_document`, `list_documents`, `search_documents`, and `update_document` include a `web_url` field pointing to the document in the Paperless UI (e.g. `https://paperless.example.com/documents/42/`). Set `PAPERLESS_MCP_PAPERLESS_PUBLIC_URL` if the public URL differs from the API URL; otherwise the API URL is used.
+
 ## Tag tools
 
 | Tool | Description |

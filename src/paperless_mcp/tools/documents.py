@@ -37,6 +37,11 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
     client = ctx.client
     read_only = ctx.read_only
 
+    def _with_web_url(doc: Document) -> None:
+        """Populate *doc*'s ``web_url`` when a public URL is configured."""
+        if ctx.public_url:
+            doc.web_url = f"{ctx.public_url}/documents/{doc.id}/"
+
     @register_tool(mcp, "list_documents", read_only_mode=read_only)
     async def list_documents(
         page: Annotated[int, Field(ge=1)] = 1,
@@ -54,7 +59,7 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
         By default, per-document OCR ``content`` is stripped to keep results
         small.  Pass ``include_content=True`` for the full text on each hit.
         """
-        return await client.documents.list(
+        result = await client.documents.list(
             page=page,
             page_size=page_size,
             ordering=ordering,
@@ -65,6 +70,9 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
             custom_field=custom_field,
             include_content=include_content,
         )
+        for doc in result.results:
+            _with_web_url(doc)
+        return result
 
     @register_tool(mcp, "search_documents", read_only_mode=read_only)
     async def search_documents(
@@ -80,18 +88,23 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
         ``include_content=True`` to get full OCR text per hit.
         Use *more_like* for similarity search.
         """
-        return await client.documents.search(
+        result = await client.documents.search(
             query,
             page=page,
             page_size=page_size,
             more_like=more_like,
             include_content=include_content,
         )
+        for doc in result.results:
+            _with_web_url(doc)
+        return result
 
     @register_tool(mcp, "get_document", read_only_mode=read_only)
     async def get_document(document_id: int) -> Document:
         """Fetch one document by ID."""
-        return await client.documents.get(document_id)
+        doc = await client.documents.get(document_id)
+        _with_web_url(doc)
+        return doc
 
     @register_tool(mcp, "get_document_content", read_only_mode=read_only)
     async def get_document_content(document_id: int) -> str:
@@ -131,7 +144,9 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
     @register_tool(mcp, "update_document", read_only_mode=read_only)
     async def update_document(document_id: int, patch: DocumentPatch) -> Document:
         """Patch selected fields on a document."""
-        return await client.documents.update(document_id, patch)
+        doc = await client.documents.update(document_id, patch)
+        _with_web_url(doc)
+        return doc
 
     @register_tool(mcp, "delete_document", read_only_mode=read_only)
     async def delete_document(document_id: int) -> None:
