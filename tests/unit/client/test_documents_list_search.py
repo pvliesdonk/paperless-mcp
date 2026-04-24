@@ -207,6 +207,29 @@ async def test_search_strips_notes_and_custom_field_values_by_default(
 
 
 @pytest.mark.asyncio
+async def test_search_strips_heavy_fields_even_when_include_content_true(
+    _documents_page_with_heavy_fields: dict[str, Any],
+    paperless_base_url: str,
+    paperless_api_token: str,
+) -> None:
+    # Mirror of the list() test — search() must also keep notes/custom_field
+    # values stripped when the caller opts into full OCR content.
+    async with respx.mock(base_url=paperless_base_url) as mock:
+        mock.get("/api/documents/").mock(
+            return_value=httpx.Response(200, json=_documents_page_with_heavy_fields)
+        )
+        c = PaperlessClient(base_url=paperless_base_url, api_token=paperless_api_token)
+        try:
+            result = await c.documents.search("foo", include_content=True)
+        finally:
+            await c.aclose()
+    doc = result.results[0]
+    assert doc.content == "B" * 10_000
+    assert doc.notes[0].note is None
+    assert doc.custom_fields[0].value is None
+
+
+@pytest.mark.asyncio
 async def test_list_normalises_upstream_next_url(
     paperless_base_url: str,
     paperless_api_token: str,

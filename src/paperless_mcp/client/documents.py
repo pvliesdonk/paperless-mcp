@@ -29,6 +29,13 @@ def _strip_listing_heavy_fields(doc: Document, *, include_content: bool) -> None
     (ids, timestamps, field refs) stay intact so callers can still detect
     presence and dereference via single-document endpoints.  OCR ``content``
     is only stripped when ``include_content`` is ``False``.
+
+    Layer note: stripping for **bulk** endpoints (list, search) happens here
+    in the client layer so any direct consumer of :class:`PaperlessClient`
+    gets the same behaviour as an MCP caller.  Stripping for **single-document**
+    endpoints (``get_document``, ``update_document``) happens at the tool
+    layer instead — ``PaperlessClient.get()``/``update()`` always return the
+    full document so server-side logic and resources can use the full model.
     """
     if not include_content:
         doc.content = None

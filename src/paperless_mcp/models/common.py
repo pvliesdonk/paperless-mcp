@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import logging
 from enum import StrEnum
 from typing import Generic, Literal, TypeVar
 from urllib.parse import parse_qs, urlparse
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
 
@@ -27,6 +30,10 @@ def _normalise_page_marker(value: str | None) -> str | None:
     pages = parse_qs(query).get("page")
     if pages and pages[0].isdigit():
         return f"page={pages[0]}"
+    # Surface unexpected shapes (cursor/offset pagination, malformed URLs) at
+    # WARNING so the normalised ``None`` — which otherwise silently stops
+    # pagination — is traceable in production.
+    logger.warning("normalise_page_marker unexpected_shape value=%r", value)
     return None
 
 

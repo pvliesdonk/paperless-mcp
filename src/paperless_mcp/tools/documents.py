@@ -58,6 +58,12 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
 
         By default, per-document OCR ``content`` is stripped to keep results
         small.  Pass ``include_content=True`` for the full text on each hit.
+
+        ``notes[].note`` and ``custom_fields[].value`` are **always** stripped
+        from listings regardless of ``include_content`` — the metadata refs
+        (note ids, timestamps, custom-field ids) are retained so callers can
+        detect presence, but to read the actual text use ``get_document``
+        (with ``include_content=True`` if needed) or ``get_document_notes``.
         """
         result = await client.documents.list(
             page=page,
@@ -87,6 +93,10 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
         By default per-hit OCR ``content`` is stripped; pass
         ``include_content=True`` to get full OCR text per hit.
         Use *more_like* for similarity search.
+
+        ``notes[].note`` and ``custom_fields[].value`` are **always** stripped
+        from search hits regardless of ``include_content`` — fetch them via
+        ``get_document`` or ``get_document_notes`` when needed.
         """
         result = await client.documents.search(
             query,

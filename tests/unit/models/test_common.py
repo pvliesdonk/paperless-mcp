@@ -38,6 +38,10 @@ def test_paginated_parses_results() -> None:
     )
     assert [r.id for r in page.results] == [1, 2]
     assert page.results[0].extra == "hi"  # type: ignore[attr-defined]
+    # The ``next`` URL is normalised to a bare ``page=N`` marker by the
+    # Paginated validator; assert it here so the fixture shape doesn't
+    # silently drift from the normalised output shape.
+    assert page.next == "page=2"
 
 
 def test_paginated_normalises_full_url_next_to_page_marker() -> None:
@@ -74,16 +78,25 @@ def test_paginated_passthrough_bare_page_marker() -> None:
     assert page.next == "page=2"
 
 
-def test_paginated_next_without_page_param_becomes_none() -> None:
-    page = Paginated[_Item].model_validate(
-        {
-            "count": 1,
-            "next": "http://paperless-ngx:8000/api/documents/",
-            "previous": None,
-            "results": [{"id": 1}],
-        }
-    )
+def test_paginated_next_without_page_param_becomes_none(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    with caplog.at_level("WARNING", logger="paperless_mcp.models.common"):
+        page = Paginated[_Item].model_validate(
+            {
+                "count": 1,
+                "next": "http://paperless-ngx:8000/api/documents/",
+                "previous": None,
+                "results": [{"id": 1}],
+            }
+        )
     assert page.next is None
+    # Surfacing unexpected pagination shapes at WARNING helps operators
+    # diagnose silently-truncated walks in production.
+    assert any(
+        "normalise_page_marker unexpected_shape" in rec.message
+        for rec in caplog.records
+    )
 
 
 def test_paginated_next_none_stays_none() -> None:
