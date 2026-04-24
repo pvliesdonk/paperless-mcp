@@ -93,3 +93,14 @@ def test_all_tools_have_icons(mock_client: Any) -> None:
     tools = asyncio.run(mcp.list_tools())
     for tool in tools:
         assert tool.icons, f"tool {tool.name} missing icons"
+
+
+def test_list_and_search_expose_include_content(mock_client: Any) -> None:
+    mcp = FastMCP("test")
+    ctx = ToolContext(client=mock_client, read_only=True, default_page_size=25)
+    documents_mod.register(mcp, ctx)
+    tools = {t.name: t for t in asyncio.run(mcp.list_tools())}
+    for name in ("list_documents", "search_documents"):
+        schema = tools[name].parameters
+        assert "include_content" in schema["properties"]
+        assert schema["properties"]["include_content"].get("default") is False

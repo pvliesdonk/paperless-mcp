@@ -131,8 +131,8 @@ The following variables are inherited unchanged from [`fastmcp-server-template`]
 
 | Tool | Description |
 |---|---|
-| `list_documents` | List documents with optional filtering |
-| `search_documents` | Full-text search across documents |
+| `list_documents` | List documents with optional filtering; OCR `content` stripped by default — pass `include_content=True` for full text |
+| `search_documents` | Full-text search across documents; OCR `content` stripped by default — pass `include_content=True` for full text |
 | `get_document` | Retrieve a document by ID |
 | `get_document_content` | Get the extracted text content of a document |
 | `get_document_thumbnail` | Get the thumbnail image of a document |
