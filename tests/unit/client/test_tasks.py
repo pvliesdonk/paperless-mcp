@@ -30,14 +30,10 @@ def tasks(http: PaperlessHTTP) -> TasksClient:
 
 @pytest.mark.asyncio
 async def test_list_all(tasks: TasksClient, load_fixture) -> None:
-    page = {
-        "count": 1,
-        "next": None,
-        "previous": None,
-        "results": [load_fixture("task_pending.json")],
-    }
+    # /api/tasks/ returns a bare list; client-side pagination wraps it.
+    bare = [load_fixture("task_pending.json")]
     async with respx.mock(base_url="http://paperless.test") as mock:
-        mock.get("/api/tasks/").mock(return_value=httpx.Response(200, json=page))
+        mock.get("/api/tasks/").mock(return_value=httpx.Response(200, json=bare))
         result = await tasks.list()
     assert result.results[0].status is TaskStatus.PENDING
 
@@ -113,10 +109,12 @@ async def test_list_tasks_paginated_defaults_to_unacknowledged(
     assert route.called
     call = route.calls[0].request
     assert call.url.params.get("acknowledged") == "false"
-    assert call.url.params.get("page") == "1"
-    assert call.url.params.get("page_size") == "25"
+    # page/page_size are NOT sent to the server; pagination is client-side.
+    assert "page" not in call.url.params
+    assert "page_size" not in call.url.params
     assert isinstance(result, Paginated)
-    assert result.count == 48
+    # count == total tasks in the bare list returned by /api/tasks/
+    assert result.count == 2
     assert len(result.results) == 2
     assert all(isinstance(t, Task) for t in result.results)
 
@@ -139,5 +137,6 @@ async def test_list_tasks_acknowledged_none_sends_no_filter(
         finally:
             await client.aclose()
 
+    assert route.called
     call = route.calls[0].request
     assert "acknowledged" not in call.url.params
