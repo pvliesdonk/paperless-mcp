@@ -32,14 +32,14 @@ async def test_wrap_catches_httpx_status_error() -> None:
 
     async def boom() -> object:
         request = httpx.Request("DELETE", "http://paperless.test/api/x/")
-        response = httpx.Response(404, request=request)
+        response = httpx.Response(404, json={"detail": "Not found."}, request=request)
         raise httpx.HTTPStatusError("404", request=request, response=response)
 
     wrapped = _wrap_with_error_handling("delete_document_note", boom)
     result = await wrapped()
     assert isinstance(result, str)
-    assert "Error occurred during tool execution" not in result
-    assert "404" in result or "not found" in result.lower()
+    assert result.startswith("Paperless API error 404:")
+    assert "Not found" in result
 
 
 @pytest.mark.asyncio
@@ -58,6 +58,4 @@ async def test_wrap_catches_pydantic_validation_error() -> None:
     wrapped = _wrap_with_error_handling("delete_document_note", boom)
     result = await wrapped()
     assert isinstance(result, str)
-    assert "Error occurred during tool execution" not in result
-    assert "validation" in result.lower()
-    assert "int" in result.lower()
+    assert result.startswith("Response validation failed (1 error(s)):")

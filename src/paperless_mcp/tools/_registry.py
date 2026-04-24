@@ -21,7 +21,7 @@ from fastmcp import FastMCP
 from mcp.types import Icon
 from pydantic import ValidationError as PydanticValidationError
 
-from paperless_mcp.client._errors import PaperlessAPIError
+from paperless_mcp.client._errors import PaperlessAPIError, error_from_response
 
 F = TypeVar("F", bound=Callable[..., object])
 
@@ -29,14 +29,11 @@ F = TypeVar("F", bound=Callable[..., object])
 logger = logging.getLogger(__name__)
 
 
-_MAX_ERROR_BODY = 500
-
-
-def _truncate(text: str, max_len: int = _MAX_ERROR_BODY) -> str:
-    return text if len(text) <= max_len else text[:max_len] + "…"
-
-
 def _wrap_with_error_handling(name: str, func: F) -> F:
+    # ``PaperlessHTTP`` normally maps non-2xx and network errors into
+    # ``PaperlessAPIError`` before they reach us, so the two ``httpx.*``
+    # branches below are defensive safety nets for any call path that
+    # bypasses ``PaperlessHTTP._request`` (e.g. future one-off httpx calls).
     @functools.wraps(func)
     async def wrapper(*args: object, **kwargs: object) -> object:
         try:
@@ -47,22 +44,30 @@ def _wrap_with_error_handling(name: str, func: F) -> F:
             )
             return f"Paperless API error {exc.status_code}: {exc.detail}"
         except httpx.HTTPStatusError as exc:
+            api_exc = error_from_response(exc.response)
             logger.warning(
                 "tool_http_status_error tool=%s status=%s url=%s",
                 name,
-                exc.response.status_code,
+                api_exc.status_code,
                 exc.request.url,
             )
-            body = exc.response.text or exc.response.reason_phrase
-            return f"Paperless API error {exc.response.status_code}: {_truncate(body)}"
+            return f"Paperless API error {api_exc.status_code}: {api_exc.detail}"
         except httpx.RequestError as exc:
             logger.warning("tool_network_error tool=%s error=%s", name, exc)
             return f"Network error connecting to Paperless: {exc}"
         except PydanticValidationError as exc:
+            errors = exc.errors()
+            detail = (
+                errors[0].get("msg") or errors[0].get("type") or "unknown"
+                if errors
+                else "unknown"
+            )
             logger.warning(
                 "tool_validation_error tool=%s errors=%d", name, exc.error_count()
             )
-            return f"Response validation failed: {_truncate(str(exc))}"
+            return (
+                f"Response validation failed ({exc.error_count()} error(s)): {detail}"
+            )
 
     return wrapper  # type: ignore[return-value]
 
