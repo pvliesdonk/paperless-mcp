@@ -52,8 +52,6 @@ def test_trailing_slash_stripped(monkeypatch: pytest.MonkeyPatch) -> None:
 def test_public_url_defaults_to_paperless_url(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("PAPERLESS_MCP_PAPERLESS_URL", "http://paperless.internal:8000")
     monkeypatch.setenv("PAPERLESS_MCP_API_TOKEN", "t")
-    from paperless_mcp._domain_config import load_domain_config
-
     cfg = load_domain_config()
     assert cfg.paperless_url == "http://paperless.internal:8000"
     assert cfg.paperless_public_url == "http://paperless.internal:8000"
@@ -65,9 +63,17 @@ def test_public_url_can_be_overridden(monkeypatch: pytest.MonkeyPatch) -> None:
         "PAPERLESS_MCP_PAPERLESS_PUBLIC_URL", "https://docs.example.com/"
     )
     monkeypatch.setenv("PAPERLESS_MCP_API_TOKEN", "t")
-    from paperless_mcp._domain_config import load_domain_config
-
     cfg = load_domain_config()
     assert cfg.paperless_url == "http://paperless.internal:8000"
     # Trailing slash stripped to match paperless_url behaviour
     assert cfg.paperless_public_url == "https://docs.example.com"
+
+
+def test_public_url_empty_string_treated_as_unset(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("PAPERLESS_MCP_PAPERLESS_URL", "http://paperless.internal:8000")
+    monkeypatch.setenv("PAPERLESS_MCP_PAPERLESS_PUBLIC_URL", "")
+    monkeypatch.setenv("PAPERLESS_MCP_API_TOKEN", "t")
+    cfg = load_domain_config()
+    assert cfg.paperless_public_url == "http://paperless.internal:8000"

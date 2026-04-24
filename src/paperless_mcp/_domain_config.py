@@ -58,12 +58,14 @@ class DomainConfig(BaseSettings):
     @field_validator("paperless_public_url")
     @classmethod
     def _strip_public_trailing_slash(cls, value: str | None) -> str | None:
-        return value.rstrip("/") if value else value
+        if not value:
+            return None
+        return value.rstrip("/")
 
     @model_validator(mode="after")
     def _default_public_url(self) -> DomainConfig:
         if self.paperless_public_url is None:
-            object.__setattr__(self, "paperless_public_url", self.paperless_url)
+            self.paperless_public_url = self.paperless_url
         return self
 
 
