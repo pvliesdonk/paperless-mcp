@@ -118,3 +118,26 @@ async def test_delete_note(documents: DocumentsClient) -> None:
         )
         await documents.delete_note(1, 9)
     assert "id=9" in str(route.calls.last.request.url)
+
+
+@pytest.mark.asyncio
+async def test_delete_note_404_raises_paperless_api_error(
+    paperless_base_url: str,
+    paperless_api_token: str,
+) -> None:
+    from paperless_mcp.client import PaperlessClient
+    from paperless_mcp.client._errors import PaperlessAPIError
+
+    async with respx.mock(base_url=paperless_base_url) as mock:
+        mock.delete("/api/documents/42/notes/").mock(
+            return_value=httpx.Response(
+                404, json={"detail": "No Note matches the given query."}
+            )
+        )
+        c = PaperlessClient(base_url=paperless_base_url, api_token=paperless_api_token)
+        try:
+            with pytest.raises(PaperlessAPIError) as exc_info:
+                await c.documents.delete_note(42, 99)
+        finally:
+            await c.aclose()
+    assert exc_info.value.status_code == 404

@@ -19,6 +19,7 @@ from typing import TypeVar
 import httpx
 from fastmcp import FastMCP
 from mcp.types import Icon
+from pydantic import ValidationError as PydanticValidationError
 
 from paperless_mcp.client._errors import PaperlessAPIError
 
@@ -38,9 +39,23 @@ def _wrap_with_error_handling(name: str, func: F) -> F:
                 "tool_api_error tool=%s status=%s msg=%s", name, exc.status_code, exc
             )
             return f"Paperless API error {exc.status_code}: {exc.detail}"
+        except httpx.HTTPStatusError as exc:
+            logger.warning(
+                "tool_http_status_error tool=%s status=%s url=%s",
+                name,
+                exc.response.status_code,
+                exc.request.url,
+            )
+            return (
+                f"Paperless API error {exc.response.status_code}: "
+                f"{exc.response.text or exc.response.reason_phrase}"
+            )
         except httpx.RequestError as exc:
             logger.warning("tool_network_error tool=%s error=%s", name, exc)
             return f"Network error connecting to Paperless: {exc}"
+        except PydanticValidationError as exc:
+            logger.warning("tool_validation_error tool=%s msg=%s", name, exc)
+            return f"Response validation failed: {exc}"
 
     return wrapper  # type: ignore[return-value]
 
