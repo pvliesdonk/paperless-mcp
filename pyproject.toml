@@ -110,6 +110,9 @@ indent-style = "space"
 testpaths = ["tests"]
 addopts = ["--strict-markers", "-ra"]
 asyncio_mode = "auto"
+markers = [
+    "integration: live Paperless-NGX integration tests (opt-in)",
+]
 
 [tool.coverage.run]
 source = ["src/paperless_mcp"]
@@ -139,6 +142,7 @@ no_implicit_optional = true
 [[tool.mypy.overrides]]
 module = ["fastmcp_pvl_core", "fastmcp_pvl_core.*"]
 ignore_missing_imports = true
+
 
 [tool.pyright]
 # Point Pyright at the uv-managed venv so editor diagnostics resolve
