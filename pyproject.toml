@@ -91,8 +91,8 @@ ignore = ["E501"]
 "src/paperless_mcp/resources/*.py" = ["TC001", "TC002", "TC003"]
 "src/paperless_mcp/prompts.py" = ["B008", "TC002", "ARG001"]
 "tests/**/*.py" = ["TC001", "TC002", "TC003", "ARG001"]
-# Pydantic model files need runtime imports for type resolution — TC002/TC003 are false positives.
-"src/paperless_mcp/models/*.py" = ["TC002", "TC003"]
+# Pydantic model files need runtime imports for type resolution — TC001/TC002/TC003 are false positives.
+"src/paperless_mcp/models/*.py" = ["TC001", "TC002", "TC003"]
 # httpx appears in except clauses (runtime); AsyncIterator used in generator return types.
 "src/paperless_mcp/client/_errors.py" = ["TC002"]
 "src/paperless_mcp/client/_http.py" = ["TC003"]

@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from paperless_mcp.models._compat import UserId
+
 
 class Tag(BaseModel):
     model_config = ConfigDict(extra="allow")
@@ -19,7 +21,7 @@ class Tag(BaseModel):
     is_insensitive: bool = True
     is_inbox_tag: bool = False
     document_count: int | None = None
-    owner: int | None = None
+    owner: UserId = None
     user_can_change: bool = True
 
 

@@ -6,6 +6,8 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from paperless_mcp.models._compat import UserId
+
 
 class SavedView(BaseModel):
     model_config = ConfigDict(extra="allow")
@@ -17,4 +19,4 @@ class SavedView(BaseModel):
     sort_reverse: bool = False
     filter_rules: list[dict[str, Any]] = Field(default_factory=list)
     page_size: int | None = None
-    owner: int | None = None
+    owner: UserId = None

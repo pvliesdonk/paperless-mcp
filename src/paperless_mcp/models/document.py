@@ -7,6 +7,8 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from paperless_mcp.models._compat import UserId, Username
+
 
 class CustomFieldInstance(BaseModel):
     model_config = ConfigDict(extra="allow")
@@ -19,7 +21,7 @@ class DocumentNote(BaseModel):
     id: int
     note: str
     created: datetime
-    user: int | None = None
+    user: UserId = None
 
 
 class Document(BaseModel):
@@ -38,7 +40,7 @@ class Document(BaseModel):
     archive_serial_number: str | int | None = None
     original_file_name: str | None = None
     archived_file_name: str | None = None
-    owner: int | None = None
+    owner: UserId = None
     user_can_change: bool = True
     notes: list[DocumentNote] = Field(default_factory=list)
     custom_fields: list[CustomFieldInstance] = Field(default_factory=list)
@@ -79,7 +81,7 @@ class DocumentHistoryEntry(BaseModel):
     model_config = ConfigDict(extra="allow")
     timestamp: datetime
     action: str
-    actor: str | None = None
+    actor: Username = None
 
 
 class DocumentSuggestions(BaseModel):
