@@ -59,6 +59,14 @@ Paperless MCP exposes the following tools to MCP clients.
 | `update_custom_field` | Update a custom field |
 | `delete_custom_field` | Delete a custom field |
 
+## Task tools
+
+| Tool | Description |
+|---|---|
+| `list_tasks` | List background Celery tasks. Paginates (`page`, `page_size` up to 100). Defaults to unacknowledged tasks only — pass `include_acknowledged=True` to include acknowledged tasks, or `acknowledged=True` to return only acknowledged ones. |
+| `get_task` | Get a task by UUID |
+| `wait_for_task` | Poll until a task reaches a terminal state or times out |
+
 ## System tools
 
 | Tool | Description |
