@@ -65,6 +65,7 @@ class TasksClient:
                 "count": len(all_tasks),
                 "next": None,
                 "previous": None,
+                "all": [t.id for t in all_tasks],
                 "results": [t.model_dump() for t in all_tasks[start:end]],
             }
         )
