@@ -40,6 +40,24 @@ def test_paginated_parses_results() -> None:
     assert page.results[0].extra == "hi"  # type: ignore[attr-defined]
 
 
+def test_paginated_drops_all_ids_from_upstream() -> None:
+    page = Paginated[_Item].model_validate(
+        {
+            "count": 3,
+            "next": None,
+            "previous": None,
+            "all": [1, 2, 3, 4, 5],
+            "results": [{"id": 1}, {"id": 2}, {"id": 3}],
+        }
+    )
+    dumped = page.model_dump()
+    assert "all" not in dumped
+    assert "all_ids" not in dumped
+    assert not hasattr(page, "all_ids")
+    assert page.count == 3
+    assert [r.id for r in page.results] == [1, 2, 3]
+
+
 def test_bulk_edit_operation_enum() -> None:
     assert BulkEditOperation("set_correspondent") == BulkEditOperation.SET_CORRESPONDENT
     with pytest.raises(ValueError):

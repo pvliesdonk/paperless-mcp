@@ -11,11 +11,11 @@ T = TypeVar("T")
 
 
 class Paginated(BaseModel, Generic[T]):
-    model_config = ConfigDict(extra="allow")
+    # extra="ignore" drops Paperless's upstream ``all: [...]`` id array (see #25).
+    model_config = ConfigDict(extra="ignore")
     count: int
     next: str | None = None
     previous: str | None = None
-    all_ids: list[int] | None = Field(None, alias="all")
     results: list[T] = Field(default_factory=list)
 
 
