@@ -100,6 +100,7 @@ All settings come from environment variables with the `PAPERLESS_MCP_` prefix.
 
 | Variable | Default | Description |
 |---|---|---|
+| `PAPERLESS_MCP_PAPERLESS_PUBLIC_URL` | *(same as `PAPERLESS_MCP_PAPERLESS_URL`)* | Public-facing Paperless UI URL used to construct user-visible links (e.g. `web_url`, `share_url`). Defaults to the API URL when unset. |
 | `PAPERLESS_MCP_HTTP_TIMEOUT_SECONDS` | `30` | Per-request HTTP timeout (seconds). |
 | `PAPERLESS_MCP_HTTP_RETRIES` | `2` | Retries (not counting the initial attempt) on 5xx/network errors. |
 | `PAPERLESS_MCP_DOWNLOAD_LINK_TTL_SECONDS` | `300` | TTL of URLs issued by `create_download_link`. Clamped `[30, 3600]`. |

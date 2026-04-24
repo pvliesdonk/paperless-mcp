@@ -46,5 +46,6 @@ def register_resources(
             client=client,
             read_only=read_only,
             default_page_size=cfg.default_page_size,
+            public_url=cfg.public_url,
         )
     _register_all(mcp, ctx)

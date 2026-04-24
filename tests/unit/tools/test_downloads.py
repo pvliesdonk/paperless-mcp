@@ -44,6 +44,7 @@ def test_registers_with_artifact_store() -> None:
         client=_mock_client(),
         read_only=False,
         default_page_size=25,
+        public_url="",
         artifact_store=_mock_artifact_store(),
     )
     downloads_mod.register(mcp, ctx)
@@ -56,6 +57,7 @@ def test_skips_registration_without_artifact_store() -> None:
         client=_mock_client(),
         read_only=False,
         default_page_size=25,
+        public_url="",
         artifact_store=None,
     )
     downloads_mod.register(mcp, ctx)
