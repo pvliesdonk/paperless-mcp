@@ -8,6 +8,7 @@ them at a scratch instance.
 from __future__ import annotations
 
 import os
+from collections.abc import AsyncGenerator
 
 import pytest
 
@@ -22,11 +23,11 @@ def _env_or_skip(name: str) -> str:
 
 
 @pytest.fixture
-async def live_client() -> PaperlessClient:
+async def live_client() -> AsyncGenerator[PaperlessClient, None]:
     url = _env_or_skip("PAPERLESS_MCP_IT_URL")
     token = _env_or_skip("PAPERLESS_MCP_IT_TOKEN")
     client = PaperlessClient(base_url=url, api_token=token)
     try:
-        yield client  # type: ignore[misc]
+        yield client
     finally:
         await client.aclose()

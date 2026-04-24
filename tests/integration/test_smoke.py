@@ -10,15 +10,16 @@ from paperless_mcp.client import PaperlessClient
 from paperless_mcp.models.common import BulkEditOperation
 from paperless_mcp.models.document import DocumentPatch
 from paperless_mcp.models.tag import TagCreate
+from paperless_mcp.models.task import TaskStatus
 
 pytestmark = pytest.mark.integration
 
 
-@pytest.mark.asyncio
 async def test_end_to_end(live_client: PaperlessClient) -> None:
     unique = uuid.uuid4().hex[:8]
 
     tag = await live_client.tags.create(TagCreate(name=f"it-smoke-{unique}"))
+    document_id: int | None = None
     try:
         pdf_bytes = (
             b"%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n"
@@ -36,6 +37,7 @@ async def test_end_to_end(live_client: PaperlessClient) -> None:
             tags=[tag.id],
         )
         task = await live_client.tasks.wait_for(ack.task_id, timeout_seconds=60)
+        assert task.status == TaskStatus.SUCCESS, f"task failed: {task.result}"
         assert task.related_document is not None
         document_id = int(task.related_document)
 
@@ -54,7 +56,7 @@ async def test_end_to_end(live_client: PaperlessClient) -> None:
             parameters={"tag": tag.id},
         )
         assert result.result == "OK"
-
-        await live_client.documents.delete(document_id)
     finally:
+        if document_id is not None:
+            await live_client.documents.delete(document_id)
         await live_client.tags.delete(tag.id)

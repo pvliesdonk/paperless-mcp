@@ -32,7 +32,23 @@ All settings come from environment variables with the `PAPERLESS_MCP_` prefix.
 | `PAPERLESS_MCP_READ_ONLY` | `false` | When `true`, disables every writable tool. |
 | `PAPERLESS_MCP_INSTRUCTIONS` | *(built-in)* | Operator-supplied description appended to MCP instructions. |
 
-See the [template's README section](#transport--auth) for transport (`TRANSPORT`, `HOST`, `PORT`, `HTTP_PATH`, `BASE_URL`), OIDC auth (`OIDC_*`), bearer fallback (`BEARER_TOKEN`), and logging (`LOG_LEVEL`, `LOG_FORMAT`) variables — those are inherited unchanged from `fastmcp-server-template`.
+See the [Transport & Auth](#transport--auth) section below for the inherited transport, auth, and logging variables.
+
+## Transport & Auth
+
+The following variables are inherited unchanged from [`fastmcp-server-template`](https://github.com/pvliesdonk/fastmcp-server-template):
+
+| Variable | Description |
+|---|---|
+| `PAPERLESS_MCP_TRANSPORT` | Server transport: `stdio` (default), `http`, or `sse`. |
+| `PAPERLESS_MCP_HOST` | Bind host for HTTP/SSE transport (default `127.0.0.1`). |
+| `PAPERLESS_MCP_PORT` | Bind port for HTTP/SSE transport (default `8000`). |
+| `PAPERLESS_MCP_HTTP_PATH` | URL path prefix for HTTP transport (default `/mcp`). |
+| `PAPERLESS_MCP_BASE_URL` | Public base URL for artifact download links. |
+| `PAPERLESS_MCP_OIDC_*` | OIDC provider settings when OIDC auth is enabled. |
+| `PAPERLESS_MCP_BEARER_TOKEN` | Static bearer token for simple token auth. |
+| `PAPERLESS_MCP_LOG_LEVEL` | Log level: `DEBUG`, `INFO`, `WARNING`, `ERROR`. |
+| `PAPERLESS_MCP_LOG_FORMAT` | Log format: `rich` (default) or `json`. |
 
 ## Tools
 
@@ -136,14 +152,14 @@ See the [template's README section](#transport--auth) for transport (`TRANSPORT`
 | `storage-paths://paperless` | All storage paths |
 | `saved-views://paperless` | All saved views |
 | `tasks://paperless` | All background tasks |
-| `paperless://documents/{id}` | Document by ID |
-| `paperless://documents/{id}/content` | Extracted text content |
-| `paperless://documents/{id}/metadata` | File metadata |
-| `paperless://documents/{id}/notes` | Document notes |
-| `paperless://documents/{id}/history` | Audit history |
-| `paperless://documents/{id}/thumbnail` | Thumbnail image |
-| `paperless://documents/{id}/preview` | PDF preview |
-| `paperless://documents/{id}/download` | Original file download |
+| `paperless://documents/{document_id}` | Document by ID |
+| `paperless://documents/{document_id}/content` | Extracted text content |
+| `paperless://documents/{document_id}/metadata` | File metadata |
+| `paperless://documents/{document_id}/notes` | Document notes |
+| `paperless://documents/{document_id}/history` | Audit history |
+| `paperless://documents/{document_id}/thumbnail` | Thumbnail image |
+| `paperless://documents/{document_id}/preview` | PDF preview |
+| `paperless://documents/{document_id}/download` | Original file download |
 
 ## Links
 
