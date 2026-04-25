@@ -86,7 +86,6 @@ ANNOTATION_REGISTRY: dict[str, dict[str, bool]] = {
     "create_custom_field": _CREATE,
     "update_custom_field": _UPDATE,
     "delete_custom_field": _DELETE,
-    "bulk_edit_custom_fields": _BULK_EDIT,
     # Observability
     "list_storage_paths": _READ,
     "get_storage_path": _READ,

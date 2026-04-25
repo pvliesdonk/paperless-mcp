@@ -26,6 +26,6 @@ async def test_all_tools_registered(monkeypatch: pytest.MonkeyPatch) -> None:
     async with Client(server) as client:
         tools = await client.list_tools()
     names = {t.name for t in tools}
-    assert len(tools) >= 50
+    assert len(tools) >= 49
     for expected in ("list_documents", "create_tag", "wait_for_task", "get_statistics"):
         assert expected in names, f"missing tool: {expected}"

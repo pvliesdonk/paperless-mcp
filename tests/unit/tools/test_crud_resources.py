@@ -38,16 +38,20 @@ def _names(mcp: FastMCP) -> set[str]:
     return {t.name for t in tools}
 
 
-@pytest.mark.parametrize(
-    ("module", "prefix"),
-    [
-        (tags_mod, "tag"),
-        (correspondents_mod, "correspondent"),
-        (document_types_mod, "document_type"),
-        (custom_fields_mod, "custom_field"),
-    ],
-)
-def test_read_only_registers_read_tools_only(module: Any, prefix: str) -> None:
+# (module, prefix, has_bulk_edit). custom_fields has no bulk_edit because
+# Paperless's bulk_edit_objects endpoint does not accept object_type=custom_fields.
+_CRUD_MODULES: list[tuple[Any, str, bool]] = [
+    (tags_mod, "tag", True),
+    (correspondents_mod, "correspondent", True),
+    (document_types_mod, "document_type", True),
+    (custom_fields_mod, "custom_field", False),
+]
+
+
+@pytest.mark.parametrize(("module", "prefix", "has_bulk_edit"), _CRUD_MODULES)
+def test_read_only_registers_read_tools_only(
+    module: Any, prefix: str, has_bulk_edit: bool
+) -> None:
     mcp = FastMCP("test")
     ctx = ToolContext(
         client=_mock_client(), read_only=True, default_page_size=25, public_url=""
@@ -62,16 +66,8 @@ def test_read_only_registers_read_tools_only(module: Any, prefix: str) -> None:
     assert f"bulk_edit_{prefix}s" not in names
 
 
-@pytest.mark.parametrize(
-    ("module", "prefix"),
-    [
-        (tags_mod, "tag"),
-        (correspondents_mod, "correspondent"),
-        (document_types_mod, "document_type"),
-        (custom_fields_mod, "custom_field"),
-    ],
-)
-def test_all_tools_have_icons(module: Any, prefix: str) -> None:
+@pytest.mark.parametrize(("module", "prefix", "has_bulk_edit"), _CRUD_MODULES)
+def test_all_tools_have_icons(module: Any, prefix: str, has_bulk_edit: bool) -> None:
     from paperless_mcp.tools._icons import ICON_REGISTRY
 
     mcp = FastMCP("test")
@@ -84,16 +80,10 @@ def test_all_tools_have_icons(module: Any, prefix: str) -> None:
         assert name in ICON_REGISTRY, f"tool {name!r} missing from ICON_REGISTRY"
 
 
-@pytest.mark.parametrize(
-    ("module", "prefix"),
-    [
-        (tags_mod, "tag"),
-        (correspondents_mod, "correspondent"),
-        (document_types_mod, "document_type"),
-        (custom_fields_mod, "custom_field"),
-    ],
-)
-def test_read_write_registers_all(module: Any, prefix: str) -> None:
+@pytest.mark.parametrize(("module", "prefix", "has_bulk_edit"), _CRUD_MODULES)
+def test_read_write_registers_all(
+    module: Any, prefix: str, has_bulk_edit: bool
+) -> None:
     mcp = FastMCP("test")
     ctx = ToolContext(
         client=_mock_client(), read_only=False, default_page_size=25, public_url=""
@@ -106,9 +96,12 @@ def test_read_write_registers_all(module: Any, prefix: str) -> None:
         f"create_{prefix}",
         f"update_{prefix}",
         f"delete_{prefix}",
-        f"bulk_edit_{prefix}s",
     }
+    if has_bulk_edit:
+        expected.add(f"bulk_edit_{prefix}s")
     assert expected.issubset(names)
+    if not has_bulk_edit:
+        assert f"bulk_edit_{prefix}s" not in names
 
 
 def test_custom_field_tool_descriptions_mention_select_options() -> None:

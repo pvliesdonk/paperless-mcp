@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
-
 from paperless_mcp.client._http import PaperlessHTTP
-from paperless_mcp.models.common import BulkEditResult, Paginated
+from paperless_mcp.models.common import Paginated
 from paperless_mcp.models.custom_field import (
     CustomField,
     CustomFieldCreate,
@@ -14,9 +12,13 @@ from paperless_mcp.models.custom_field import (
 
 
 class CustomFieldsClient:
-    """Async operations against ``/api/custom_fields/``."""
+    """Async operations against ``/api/custom_fields/``.
 
-    _OBJECT_TYPE = "custom_fields"
+    No ``bulk_edit`` method: Paperless-NGX's ``/api/bulk_edit_objects/``
+    endpoint does not accept ``object_type=custom_fields`` (see
+    ``BulkEditObjectsSerializer`` in paperless-ngx upstream — the choices are
+    ``tags``, ``correspondents``, ``document_types``, ``storage_paths``).
+    """
 
     def __init__(self, http: PaperlessHTTP) -> None:
         self._http = http
@@ -92,29 +94,3 @@ class CustomFieldsClient:
             field_id: ID of the custom field to delete.
         """
         await self._http.delete(f"/api/custom_fields/{field_id}/")
-
-    async def bulk_edit(
-        self,
-        *,
-        operation: str,
-        ids: Sequence[int],
-        parameters: dict[str, object] | None = None,
-    ) -> BulkEditResult:
-        """Perform a bulk edit operation on multiple custom fields.
-
-        Args:
-            operation: The operation to perform (e.g. ``"set_permissions"``).
-            ids: List of custom field IDs to act on.
-            parameters: Optional extra parameters for the operation.
-
-        Returns:
-            A :class:`BulkEditResult` with the operation result.
-        """
-        payload: dict[str, object] = {
-            "object_type": self._OBJECT_TYPE,
-            "objects": ids,
-            "operation": operation,
-            "parameters": parameters or {},
-        }
-        body = await self._http.post_json("/api/bulk_edit_objects/", json=payload)
-        return BulkEditResult.model_validate(body)

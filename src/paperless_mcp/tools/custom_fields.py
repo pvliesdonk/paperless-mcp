@@ -7,7 +7,7 @@ from typing import Annotated
 from fastmcp import FastMCP
 from pydantic import Field
 
-from paperless_mcp.models.common import BulkEditResult, Paginated
+from paperless_mcp.models.common import Paginated
 from paperless_mcp.models.custom_field import (
     CustomField,
     CustomFieldCreate,
@@ -84,14 +84,3 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
     async def delete_custom_field(field_id: int) -> None:
         """Delete a custom field."""
         await client.custom_fields.delete(field_id)
-
-    @register_tool(mcp, "bulk_edit_custom_fields", read_only_mode=read_only)
-    async def bulk_edit_custom_fields(
-        operation: str,
-        ids: list[int],
-        parameters: dict[str, object] | None = None,
-    ) -> BulkEditResult:
-        """Apply a bulk operation to a set of custom fields."""
-        return await client.custom_fields.bulk_edit(
-            operation=operation, ids=ids, parameters=parameters
-        )
