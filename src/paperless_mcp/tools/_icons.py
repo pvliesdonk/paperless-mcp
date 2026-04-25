@@ -64,7 +64,6 @@ ICON_REGISTRY: dict[str, list[Icon]] = {
     "create_custom_field": [_icon("form-input")],
     "update_custom_field": [_icon("pencil")],
     "delete_custom_field": [_icon("trash-2")],
-    "bulk_edit_custom_fields": [_icon("list-checks")],
     # Observability
     "list_storage_paths": [_icon("hard-drive")],
     "get_storage_path": [_icon("hard-drive")],

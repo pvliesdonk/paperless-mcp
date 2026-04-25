@@ -182,7 +182,9 @@ Each gets the standard quintet:
 - `bulk_edit_tags(operation, ids, **params) -> BulkEditResult`
 - `bulk_edit_correspondents(operation, ids, **params) -> BulkEditResult`
 - `bulk_edit_document_types(operation, ids, **params) -> BulkEditResult`
-- `bulk_edit_custom_fields(operation, ids, **params) -> BulkEditResult`
+
+Custom fields are intentionally excluded: Paperless-NGX's `bulk_edit_objects`
+endpoint does not accept `object_type=custom_fields` (see issue #38).
 
 ### Read-only observability
 - `list_storage_paths(...)`, `get_storage_path(id)`

@@ -26,6 +26,9 @@ async def test_all_tools_registered(monkeypatch: pytest.MonkeyPatch) -> None:
     async with Client(server) as client:
         tools = await client.list_tools()
     names = {t.name for t in tools}
-    assert len(tools) >= 50
+    # 50 tools are registered with an artifact store; the stdio path used here
+    # has no store, so ``create_download_link`` is not registered — hence 49.
+    assert len(tools) >= 49
+    assert "create_download_link" not in names
     for expected in ("list_documents", "create_tag", "wait_for_task", "get_statistics"):
         assert expected in names, f"missing tool: {expected}"

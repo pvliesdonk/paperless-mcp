@@ -13,7 +13,7 @@ Paperless-NGX document management over MCP: search, tag, upload, and read docume
 - **Tag, correspondent, document-type, custom-field management** — full CRUD and bulk-edit for every classification dimension Paperless exposes.
 - **Document lifecycle** — upload new documents, update fields, attach notes, and inspect audit history and AI-suggested tags/correspondents/types.
 - **Operational introspection** — saved views, storage paths, share links, background tasks (with `wait_for_task`), statistics, and remote Paperless-NGX version.
-- **MCP tools** — 52 LLM-visible tools with Lucide icons and read-only gating; see `src/paperless_mcp/tools/`.
+- **MCP tools** — 50 LLM-visible tools with Lucide icons and read-only gating; see `src/paperless_mcp/tools/`.
 - **MCP resources** — 20 URIs exposing documents and domain collections; see `src/paperless_mcp/resources/`.
 - **Read-only mode** — flip `PAPERLESS_MCP_READ_ONLY=true` to disable every mutating tool at startup.
 <!-- DOMAIN-END -->
@@ -194,7 +194,6 @@ Paginated tools return `next`/`previous` as bare `page=N` markers (never full UR
 | `create_custom_field` | Create a new custom field |
 | `update_custom_field` | Update a custom field |
 | `delete_custom_field` | Delete a custom field |
-| `bulk_edit_custom_fields` | Bulk edit custom fields |
 
 ### Observability
 

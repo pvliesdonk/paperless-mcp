@@ -25,8 +25,29 @@ def test_load_svg_missing(tmp_path: Path) -> None:
 
 
 @pytest.mark.asyncio
-async def test_wrap_catches_httpx_status_error() -> None:
+async def test_wrap_raises_tool_error_on_paperless_api_error() -> None:
+    from fastmcp.exceptions import ToolError
+
+    from paperless_mcp.client._errors import NotFoundError
+    from paperless_mcp.tools._registry import _wrap_with_error_handling
+
+    async def boom() -> object:
+        raise NotFoundError(404, "No Tag matches the given query.")
+
+    wrapped = _wrap_with_error_handling("get_tag", boom)
+    with pytest.raises(ToolError) as excinfo:
+        await wrapped()
+    assert str(excinfo.value).startswith("Paperless API error 404:")
+    assert "No Tag matches" in str(excinfo.value)
+    # ``raise ... from exc`` must preserve the cause so the original Paperless
+    # error remains visible in tracebacks and ``__cause__`` walks.
+    assert isinstance(excinfo.value.__cause__, NotFoundError)
+
+
+@pytest.mark.asyncio
+async def test_wrap_raises_tool_error_on_httpx_status_error() -> None:
     import httpx
+    from fastmcp.exceptions import ToolError
 
     from paperless_mcp.tools._registry import _wrap_with_error_handling
 
@@ -36,15 +57,35 @@ async def test_wrap_catches_httpx_status_error() -> None:
         raise httpx.HTTPStatusError("404", request=request, response=response)
 
     wrapped = _wrap_with_error_handling("delete_document_note", boom)
-    result = await wrapped()
-    assert isinstance(result, str)
-    assert result.startswith("Paperless API error 404:")
-    assert "Not found" in result
+    with pytest.raises(ToolError) as excinfo:
+        await wrapped()
+    assert str(excinfo.value).startswith("Paperless API error 404:")
+    assert "Not found" in str(excinfo.value)
+    assert isinstance(excinfo.value.__cause__, httpx.HTTPStatusError)
 
 
 @pytest.mark.asyncio
-async def test_wrap_catches_pydantic_validation_error() -> None:
+async def test_wrap_raises_tool_error_on_request_error() -> None:
+    import httpx
+    from fastmcp.exceptions import ToolError
+
+    from paperless_mcp.tools._registry import _wrap_with_error_handling
+
+    async def boom() -> object:
+        raise httpx.ConnectError("name resolution failed")
+
+    wrapped = _wrap_with_error_handling("get_tag", boom)
+    with pytest.raises(ToolError) as excinfo:
+        await wrapped()
+    assert "Network error connecting to Paperless" in str(excinfo.value)
+    assert isinstance(excinfo.value.__cause__, httpx.ConnectError)
+
+
+@pytest.mark.asyncio
+async def test_wrap_raises_tool_error_on_pydantic_validation_error() -> None:
+    from fastmcp.exceptions import ToolError
     from pydantic import BaseModel
+    from pydantic import ValidationError as PydanticValidationError
 
     from paperless_mcp.tools._registry import _wrap_with_error_handling
 
@@ -56,6 +97,7 @@ async def test_wrap_catches_pydantic_validation_error() -> None:
         return None
 
     wrapped = _wrap_with_error_handling("delete_document_note", boom)
-    result = await wrapped()
-    assert isinstance(result, str)
-    assert result.startswith("Response validation failed (1 error(s)):")
+    with pytest.raises(ToolError) as excinfo:
+        await wrapped()
+    assert str(excinfo.value).startswith("Response validation failed (1 error(s)):")
+    assert isinstance(excinfo.value.__cause__, PydanticValidationError)

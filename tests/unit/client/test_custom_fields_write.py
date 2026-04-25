@@ -62,14 +62,10 @@ async def test_delete(custom_fields) -> None:
     assert route.called
 
 
-@pytest.mark.asyncio
-async def test_bulk_edit(custom_fields) -> None:
-    async with respx.mock(base_url="http://paperless.test") as mock:
-        route = mock.post("/api/bulk_edit_objects/").mock(
-            return_value=httpx.Response(200, json={"result": "OK"})
-        )
-        result = await custom_fields.bulk_edit(operation="set_permissions", ids=[2])
-    assert result.result == "OK"
-    assert (
-        json.loads(route.calls.last.request.content)["object_type"] == "custom_fields"
-    )
+def test_bulk_edit_method_does_not_exist(
+    custom_fields: CustomFieldsClient,
+) -> None:
+    """Paperless rejects ``object_type=custom_fields`` on
+    ``/api/bulk_edit_objects/``, so no ``bulk_edit`` method is exposed.
+    """
+    assert not hasattr(custom_fields, "bulk_edit")
