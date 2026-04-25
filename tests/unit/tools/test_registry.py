@@ -39,6 +39,9 @@ async def test_wrap_raises_tool_error_on_paperless_api_error() -> None:
         await wrapped()
     assert str(excinfo.value).startswith("Paperless API error 404:")
     assert "No Tag matches" in str(excinfo.value)
+    # ``raise ... from exc`` must preserve the cause so the original Paperless
+    # error remains visible in tracebacks and ``__cause__`` walks.
+    assert isinstance(excinfo.value.__cause__, NotFoundError)
 
 
 @pytest.mark.asyncio
@@ -58,6 +61,7 @@ async def test_wrap_raises_tool_error_on_httpx_status_error() -> None:
         await wrapped()
     assert str(excinfo.value).startswith("Paperless API error 404:")
     assert "Not found" in str(excinfo.value)
+    assert isinstance(excinfo.value.__cause__, httpx.HTTPStatusError)
 
 
 @pytest.mark.asyncio
@@ -74,12 +78,14 @@ async def test_wrap_raises_tool_error_on_request_error() -> None:
     with pytest.raises(ToolError) as excinfo:
         await wrapped()
     assert "Network error connecting to Paperless" in str(excinfo.value)
+    assert isinstance(excinfo.value.__cause__, httpx.ConnectError)
 
 
 @pytest.mark.asyncio
 async def test_wrap_raises_tool_error_on_pydantic_validation_error() -> None:
     from fastmcp.exceptions import ToolError
     from pydantic import BaseModel
+    from pydantic import ValidationError as PydanticValidationError
 
     from paperless_mcp.tools._registry import _wrap_with_error_handling
 
@@ -94,3 +100,4 @@ async def test_wrap_raises_tool_error_on_pydantic_validation_error() -> None:
     with pytest.raises(ToolError) as excinfo:
         await wrapped()
     assert str(excinfo.value).startswith("Response validation failed (1 error(s)):")
+    assert isinstance(excinfo.value.__cause__, PydanticValidationError)
