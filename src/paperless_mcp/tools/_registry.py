@@ -18,6 +18,7 @@ from typing import TypeVar
 
 import httpx
 from fastmcp import FastMCP
+from fastmcp.exceptions import ToolError
 from mcp.types import Icon
 from pydantic import ValidationError as PydanticValidationError
 
@@ -34,6 +35,13 @@ def _wrap_with_error_handling(name: str, func: F) -> F:
     # ``PaperlessAPIError`` before they reach us, so the two ``httpx.*``
     # branches below are defensive safety nets for any call path that
     # bypasses ``PaperlessHTTP._request`` (e.g. future one-off httpx calls).
+    #
+    # We raise ``ToolError`` rather than returning an error string: returning a
+    # string conflicts with tools whose declared output schema is a typed model
+    # (``Tag``, ``Paginated[Tag]``, ...). FastMCP would refuse to coerce the
+    # string into ``structured_content``. Raising ``ToolError`` lets the MCP
+    # layer emit a proper ``CallToolResult(isError=True)`` regardless of the
+    # tool's output schema.
     @functools.wraps(func)
     async def wrapper(*args: object, **kwargs: object) -> object:
         try:
@@ -42,7 +50,9 @@ def _wrap_with_error_handling(name: str, func: F) -> F:
             logger.warning(
                 "tool_api_error tool=%s status=%s msg=%s", name, exc.status_code, exc
             )
-            return f"Paperless API error {exc.status_code}: {exc.detail}"
+            raise ToolError(
+                f"Paperless API error {exc.status_code}: {exc.detail}"
+            ) from exc
         except httpx.HTTPStatusError as exc:
             api_exc = error_from_response(exc.response)
             logger.warning(
@@ -51,10 +61,12 @@ def _wrap_with_error_handling(name: str, func: F) -> F:
                 api_exc.status_code,
                 exc.request.url,
             )
-            return f"Paperless API error {api_exc.status_code}: {api_exc.detail}"
+            raise ToolError(
+                f"Paperless API error {api_exc.status_code}: {api_exc.detail}"
+            ) from exc
         except httpx.RequestError as exc:
             logger.warning("tool_network_error tool=%s error=%s", name, exc)
-            return f"Network error connecting to Paperless: {exc}"
+            raise ToolError(f"Network error connecting to Paperless: {exc}") from exc
         except PydanticValidationError as exc:
             errors = exc.errors()
             detail = (
@@ -65,9 +77,9 @@ def _wrap_with_error_handling(name: str, func: F) -> F:
             logger.warning(
                 "tool_validation_error tool=%s errors=%d", name, exc.error_count()
             )
-            return (
+            raise ToolError(
                 f"Response validation failed ({exc.error_count()} error(s)): {detail}"
-            )
+            ) from exc
 
     return wrapper  # type: ignore[return-value]
 
