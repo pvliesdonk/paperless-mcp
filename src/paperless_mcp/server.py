@@ -17,12 +17,13 @@ from typing import Any
 
 from fastmcp import FastMCP
 from fastmcp_pvl_core import (
-    ArtifactStore,
     ServerConfig,  # noqa: F401  — re-exported for downstream projects' convenience
     build_auth,
     build_event_store,  # noqa: F401  — re-exported for downstream projects' convenience
     build_instructions,
     configure_logging_from_env,
+    register_file_exchange,
+    register_server_info_tool,
     resolve_auth_mode,
     wire_middleware_stack,
 )
@@ -50,9 +51,12 @@ def make_server(
     """Construct the Paperless MCP FastMCP server.
 
     Args:
-        transport: ``"stdio"`` / ``"http"`` / ``"sse"``.  HTTP-only
-            features (artifact downloads) are wired only when transport
-            != ``"stdio"``.
+        transport: ``"stdio"`` / ``"http"`` / ``"sse"``.  Used here for
+            logging only; MCP File Exchange wiring is gated by
+            ``register_file_exchange`` reading
+            ``PAPERLESS_MCP_TRANSPORT`` / ``FASTMCP_TRANSPORT`` and
+            ``PAPERLESS_MCP_FILE_EXCHANGE_ENABLED`` (default true on
+            HTTP/SSE, false on stdio).
         config: Optional pre-loaded config; default loads from env.
 
     Returns:
@@ -99,8 +103,9 @@ def make_server(
         pkg_ver = "unknown"
 
     logger.info(
-        "Server config: version=%s name=paperless-mcp auth=%s",
+        "Server config: version=%s name=paperless-mcp transport=%s auth=%s",
         pkg_ver,
+        transport,
         auth_mode,
     )
 
@@ -122,8 +127,40 @@ def make_server(
     register_prompts(mcp)
     register_apps(mcp)
 
-    if transport != "stdio":
-        artifact_store = ArtifactStore(ttl_seconds=3600)
-        ArtifactStore.register_route(mcp, artifact_store)
+    register_server_info_tool(
+        mcp,
+        server_name="paperless-mcp",
+        server_version=pkg_ver,
+        # DOMAIN-UPSTREAM-START — wire upstream version reporting for servers
+        # that talk to a remote service (paperless-mcp, etc.). The provider is
+        # a zero-arg callable; the simplest pattern is a module-level upstream
+        # client (typically constructed from env vars at import time) whose
+        # version method is referenced here. ``CurrentContext()`` is a FastMCP
+        # DI marker — it only resolves to a live context when used as a
+        # parameter default in a tool/resource handler, so it cannot be called
+        # directly from a zero-arg provider.
+        # Uncomment the kwargs below as additional arguments to this call:
+        # upstream_version=lambda: _upstream_client.remote_version(),
+        # upstream_label="paperless",
+        # DOMAIN-UPSTREAM-END
+    )
+
+    # DOMAIN-WIRING-START — project-specific wiring (custom HTTP routes,
+    # transforms, mode toggles, alternative middleware, additional registrations);
+    # kept across copier update. Leave empty for projects that don't customise
+    # make_server() beyond the standard scaffold.
+    # DOMAIN-WIRING-END
+
+    # To publish files from a tool body, capture the returned handle
+    # — see docs/guides/file-exchange.md for the module-level singleton
+    # pattern (e.g. ``_file_exchange = register_file_exchange(...)``).
+    register_file_exchange(
+        mcp,
+        namespace="paperless-mcp",
+        env_prefix=_ENV_PREFIX,
+        transport="auto",
+        # produces=("application/octet-stream",),  # uncomment + customise per project
+        # consumer_sink=_my_sink,                  # uncomment if this server consumes file_refs
+    )
 
     return mcp
