@@ -36,6 +36,28 @@ theme:
 
 plugins:
   - search
+  # Generates llms.txt + llms-full.txt for the README badge.
+  # Sections mirror `nav:` below — keep them aligned when customising
+  # (both blocks are sentinel-protected so customise both as a unit).
+  # `guides/*.md` and `deployment/*.md` use globs deliberately so new pages
+  # in those directories are auto-indexed without a sections-list update.
+  - llmstxt:
+      full_output: llms-full.txt
+      sections:
+        # PROJECT-LLMSTXT-SECTIONS-START — keep aligned with `nav:` below;
+        # kept across copier update.
+        Getting Started:
+          - index.md
+          - installation.md
+          - configuration.md
+        Guides:
+          - guides/*.md
+        MCP Interface:
+          - tools/index.md
+          - prompts.md
+        Deployment:
+          - deployment/*.md
+        # PROJECT-LLMSTXT-SECTIONS-END
   - mkdocstrings:
       handlers:
         python:
@@ -68,15 +90,20 @@ markdown_extensions:
   - md_in_html
 
 nav:
+  # PROJECT-NAV-START — replace with your real navigation; kept across copier
+  # update. Keep aligned with the `llmstxt` plugin's sentinel-protected
+  # `sections:` block above.
   - Home: index.md
   - Getting Started:
       - Installation: installation.md
       - Configuration: configuration.md
   - Guides:
       - Authentication: guides/authentication.md
+      - File Exchange: guides/file-exchange.md
   - MCP Interface:
       - Tools: tools/index.md
       - Prompts: prompts.md
   - Deployment:
       - Docker: deployment/docker.md
       - OIDC Authentication: deployment/oidc.md
+  # PROJECT-NAV-END

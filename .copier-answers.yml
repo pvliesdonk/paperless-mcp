@@ -1,5 +1,5 @@
 # Changes here will be overwritten by `copier update`.
-_commit: v1.2.0
+_commit: v1.3.0
 _src_path: gh:pvliesdonk/fastmcp-server-template
 docker_registry: ghcr.io/pvliesdonk
 domain_description: 'Paperless-NGX document management over MCP: search, tag, upload,
