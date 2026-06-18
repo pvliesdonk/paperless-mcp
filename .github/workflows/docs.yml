@@ -30,7 +30,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           # On release events the triggering tag may move after the workflow is
           # queued (the release workflow pushes a version-bump commit and
