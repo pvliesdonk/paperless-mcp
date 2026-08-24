@@ -30,3 +30,15 @@ def test_http_server_boots_with_kv_store(monkeypatch: pytest.MonkeyPatch) -> Non
     )
 
     assert app is not None
+
+
+def test_sse_server_boots_without_artifact_store(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """SSE construction does not depend on the retired download-store API."""
+    monkeypatch.setenv("PAPERLESS_MCP_PAPERLESS_URL", "http://paperless.test")
+    monkeypatch.setenv("PAPERLESS_MCP_API_TOKEN", "t")
+
+    server = make_server(transport="sse")
+
+    assert server is not None

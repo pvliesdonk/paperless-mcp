@@ -72,3 +72,16 @@ references outside that Task 4-owned file.
   checkout because the removed tool was already skipped when the test context
   had no artifact store. The test still verifies the required final public
   registry behavior.
+
+## Fix Round 1
+
+- Added `test_sse_server_boots_without_artifact_store` in
+  `tests/unit/test_server_boot.py`. It exercises the non-stdio transport path
+  that the retired server wired to `ArtifactStore`, without recreating or
+  faking that removed API. The current server constructs successfully; the
+  retired wiring would fail against pvl-core 4 because `ArtifactStore` is no
+  longer available.
+- Kept `test_tool_registry_omits_download_link` unchanged as the final public
+  registry assertion.
+- Ran `uv run pytest tests/unit/test_server_boot.py tests/unit/tools/test_downloads.py -q`.
+  Output: `4 passed in 0.41s`.
