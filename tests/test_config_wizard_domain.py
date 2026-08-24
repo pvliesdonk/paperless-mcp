@@ -16,12 +16,38 @@ invokes ``pytest ... -m browser``.
 
 from __future__ import annotations
 
-import pytest
-from playwright.sync_api import Page
+from collections.abc import Iterator
 
-pytest_plugins = ("test_config_wizard_smoke",)
+import pytest
+from playwright.sync_api import Browser, Page
+
+# Reuse the complete project fixture chain, under private Python names, so it
+# overrides pytest-playwright's built-in blank-page fixture in docs CI.
+from test_config_wizard_smoke import browser as _smoke_browser
+from test_config_wizard_smoke import page as _smoke_page
+from test_config_wizard_smoke import site_url as _smoke_site_url
 
 pytestmark = pytest.mark.browser
+
+
+@pytest.fixture(scope="module")
+def domain_site_url() -> Iterator[str]:
+    """Serve the built documentation through the smoke-test fixture."""
+    yield from _smoke_site_url.__wrapped__()  # type: ignore[attr-defined]
+
+
+@pytest.fixture(scope="module")
+def domain_browser(domain_site_url: str) -> Iterator[Browser]:
+    """Launch the smoke-test browser against the domain test server."""
+    yield from _smoke_browser.__wrapped__(domain_site_url)  # type: ignore[attr-defined]
+
+
+@pytest.fixture
+def page(domain_browser: Browser, domain_site_url: str) -> Iterator[Page]:
+    """Open a fresh domain-test page at the configuration wizard."""
+    yield from _smoke_page.__wrapped__(  # type: ignore[attr-defined]
+        domain_browser, domain_site_url
+    )
 
 
 def test_paperless_settings_emit_config_without_sharing_api_token(page: Page) -> None:
