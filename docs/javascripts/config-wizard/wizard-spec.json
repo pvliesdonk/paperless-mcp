@@ -124,6 +124,15 @@
       "advancedGroup": "Auth"
     },
     {
+      "id": "oidc_advertised_scopes",
+      "label": "OIDC advertised scopes (CSV)",
+      "help": "Scopes advertised to OAuth clients. Separate values with commas or spaces.",
+      "type": "text",
+      "var": "PAPERLESS_MCP_OIDC_ADVERTISED_SCOPES",
+      "showIf": { "deployment": ["server"], "auth": ["oidc", "both"] },
+      "advancedGroup": "Auth"
+    },
+    {
       "id": "oidc_verify_access_token",
       "label": "Verify access token (not id token)",
       "type": "bool",
@@ -167,6 +176,15 @@
       "advancedGroup": "Persistence"
     },
     {
+      "id": "tasks_url",
+      "label": "Task store URL",
+      "help": "Task storage URL for durable background tasks. Supports memory:// or redis:// URLs.",
+      "type": "text",
+      "var": "PAPERLESS_MCP_TASKS_URL",
+      "showIf": { "deployment": ["server"] },
+      "advancedGroup": "Persistence"
+    },
+    {
       "id": "app_domain",
       "label": "MCP Apps domain",
       "help": "Public domain that serves MCP Apps UI resources.",
@@ -174,6 +192,22 @@
       "var": "PAPERLESS_MCP_APP_DOMAIN",
       "showIf": { "deployment": ["server"] },
       "advancedGroup": "MCP Apps"
+    },
+    {
+      "id": "tools_allow",
+      "label": "Allowed tools (CSV)",
+      "help": "Expose only these comma-separated tool names. Leave blank to expose all tools; do not set TOOLS_DENY at the same time.",
+      "type": "text",
+      "var": "PAPERLESS_MCP_TOOLS_ALLOW",
+      "advancedGroup": "Tool access"
+    },
+    {
+      "id": "tools_deny",
+      "label": "Denied tools (CSV)",
+      "help": "Hide these comma-separated tool names. Leave blank to hide none; do not set TOOLS_ALLOW at the same time.",
+      "type": "text",
+      "var": "PAPERLESS_MCP_TOOLS_DENY",
+      "advancedGroup": "Tool access"
     },
     {
       "id": "log_level",
