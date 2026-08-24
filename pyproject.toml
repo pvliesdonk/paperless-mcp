@@ -129,6 +129,9 @@ ignore = ["E501"]
 "src/paperless_mcp/client/_errors.py" = ["TC002"]
 "src/paperless_mcp/client/_http.py" = ["TC003"]
 "src/paperless_mcp/client/*.py" = ["TC001", "TC002", "TC003"]
+# The aggregator's documented structural suppressions are exercised only by the
+# diff gate, whose custom rule selection is not enabled in the normal lint run.
+"scripts/copier_update_aggregator.py" = ["RUF100"]
 # PROJECT-RUFF-IGNORES-END
 
 [tool.ruff.lint.isort]

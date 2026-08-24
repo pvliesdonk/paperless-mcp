@@ -128,7 +128,7 @@ The following variables are inherited unchanged from [`fastmcp-server-template`]
 | `PAPERLESS_MCP_HOST` | Bind host for HTTP/SSE transport (default `127.0.0.1`). |
 | `PAPERLESS_MCP_PORT` | Bind port for HTTP/SSE transport (default `8000`). |
 | `PAPERLESS_MCP_HTTP_PATH` | URL path prefix for HTTP transport (default `/mcp`). |
-| `PAPERLESS_MCP_BASE_URL` | Public base URL for artifact download links. |
+| `PAPERLESS_MCP_BASE_URL` | Public base URL for OIDC and public HTTP server metadata. |
 | `PAPERLESS_MCP_OIDC_*` | OIDC provider settings when OIDC auth is enabled. |
 | `PAPERLESS_MCP_BEARER_TOKEN` | Static bearer token for simple token auth. |
 | `PAPERLESS_MCP_LOG_LEVEL` | Log level: `DEBUG`, `INFO`, `WARNING`, `ERROR`. |

@@ -3,8 +3,8 @@
 Two directions, both fail CI:
 
 * Orphan — a wizard ``var`` (or option ``emit`` key) that no read site consumes.
-* Coverage — a core (``ServerConfig``) or domain (``ProjectConfig``) env setting
-  with no wizard ``var``/``emit``.
+* Coverage — a core (``ServerConfig``) or domain (``ProjectConfig`` /
+  ``DomainConfig``) env setting with no wizard ``var``/``emit``.
 
 Runs in the main lane. On the scaffold the domain surface is empty (every
 ``ProjectConfig.from_env`` domain read is a commented example), so this reduces
@@ -20,6 +20,7 @@ from typing import Any, cast
 
 from fastmcp_pvl_core import domain_env_suffixes, server_config_env_suffixes
 
+from paperless_mcp._domain_config import DomainConfig
 from paperless_mcp.config import ProjectConfig
 
 _ENV_PREFIX = "PAPERLESS_MCP"
@@ -36,6 +37,20 @@ _WIZARD_SPEC = (
 # ``auth`` select is a no-var routing key — see the Config wizard section of
 # CLAUDE.md), so there is no AUTH_MODE control to offer.
 _COVERED_BY_INFERENCE = frozenset({"AUTH_MODE"})
+_DOMAIN_CONFIG_SUFFIXES = frozenset(name.upper() for name in DomainConfig.model_fields)
+_EXPECTED_DOMAIN_CONFIG_SUFFIXES = frozenset(
+    {
+        "API_TOKEN",
+        "DEFAULT_PAGE_SIZE",
+        "HTTP_RETRIES",
+        "HTTP_TIMEOUT_SECONDS",
+        "PAPERLESS_PUBLIC_URL",
+        "PAPERLESS_URL",
+    }
+)
+# pvl-core accepts this legacy compatibility input, but this project deliberately
+# no longer publishes it: KV_STORE_URL is the supported persistence setting.
+_RETIRED_CORE_SUFFIXES = frozenset({"EVENT_STORE_URL"})
 
 
 def _spec() -> dict[str, Any]:
@@ -60,7 +75,7 @@ def _suffix(var: str) -> str | None:
 
 
 def _surface() -> set[str]:
-    """The config surface the wizard must COVER: core (ServerConfig) + domain.
+    """The config surface the wizard must COVER: core + both domain configs.
 
     The domain half is :func:`fastmcp_pvl_core.domain_env_suffixes`, which
     AST-scans ``ProjectConfig.from_env`` and recurses into any sub-config
@@ -76,7 +91,11 @@ def _surface() -> set[str]:
     legitimately offer a var the scaffold reads outside ServerConfig (e.g.
     ``HTTP_PATH`` is read in ``cli.py``).
     """
-    return set(server_config_env_suffixes()) | set(domain_env_suffixes(ProjectConfig))
+    return (
+        (set(server_config_env_suffixes()) - _RETIRED_CORE_SUFFIXES)
+        | set(domain_env_suffixes(ProjectConfig))
+        | set(_DOMAIN_CONFIG_SUFFIXES)
+    )
 
 
 def _src_text() -> str:
@@ -139,17 +158,23 @@ def _orphan_vars(spec: dict[str, Any]) -> list[str]:
 
 
 def test_surface_composes_core_and_domain() -> None:
-    """The coverage surface is core (``server_config_env_suffixes``) plus the
-    domain half from ``domain_env_suffixes(ProjectConfig)``, which recurses into
-    any sub-config sections. Guards the delegation wiring (callable on the
-    rendered ``ProjectConfig``, returns a frozenset); the scanner's own behavior
-    — literal vs variable reads, recursion, edges — is tested upstream in
-    ``fastmcp_pvl_core``'s ``TestDomainEnvSuffixes``.
-    """
+    """The coverage surface combines core, template, and Paperless settings."""
     domain = domain_env_suffixes(ProjectConfig)
     assert isinstance(domain, frozenset)
     assert domain <= _surface()
-    assert set(server_config_env_suffixes()) <= _surface()
+    assert _EXPECTED_DOMAIN_CONFIG_SUFFIXES == _DOMAIN_CONFIG_SUFFIXES
+    assert _surface() >= _DOMAIN_CONFIG_SUFFIXES
+    assert _surface() >= set(server_config_env_suffixes()) - _RETIRED_CORE_SUFFIXES
+
+
+def test_domain_wizard_marks_the_paperless_api_token_secret() -> None:
+    """Paperless settings are emitted and the token stays out of share links."""
+    spec = _spec()
+    emitted = _wizard_emitted_vars(spec)
+    expected = {f"{_ENV_PREFIX}_{suffix}" for suffix in _DOMAIN_CONFIG_SUFFIXES}
+    assert expected <= emitted
+    assert f"{_ENV_PREFIX}_API_TOKEN" in spec["secretKeys"]
+    assert f"{_ENV_PREFIX}_EVENT_STORE_URL" not in emitted
 
 
 def test_no_orphan_wizard_vars() -> None:

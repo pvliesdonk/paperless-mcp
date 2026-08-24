@@ -192,7 +192,10 @@ def _render_job_a(data: dict | None, conflict_count: int) -> str:
     return "\n".join(["### 🔧 Conflict resolutions", "", *content])
 
 
-def _render_job_b(data: dict | None, template_advanced: bool = True) -> str:
+# Explicit status handling and output strata keep this renderer auditable.
+def _render_job_b(  # noqa: C901, PLR0911, PLR0912
+    data: dict | None, template_advanced: bool = True
+) -> str:
     """Render the ✨ New features in this update section."""
     if not template_advanced:
         return ""  # Job B is gated; no section if refs didn't differ
@@ -273,7 +276,10 @@ def _render_job_b(data: dict | None, template_advanced: bool = True) -> str:
     return "\n".join(["### ✨ New features in this update", "", *content])
 
 
-def _render_job_c(data: dict | None, template_advanced: bool = True) -> str:
+# Explicit status handling and output strata keep this renderer auditable.
+def _render_job_c(  # noqa: C901, PLR0911, PLR0912
+    data: dict | None, template_advanced: bool = True
+) -> str:
     """Render the 📦 Excluded-file upstream changes section."""
     if not template_advanced:
         return ""  # Job C is gated; no section if refs didn't differ

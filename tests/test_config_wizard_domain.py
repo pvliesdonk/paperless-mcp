@@ -24,6 +24,18 @@ pytest_plugins = ("test_config_wizard_smoke",)
 pytestmark = pytest.mark.browser
 
 
+def test_paperless_settings_emit_config_without_sharing_api_token(page: Page) -> None:
+    """Paperless settings produce startup config while hiding its token from URLs."""
+    page.locator('[data-qid="paperless_url"] input').fill("http://paperless.test")
+    page.locator('[data-qid="api_token"] input').fill("secret-token")
+
+    page.wait_for_function("location.hash.includes('paperless_url=')")
+    output = page.inner_text(".cfg-output")
+    assert "PAPERLESS_MCP_PAPERLESS_URL=http://paperless.test" in output
+    assert "PAPERLESS_MCP_API_TOKEN=secret-token" in output
+    assert "api_token" not in page.url
+
+
 def test_tool_visibility_emits_only_the_selected_list(page: Page) -> None:
     """Switching policy excludes a stale list from generated configuration."""
     page.locator("#cfg-wizard .cfg-advanced summary").click()

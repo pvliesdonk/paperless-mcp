@@ -6,11 +6,55 @@
     "envPrefix": "PAPERLESS_MCP"
   },
   "secretKeys": [
+    "PAPERLESS_MCP_API_TOKEN",
     "PAPERLESS_MCP_BEARER_TOKEN",
     "PAPERLESS_MCP_OIDC_CLIENT_SECRET",
     "PAPERLESS_MCP_OIDC_JWT_SIGNING_KEY"
   ],
   "questions": [
+    {
+      "id": "paperless_url",
+      "label": "Paperless API URL",
+      "help": "Base URL of the Paperless-NGX instance, e.g. http://paperless:8000.",
+      "type": "text",
+      "var": "PAPERLESS_MCP_PAPERLESS_URL"
+    },
+    {
+      "id": "api_token",
+      "label": "Paperless API token",
+      "help": "Service-account token for the Paperless-NGX API. Never included in the shareable link.",
+      "type": "text",
+      "var": "PAPERLESS_MCP_API_TOKEN"
+    },
+    {
+      "id": "paperless_public_url",
+      "label": "Paperless public URL",
+      "help": "Public-facing Paperless UI URL when it differs from the API URL.",
+      "type": "text",
+      "var": "PAPERLESS_MCP_PAPERLESS_PUBLIC_URL",
+      "advancedGroup": "Paperless"
+    },
+    {
+      "id": "http_timeout_seconds",
+      "label": "Paperless request timeout (seconds)",
+      "type": "number",
+      "var": "PAPERLESS_MCP_HTTP_TIMEOUT_SECONDS",
+      "advancedGroup": "Paperless"
+    },
+    {
+      "id": "http_retries",
+      "label": "Paperless request retries",
+      "type": "number",
+      "var": "PAPERLESS_MCP_HTTP_RETRIES",
+      "advancedGroup": "Paperless"
+    },
+    {
+      "id": "default_page_size",
+      "label": "Default Paperless page size",
+      "type": "number",
+      "var": "PAPERLESS_MCP_DEFAULT_PAGE_SIZE",
+      "advancedGroup": "Paperless"
+    },
     {
       "id": "deployment",
       "label": "Where will the server run?",
@@ -163,15 +207,6 @@
       "label": "KV store URL (HTTP session persistence)",
       "type": "text",
       "var": "PAPERLESS_MCP_KV_STORE_URL",
-      "showIf": { "deployment": ["server"] },
-      "advancedGroup": "Persistence"
-    },
-    {
-      "id": "event_store_url",
-      "label": "Event store URL (HTTP resumability)",
-      "help": "Alternative event-store URL for HTTP resumability; prefer KV_STORE_URL for new deployments.",
-      "type": "text",
-      "var": "PAPERLESS_MCP_EVENT_STORE_URL",
       "showIf": { "deployment": ["server"] },
       "advancedGroup": "Persistence"
     },
