@@ -11,13 +11,13 @@ Paperless-NGX document management over MCP: search, tag, upload, and read docume
 ## Features
 
 <!-- DOMAIN-START -->
-- **Document search & retrieval** — full-text and filtered list queries against Paperless-NGX, plus access to extracted OCR text, metadata, thumbnails, and original-file downloads via short-lived signed URLs.
-- **Tag, correspondent, document-type, custom-field management** — full CRUD and bulk-edit for every classification dimension Paperless exposes.
-- **Document lifecycle** — upload new documents, update fields, attach notes, and inspect audit history and AI-suggested tags/correspondents/types.
-- **Operational introspection** — saved views, storage paths, share links, background tasks (with `wait_for_task`), statistics, and remote Paperless-NGX version.
-- **MCP tools** — 50 LLM-visible tools with Lucide icons and read-only gating; see `src/paperless_mcp/tools/`.
-- **MCP resources** — 20 URIs exposing documents and domain collections; see `src/paperless_mcp/resources/`.
-- **Read-only mode** — flip `PAPERLESS_MCP_READ_ONLY=true` to disable every mutating tool at startup.
+- **Document search & retrieval:** full-text and filtered list queries against Paperless-NGX, plus access to extracted OCR text, metadata, and thumbnails.
+- **Tag, correspondent, document-type, custom-field management:** full CRUD and bulk-edit for every classification dimension Paperless exposes.
+- **Document lifecycle** supports uploads, field changes, notes, audit history, and AI-suggested tags/correspondents/types.
+- **Operational introspection** covers saved views, storage paths, share links, background tasks (with `wait_for_task`), statistics, and remote Paperless-NGX version.
+- **MCP tools:** 50 LLM-visible tools with `Lucide` icons and read-only gating; see `src/paperless_mcp/tools/`.
+- **MCP resources:** 20 URIs exposing documents and domain collections; see `src/paperless_mcp/resources/`.
+- **Read-only mode:** flip `PAPERLESS_MCP_READ_ONLY=true` to disable every mutating tool at startup.
 <!-- DOMAIN-END -->
 
 ## What you can do with it
@@ -29,7 +29,6 @@ With this server mounted in an MCP client (Claude, etc.), you can:
 - **"Tag these three documents as 'reviewed' and move them to the Accounting correspondent."** Uses `bulk_edit_documents` in a single call.
 - **"Upload this PDF and wait until OCR finishes."** Composes `upload_document` + `wait_for_task` so the assistant only reports back once the document is indexed.
 - **"What changed on document 4213 in the last week?"** Reads `paperless://documents/4213/history` and summarises the audit trail.
-- **"Give me a time-limited link to the original file for document 982."** Calls `create_download_link` — the URL is valid for `PAPERLESS_MCP_DOWNLOAD_LINK_TTL_SECONDS` and does not expose the API token.
 <!-- DOMAIN-END -->
 
 <!-- ===== TEMPLATE-OWNED SECTIONS BELOW — DO NOT EDIT; CHANGES WILL BE OVERWRITTEN ON COPIER UPDATE ===== -->
@@ -45,7 +44,7 @@ pip install pvliesdonk-paperless-mcp
 If you add optional extras via the `PROJECT-EXTRAS-START` / `PROJECT-EXTRAS-END` sentinels in `pyproject.toml`, document them below:
 
 <!-- DOMAIN-START -->
-- `pip install pvliesdonk-paperless-mcp[docs]` — pulls in `mkdocs-material` and `mkdocstrings[python]` for building the documentation site locally (`uv run mkdocs serve`).
+- `pip install pvliesdonk-paperless-mcp[docs]`: installs `mkdocs-material` and `mkdocstrings[python]` for building the documentation site locally (`uv run mkdocs serve`).
 <!-- DOMAIN-END -->
 
 ### From source
@@ -110,10 +109,9 @@ All settings come from environment variables with the `PAPERLESS_MCP_` prefix.
 
 | Variable | Default | Description |
 |---|---|---|
-| `PAPERLESS_MCP_PAPERLESS_PUBLIC_URL` | *(same as `PAPERLESS_MCP_PAPERLESS_URL`)* | Public-facing Paperless UI URL used to construct user-visible links (e.g. `web_url`, `share_url`). Defaults to the API URL when unset. |
+| `PAPERLESS_MCP_PAPERLESS_PUBLIC_URL` | *(same as `PAPERLESS_MCP_PAPERLESS_URL`)* | Public-facing Paperless UI URL used to construct user-visible links, including `web_url` and `share_url`. Defaults to the API URL when unset. |
 | `PAPERLESS_MCP_HTTP_TIMEOUT_SECONDS` | `30` | Per-request HTTP timeout (seconds). |
 | `PAPERLESS_MCP_HTTP_RETRIES` | `2` | Retries (not counting the initial attempt) on 5xx/network errors. |
-| `PAPERLESS_MCP_DOWNLOAD_LINK_TTL_SECONDS` | `300` | TTL of URLs issued by `create_download_link`. Clamped `[30, 3600]`. |
 | `PAPERLESS_MCP_DEFAULT_PAGE_SIZE` | `25` | Default `page_size` for list tools. Clamped `[1, 100]`. |
 | `PAPERLESS_MCP_READ_ONLY` | `false` | When `true`, disables every writable tool. |
 | `PAPERLESS_MCP_INSTRUCTIONS` | *(built-in)* | Operator-supplied description appended to MCP instructions. |
@@ -142,7 +140,7 @@ The following variables are inherited unchanged from [`fastmcp-server-template`]
 
 | Tool | Description |
 |---|---|
-| `list_documents` | List documents with optional filtering; OCR `content` stripped by default (`include_content=True` for full text). `notes[].note` and `custom_fields[].value` are always stripped on listings — use single-document endpoints to fetch them. |
+| `list_documents` | List documents with optional filtering; OCR `content` stripped by default (`include_content=True` for full text). `notes[].note` and `custom_fields[].value` are always stripped on listings. Use single-document endpoints to fetch them. |
 | `search_documents` | Full-text search across documents; OCR `content` stripped by default (`include_content=True` for full text). `notes[].note` and `custom_fields[].value` are always stripped on search hits. |
 | `get_document` | Retrieve a document by ID; OCR `content` stripped by default (`include_content=True` for full text) |
 | `get_document_content` | Get the extracted text content of a document |
@@ -158,9 +156,9 @@ The following variables are inherited unchanged from [`fastmcp-server-template`]
 | `add_document_note` | Add a note to a document |
 | `delete_document_note` | Delete a note from a document |
 
-`get_document`, `list_documents`, `search_documents`, and `update_document` include a `web_url` field pointing to the document in the Paperless UI (e.g. `https://paperless.example.com/documents/42/`). Set `PAPERLESS_MCP_PAPERLESS_PUBLIC_URL` if the public URL differs from the API URL; otherwise the API URL is used.
+`get_document`, `list_documents`, `search_documents`, and `update_document` include a `web_url` field pointing to the document in the Paperless UI, such as `https://paperless.example.com/documents/42/`. Set `PAPERLESS_MCP_PAPERLESS_PUBLIC_URL` if the public URL differs from the API URL; otherwise the API URL is used.
 
-Paginated tools return `next`/`previous` as bare `page=N` markers (never full URLs) — callers pass `page=N` explicitly when walking pages. `None` means no further page.
+Paginated tools return `next`/`previous` as bare `page=N` markers (never full URLs). Callers pass `page=N` explicitly when walking pages. `None` means no further page.
 
 ### Tags
 
@@ -215,17 +213,11 @@ Paginated tools return `next`/`previous` as bare `page=N` markers (never full UR
 | `get_saved_view` | Get a saved view by ID |
 | `list_share_links` | List share links (includes `share_url`; uses `PAPERLESS_MCP_PAPERLESS_PUBLIC_URL` if set, otherwise `PAPERLESS_MCP_PAPERLESS_URL`) |
 | `get_share_link` | Get a share link by ID (includes `share_url`; uses `PAPERLESS_MCP_PAPERLESS_PUBLIC_URL` if set, otherwise `PAPERLESS_MCP_PAPERLESS_URL`) |
-| `list_tasks` | List background tasks. Paginates (`page`, `page_size` up to 100). By default returns only unacknowledged tasks — pass `include_acknowledged=True` to include acknowledged tasks, or `acknowledged=True` to return only acknowledged ones. |
+| `list_tasks` | List background tasks. Paginates (`page`, `page_size` up to 100). By default returns only unacknowledged tasks. Pass `include_acknowledged=True` to include acknowledged tasks, or `acknowledged=True` to return only acknowledged ones. |
 | `get_task` | Get a task by ID |
 | `wait_for_task` | Wait until a task completes |
 | `get_statistics` | Get server statistics |
 | `get_remote_version` | Get the Paperless-NGX version |
-
-### Downloads
-
-| Tool | Description |
-|---|---|
-| `create_download_link` | Create a time-limited download URL for a document |
 
 ## Resources
 
@@ -250,7 +242,7 @@ Paginated tools return `next`/`previous` as bare `page=N` markers (never full UR
 | `paperless://documents/{document_id}/preview` | PDF preview |
 | `paperless://documents/{document_id}/download` | Original file download |
 
-### Shared framework variables
+### Shared template variables
 
 Inherited from `fastmcp-pvl-core` across all services built on the template:
 
@@ -283,7 +275,7 @@ CI workflows reference three repository secrets. Configure them via **Settings �
 | Secret | Used by | How to generate |
 |---|---|---|
 | `RELEASE_TOKEN` | `release.yml`, `copier-update.yml`, `renovate.yml`, `bootstrap.yml` | Fine-grained PAT at <https://github.com/settings/personal-access-tokens/new> with `contents: write`, `pull_requests: write`, and `administration: write` (bootstrap sets branch protection + auto-merge). Scoped to this repo. |
-| `CODECOV_TOKEN` | `ci.yml` | <https://codecov.io>: sign in with GitHub, add the repo, copy the upload token from the repo settings page. |
+| `CODECOV_TOKEN` | `ci.yml` | <https://codecov.io>: Sign in with GitHub and copy the upload token from the repository settings page. |
 | `CLAUDE_CODE_OAUTH_TOKEN` | `claude.yml`, `claude-code-review.yml` | Run `claude setup-token` locally and paste the result. |
 
 ```bash
@@ -349,10 +341,9 @@ The full domain env-var surface is documented under [Configuration](#configurati
 ## Key design decisions
 
 <!-- DOMAIN-START -->
-- **Read-only gating at startup, not per-call.** `PAPERLESS_MCP_READ_ONLY=true` skips registration of every mutating tool so they simply aren't part of the advertised tool surface — clients can't invoke a write that will be refused.
-- **Download links are signed and time-limited.** `create_download_link` mints a short-lived URL (default 300 s, clamped to `[30, 3600]`) that proxies through the MCP server, so the Paperless API token never leaves the host.
+- **Read-only gating at startup, not per-call.** `PAPERLESS_MCP_READ_ONLY=true` skips registration of every mutating tool so they simply are not part of the advertised tool surface. Clients cannot invoke a write that will be refused.
 - **HTTP layer retries idempotent reads only.** `PAPERLESS_MCP_HTTP_RETRIES` applies to GETs on 5xx/network errors; writes never retry automatically, to avoid double-applying bulk edits or uploads.
-- **Tool icons come from Lucide.** Every tool carries a Lucide icon hint so MCP clients that render icons (Claude Desktop) get a coherent visual surface — see `src/paperless_mcp/tools/_icons.py`.
-- **Models accept unknown upstream fields.** Pydantic models use lenient validation for list-endpoint responses so newer Paperless-NGX versions don't break the client (the `Document.some_future_paperless_field` test pins this behaviour).
+- **Tool icons come from `Lucide`.** Every tool carries a `Lucide` icon hint so MCP clients that render icons (Claude Desktop) get a coherent visual surface. See `src/paperless_mcp/tools/_icons.py`.
+- **Models accept unknown upstream fields.** `Pydantic` models use lenient validation for list-endpoint responses so newer Paperless-NGX versions do not break the client (the `Document.some_future_paperless_field` test pins this behaviour).
 - **No prompts ship in v1.** `prompts.py` is intentionally empty; prompts land as concrete user-workflow patterns emerge in practice.
 <!-- DOMAIN-END -->

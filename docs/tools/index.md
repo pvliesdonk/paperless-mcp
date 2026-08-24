@@ -10,7 +10,7 @@ for the full tool API.
 
 | Tool | Description |
 |---|---|
-| `list_documents` | List documents with optional filters; OCR `content` stripped by default (`include_content=True` to opt in). `notes[].note` and `custom_fields[].value` are always stripped — fetch them via single-document endpoints. |
+| `list_documents` | List documents with optional filters; OCR `content` stripped by default (`include_content=True` to opt in). `notes[].note` and `custom_fields[].value` are always stripped. Fetch them via single-document endpoints. |
 | `search_documents` | Full-text and filtered document search; OCR `content` stripped by default (`include_content=True` to opt in). `notes[].note` and `custom_fields[].value` are always stripped on hits. |
 | `get_document` | Retrieve document metadata by ID; OCR `content` stripped by default (`include_content=True` to opt in) |
 | `get_document_content` | Retrieve the plain-text content of a document |
@@ -21,13 +21,12 @@ for the full tool API.
 | `get_document_notes` | List notes attached to a document |
 | `add_document_note` | Add a note to a document |
 | `get_document_history` | Retrieve audit log for a document |
-| `create_download_link` | Generate a time-limited download URL |
 
-`get_document`, `list_documents`, `search_documents`, and `update_document` include a `web_url` field pointing to the document in the Paperless UI (e.g. `https://paperless.example.com/documents/42/`). Set `PAPERLESS_MCP_PAPERLESS_PUBLIC_URL` if the public URL differs from the API URL; otherwise the API URL is used.
+`get_document`, `list_documents`, `search_documents`, and `update_document` include a `web_url` field pointing to the document in the Paperless UI, such as `https://paperless.example.com/documents/42/`. Set `PAPERLESS_MCP_PAPERLESS_PUBLIC_URL` if the public URL differs from the API URL; otherwise the API URL is used.
 
 ### Pagination
 
-All paginated tools return `next`/`previous` as bare `page=N` markers (or `None`). Upstream Paperless URLs are normalised away so the internal hostname never leaks into MCP responses; both server-paginated (documents, tags, ...) and client-paginated (tasks) endpoints now share a single shape. Callers pass `page=N` explicitly to fetch subsequent pages.
+All paginated tools return `next`/`previous` as bare `page=N` markers (or `None`). Upstream Paperless URLs are normalised away so the internal hostname never leaks into MCP responses. Both server-paginated (documents, tags, and similar endpoints) and client-paginated (tasks) endpoints now share a single shape. Callers pass `page=N` explicitly to fetch subsequent pages.
 
 ## Tag tools
 
@@ -70,13 +69,13 @@ All paginated tools return `next`/`previous` as bare `page=N` markers (or `None`
 | `update_custom_field` | Update a custom field |
 | `delete_custom_field` | Delete a custom field |
 
-### extra_data by data_type
+### Additional data by type
 
-The `extra_data` field shape depends on the custom field's `data_type`. Refer to these shapes when using `create_custom_field` and `update_custom_field`:
+The additional-data field shape depends on the custom field type. Refer to these shapes when using `create_custom_field` and `update_custom_field`:
 
-| `data_type` | `extra_data` shape / example | Notes |
+| Type | Additional-data shape / example | Notes |
 |---|---|---|
-| `string`, `longtext`, `integer`, `boolean`, `float`, `date`, `url`, `documentlink` | — (unused) | Omit or pass `null` |
+| `string`, `longtext`, `integer`, `boolean`, `float`, `date`, `url`, `documentlink` | (unused) | Omit or pass `null` |
 | `monetary` | `{"default_currency": "USD"}` | Optional ISO-4217 currency code; Paperless accepts `null`/absent |
 | `select` | `{"select_options": [{"label": "Low"}, {"label": "Medium"}]}` | **Required** on create. Paperless assigns each option a stable `id` on creation. On update, re-use existing `id` values to preserve document values. |
 
@@ -98,7 +97,7 @@ in the README env-var table).
 
 | Tool | Description |
 |---|---|
-| `list_tasks` | List background Celery tasks. Paginates (`page`, `page_size` up to 100). Defaults to unacknowledged tasks only — pass `include_acknowledged=True` to include acknowledged tasks, or `acknowledged=True` to return only acknowledged ones. |
+| `list_tasks` | List background Celery tasks. Paginates (`page`, `page_size` up to 100). Defaults to unacknowledged tasks only. Pass `include_acknowledged=True` to include acknowledged tasks, or `acknowledged=True` to return only acknowledged ones. |
 | `get_task` | Get a task by UUID |
 | `wait_for_task` | Poll until a task reaches a terminal state or times out |
 

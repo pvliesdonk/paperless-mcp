@@ -83,11 +83,3 @@ class BulkEditResult(BaseModel):
 class UploadTaskAcknowledgement(BaseModel):
     model_config = ConfigDict(extra="allow")
     task_id: str
-
-
-class DownloadLink(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-    download_url: str
-    expires_in_seconds: int
-    content_type: str
-    filename: str
