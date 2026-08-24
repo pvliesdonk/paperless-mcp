@@ -27,7 +27,7 @@ With this server mounted in an MCP client (Claude, etc.), you can:
 - **"Tag these three documents as 'reviewed' and move them to the Accounting correspondent."** Uses `bulk_edit_documents` in a single call.
 - **"Upload this PDF and wait until OCR finishes."** Composes `upload_document` + `wait_for_task` so the assistant only reports back once the document is indexed.
 - **"What changed on document 4213 in the last week?"** Reads `paperless://documents/4213/history` and summarises the audit trail.
-- **"Give me a time-limited link to the original file for document 982."** Calls `create_download_link` — the URL is valid for `PAPERLESS_MCP_DOWNLOAD_LINK_TTL_SECONDS` and does not expose the API token.
+- **"Give me a time-limited link to the original file for document 982."** Calls `create_download_link(ref="982")` — the URL is valid for `PAPERLESS_MCP_TRANSFER_TTL_DEFAULT_S` and does not expose the API token.
 <!-- DOMAIN-END -->
 
 <!-- ===== TEMPLATE-OWNED SECTIONS BELOW — DO NOT EDIT; CHANGES WILL BE OVERWRITTEN ON COPIER UPDATE ===== -->
@@ -103,7 +103,6 @@ All settings come from environment variables with the `PAPERLESS_MCP_` prefix.
 | `PAPERLESS_MCP_PAPERLESS_PUBLIC_URL` | *(same as `PAPERLESS_MCP_PAPERLESS_URL`)* | Public-facing Paperless UI URL used to construct user-visible links (e.g. `web_url`, `share_url`). Defaults to the API URL when unset. |
 | `PAPERLESS_MCP_HTTP_TIMEOUT_SECONDS` | `30` | Per-request HTTP timeout (seconds). |
 | `PAPERLESS_MCP_HTTP_RETRIES` | `2` | Retries (not counting the initial attempt) on 5xx/network errors. |
-| `PAPERLESS_MCP_DOWNLOAD_LINK_TTL_SECONDS` | `300` | TTL of URLs issued by `create_download_link`. Clamped `[30, 3600]`. |
 | `PAPERLESS_MCP_DEFAULT_PAGE_SIZE` | `25` | Default `page_size` for list tools. Clamped `[1, 100]`. |
 | `PAPERLESS_MCP_READ_ONLY` | `false` | When `true`, disables every writable tool. |
 | `PAPERLESS_MCP_INSTRUCTIONS` | *(built-in)* | Operator-supplied description appended to MCP instructions. |
@@ -120,7 +119,9 @@ The following variables are inherited unchanged from [`fastmcp-server-template`]
 | `PAPERLESS_MCP_HOST` | Bind host for HTTP/SSE transport (default `127.0.0.1`). |
 | `PAPERLESS_MCP_PORT` | Bind port for HTTP/SSE transport (default `8000`). |
 | `PAPERLESS_MCP_HTTP_PATH` | URL path prefix for HTTP transport (default `/mcp`). |
-| `PAPERLESS_MCP_BASE_URL` | Public base URL for artifact download links. |
+| `PAPERLESS_MCP_BASE_URL` | Public base URL for `create_download_link` links. Required (over HTTP/SSE) for the tool to be registered at all. |
+| `PAPERLESS_MCP_TRANSFER_TTL_DEFAULT_S` | Default TTL in seconds for a download link when the caller omits `ttl_s` (pvl-core default: `3600`). |
+| `PAPERLESS_MCP_TRANSFER_TTL_MAX_S` | Ceiling in seconds a caller-requested TTL is clamped to (pvl-core default: `86400`). |
 | `PAPERLESS_MCP_OIDC_*` | OIDC provider settings when OIDC auth is enabled. |
 | `PAPERLESS_MCP_BEARER_TOKEN` | Static bearer token for simple token auth. |
 | `PAPERLESS_MCP_LOG_LEVEL` | Log level: `DEBUG`, `INFO`, `WARNING`, `ERROR`. |
@@ -318,7 +319,7 @@ The full domain env-var surface is documented under [Configuration](#configurati
 
 <!-- DOMAIN-START -->
 - **Read-only gating at startup, not per-call.** `PAPERLESS_MCP_READ_ONLY=true` skips registration of every mutating tool so they simply aren't part of the advertised tool surface — clients can't invoke a write that will be refused.
-- **Download links are signed and time-limited.** `create_download_link` mints a short-lived URL (default 300 s, clamped to `[30, 3600]`) that proxies through the MCP server, so the Paperless API token never leaves the host.
+- **Download links are one-time and time-limited.** `create_download_link` mints a short-lived, single-use URL (default `PAPERLESS_MCP_TRANSFER_TTL_DEFAULT_S` = 3600 s) via pvl-core's Transfer API, proxying through the MCP server so the Paperless API token never leaves the host. It's only registered over HTTP/SSE with `PAPERLESS_MCP_BASE_URL` set.
 - **HTTP layer retries idempotent reads only.** `PAPERLESS_MCP_HTTP_RETRIES` applies to GETs on 5xx/network errors; writes never retry automatically, to avoid double-applying bulk edits or uploads.
 - **Tool icons come from Lucide.** Every tool carries a Lucide icon hint so MCP clients that render icons (Claude Desktop) get a coherent visual surface — see `src/paperless_mcp/tools/_icons.py`.
 - **Models accept unknown upstream fields.** Pydantic models use lenient validation for list-endpoint responses so newer Paperless-NGX versions don't break the client (the `Document.some_future_paperless_field` test pins this behaviour).
