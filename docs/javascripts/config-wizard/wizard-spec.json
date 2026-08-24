@@ -194,19 +194,33 @@
       "advancedGroup": "MCP Apps"
     },
     {
+      "id": "tool_visibility",
+      "label": "Tool visibility policy",
+      "help": "Expose all tools, allow only selected tools, or deny selected tools.",
+      "type": "select",
+      "options": [
+        { "value": "all", "label": "Expose all tools" },
+        { "value": "allow", "label": "Allow only selected tools" },
+        { "value": "deny", "label": "Deny selected tools" }
+      ],
+      "advancedGroup": "Tool access"
+    },
+    {
       "id": "tools_allow",
       "label": "Allowed tools (CSV)",
-      "help": "Expose only these comma-separated tool names. Leave blank to expose all tools; do not set TOOLS_DENY at the same time.",
+      "help": "Expose only these comma-separated tool names.",
       "type": "text",
       "var": "PAPERLESS_MCP_TOOLS_ALLOW",
+      "showIf": { "tool_visibility": ["allow"] },
       "advancedGroup": "Tool access"
     },
     {
       "id": "tools_deny",
       "label": "Denied tools (CSV)",
-      "help": "Hide these comma-separated tool names. Leave blank to hide none; do not set TOOLS_ALLOW at the same time.",
+      "help": "Hide these comma-separated tool names.",
       "type": "text",
       "var": "PAPERLESS_MCP_TOOLS_DENY",
+      "showIf": { "tool_visibility": ["deny"] },
       "advancedGroup": "Tool access"
     },
     {

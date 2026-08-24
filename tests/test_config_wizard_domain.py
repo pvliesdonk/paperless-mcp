@@ -17,14 +17,25 @@ invokes ``pytest ... -m browser``.
 from __future__ import annotations
 
 import pytest
+from playwright.sync_api import Page
+
+pytest_plugins = ("test_config_wizard_smoke",)
 
 pytestmark = pytest.mark.browser
 
 
-def test_domain_placeholder() -> None:
-    # Placeholder: the template seeds this file with one skipped test so the
-    # path exists and is kept across copier updates, while neither failing CI
-    # on an empty file nor reporting a hollow "passing" test. Replace this skip
-    # with real domain assertions (field renders, option emits the expected env
-    # var, guard message appears).
-    pytest.skip("No domain-specific wizard tests yet -- add them here.")
+def test_tool_visibility_emits_only_the_selected_list(page: Page) -> None:
+    """Switching policy excludes a stale list from generated configuration."""
+    page.locator("#cfg-wizard .cfg-advanced summary").click()
+    page.select_option('[data-qid="tool_visibility"] select', "allow")
+    page.locator("#cfg-wizard .cfg-advanced summary").click()
+    page.locator('[data-qid="tools_allow"] input').fill("search_documents")
+
+    page.locator("#cfg-wizard .cfg-advanced summary").click()
+    page.select_option('[data-qid="tool_visibility"] select', "deny")
+    page.locator("#cfg-wizard .cfg-advanced summary").click()
+    page.locator('[data-qid="tools_deny"] input').fill("delete_document")
+
+    output = page.inner_text(".cfg-output")
+    assert "PAPERLESS_MCP_TOOLS_DENY=delete_document" in output
+    assert "PAPERLESS_MCP_TOOLS_ALLOW=search_documents" not in output
