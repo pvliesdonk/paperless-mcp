@@ -1,32 +1,27 @@
 # Installation
 
-## Requirements
-
-- Python 3.11 or later
-- A running [Paperless-NGX](https://docs.paperless-ngx.com/) instance (v1.17+)
-- A Paperless API token (Settings → API Token in the Paperless web UI)
-
-## pip / uv
+## From PyPI
 
 ```bash
 pip install pvliesdonk-paperless-mcp
-# or
-uv tool install pvliesdonk-paperless-mcp
 ```
 
-## Docker
+## From Docker
 
 ```bash
-docker run --rm \
-  -e PAPERLESS_MCP_PAPERLESS_URL=http://paperless:8000 \
-  -e PAPERLESS_MCP_API_TOKEN=your-token \
-  ghcr.io/pvliesdonk/paperless-mcp:latest
+docker pull ghcr.io/pvliesdonk/paperless-mcp:latest
 ```
 
-See [Docker deployment](deployment/docker.md) for full options.
-
-## Verify installation
+## From source
 
 ```bash
-paperless-mcp --version
+git clone https://github.com/pvliesdonk/paperless-mcp
+cd paperless-mcp
+uv sync --all-extras --all-groups
 ```
+
+<!-- DOMAIN-INSTALL-EXTRA-START -->
+<!-- Project-specific notes for installation go here; kept across copier
+     update. (E.g. system dependencies, optional extras, custom configuration
+     steps.) -->
+<!-- DOMAIN-INSTALL-EXTRA-END -->

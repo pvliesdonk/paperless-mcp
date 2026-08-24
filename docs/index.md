@@ -2,29 +2,20 @@
 
 Paperless-NGX document management over MCP: search, tag, upload, and read documents; manage tags, correspondents, document types, and custom fields.
 
-## Quick start
+## Getting started
 
-```bash
-pip install pvliesdonk-paperless-mcp
-paperless-mcp serve                                # stdio
-paperless-mcp serve --transport http --port 8000   # HTTP
-```
+- [Installation](installation.md)
+- [Configuration](configuration.md)
+- [Tools](tools/index.md)
 
-## What it does
+<!-- DOMAIN-INDEX-FEATURES-START -->
+## Features
 
-Paperless MCP exposes your [Paperless-NGX](https://docs.paperless-ngx.com/) instance as a set of MCP tools and resources, letting AI assistants:
+- _Add features specific to your server here._
+<!-- DOMAIN-INDEX-FEATURES-END -->
 
-- **Search** documents by full-text query, tags, correspondent, date range, and more
-- **Read** document content, metadata, notes, and history
-- **Upload** new documents and monitor ingestion tasks
-- **Manage** tags, correspondents, document types, custom fields, and storage paths
+<!-- DOMAIN-INDEX-USE-CASES-START -->
+## What you can do
 
-## Configuration
-
-All configuration goes via `PAPERLESS_MCP_*` environment variables. See [Configuration](configuration.md).
-
-## Links
-
-- [FastMCP](https://gofastmcp.com)
-- [Paperless-NGX](https://docs.paperless-ngx.com/)
-- [GitHub](https://github.com/pvliesdonk/paperless-mcp)
+- _Add usage examples here._
+<!-- DOMAIN-INDEX-USE-CASES-END -->

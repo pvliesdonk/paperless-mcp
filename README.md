@@ -1,10 +1,12 @@
 # Paperless MCP
 
-[![CI](https://github.com/pvliesdonk/paperless-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/pvliesdonk/paperless-mcp/actions/workflows/ci.yml) [![codecov](https://codecov.io/gh/pvliesdonk/paperless-mcp/graph/badge.svg)](https://codecov.io/gh/pvliesdonk/paperless-mcp) [![PyPI](https://img.shields.io/pypi/v/pvliesdonk-paperless-mcp)](https://pypi.org/project/pvliesdonk-paperless-mcp/) [![Python](https://img.shields.io/pypi/pyversions/pvliesdonk-paperless-mcp)](https://pypi.org/project/pvliesdonk-paperless-mcp/) [![License](https://img.shields.io/github/license/pvliesdonk/paperless-mcp)](LICENSE) [![Docker](https://img.shields.io/github/v/release/pvliesdonk/paperless-mcp?label=ghcr.io&logo=docker)](https://github.com/pvliesdonk/paperless-mcp/pkgs/container/paperless-mcp) [![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://pvliesdonk.github.io/paperless-mcp/) [![llms.txt](https://img.shields.io/badge/llms.txt-available-brightgreen)](https://pvliesdonk.github.io/paperless-mcp/llms.txt)
+<!-- mcp-name: io.github.pvliesdonk/paperless-mcp -->
+
+[![CI](https://github.com/pvliesdonk/paperless-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/pvliesdonk/paperless-mcp/actions/workflows/ci.yml) [![codecov](https://codecov.io/gh/pvliesdonk/paperless-mcp/graph/badge.svg)](https://codecov.io/gh/pvliesdonk/paperless-mcp) [![PyPI](https://img.shields.io/pypi/v/pvliesdonk-paperless-mcp)](https://pypi.org/project/pvliesdonk-paperless-mcp/) [![Python](https://img.shields.io/pypi/pyversions/pvliesdonk-paperless-mcp)](https://pypi.org/project/pvliesdonk-paperless-mcp/) [![License](https://img.shields.io/github/license/pvliesdonk/paperless-mcp)](LICENSE) [![Docker](https://img.shields.io/github/v/release/pvliesdonk/paperless-mcp?label=ghcr.io&logo=docker)](https://github.com/pvliesdonk/paperless-mcp/pkgs/container/paperless-mcp) [![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://pvliesdonk.github.io/paperless-mcp/) [![llms.txt](https://img.shields.io/badge/llms.txt-available-brightgreen)](https://pvliesdonk.github.io/paperless-mcp/llms.txt) [![Template](https://img.shields.io/badge/dynamic/yaml?url=https://raw.githubusercontent.com/pvliesdonk/paperless-mcp/main/.copier-answers.yml&query=%24._commit&label=template)](https://github.com/pvliesdonk/fastmcp-server-template)
 
 Paperless-NGX document management over MCP: search, tag, upload, and read documents; manage tags, correspondents, document types, and custom fields.
 
-**[Documentation](https://pvliesdonk.github.io/paperless-mcp/)** | **[PyPI](https://pypi.org/project/pvliesdonk-paperless-mcp/)** | **[Docker](https://github.com/pvliesdonk/paperless-mcp/pkgs/container/paperless-mcp)**
+**[Documentation](https://pvliesdonk.github.io/paperless-mcp/)** | **[Config wizard](https://pvliesdonk.github.io/paperless-mcp/latest/configuration-generator/)** | **[PyPI](https://pypi.org/project/pvliesdonk-paperless-mcp/)** | **[Docker](https://github.com/pvliesdonk/paperless-mcp/pkgs/container/paperless-mcp)**
 
 ## Features
 
@@ -51,7 +53,7 @@ If you add optional extras via the `PROJECT-EXTRAS-START` / `PROJECT-EXTRAS-END`
 ```bash
 git clone https://github.com/pvliesdonk/paperless-mcp.git
 cd paperless-mcp
-uv sync --all-extras --dev
+uv sync --all-extras --all-groups
 ```
 
 ### Docker
@@ -60,7 +62,9 @@ uv sync --all-extras --dev
 docker pull ghcr.io/pvliesdonk/paperless-mcp:latest
 ```
 
-A `compose.yml` ships at the repo root as a starting point — copy `.env.example` to `.env`, edit, and `docker compose up -d`.
+A `compose.yml` ships at the repo root as a starting point. Copy `.env.example` to `.env`, edit, and `docker compose up -d`.
+
+To attach a remote Python debugger (development only; the protocol is unauthenticated), see [Remote debugging](docs/deployment/docker.md#remote-debugging).
 
 ### Linux packages (.deb / .rpm)
 
@@ -74,7 +78,9 @@ Download the `.mcpb` bundle from the [GitHub Releases](https://github.com/pvlies
 mcpb install paperless-mcp-<version>.mcpb
 ```
 
-Claude Desktop prompts for required env vars via a GUI wizard — no manual JSON editing needed.
+Claude Desktop prompts for required env vars via a GUI wizard, with no manual JSON editing needed.
+
+For manual Claude Desktop configuration and setup options, see [Claude Desktop deployment](docs/deployment/claude-desktop.md).
 
 ## Quick start
 
@@ -83,7 +89,11 @@ paperless-mcp serve                                # stdio transport
 paperless-mcp serve --transport http --port 8000   # streamable HTTP
 ```
 
-For library usage (embedding the domain logic without the MCP transport), import from the `paperless_mcp` package directly — see `src/paperless_mcp/domain.py` for the entry point scaffold.
+For library usage (embedding the domain logic without the MCP transport), import from the `paperless_mcp` package directly. See the project's domain modules under `src/paperless_mcp/` for entry points.
+
+### Server info
+
+The server registers a built-in `get_server_info` tool (via `fastmcp_pvl_core.register_server_info_tool`) so operators can confirm the deployed version with a single MCP call. The default response carries `server_name`, `server_version`, and `core_version`. Servers that talk to a remote upstream wire upstream version reporting inside the `DOMAIN-UPSTREAM-START` / `DOMAIN-UPSTREAM-END` sentinel in `src/paperless_mcp/server.py`; see [`CLAUDE.md`](CLAUDE.md#server-info-tool-get_server_info) for the wiring pattern.
 
 ## Configuration
 
@@ -248,16 +258,32 @@ Inherited from `fastmcp-pvl-core` across all services built on the template:
 |---|---|---|
 | `FASTMCP_LOG_LEVEL` | `INFO` | Log level for FastMCP internals and app loggers (`DEBUG` / `INFO` / `WARNING` / `ERROR`). The `-v` CLI flag overrides to `DEBUG`. |
 | `FASTMCP_ENABLE_RICH_LOGGING` | `true` | Set to `false` for plain / structured JSON log output. |
-| `PAPERLESS_MCP_EVENT_STORE_URL` | `memory://` | Event store backend for HTTP session persistence — `memory://` (dev), `file:///path` (survives restarts). |
+| `PAPERLESS_MCP_KV_STORE_URL` | `file:///data/state` | Persistent-state backend URL for pvl-core subsystems: `file:///path` (survives restarts), `memory://` (dev/ephemeral). |
 
+Domain-specific variables go below under [Domain configuration](#domain-configuration).
+
+## Authentication
+
+Callers authenticate via a bearer token or OIDC (mutually exclusive). See the [Authentication guide](docs/guides/authentication.md) for setup, mapped multi-subject tokens, OIDC, and troubleshooting.
+
+## Post-scaffold checklist
+
+After `copier copy` and `gh repo create --push`:
+
+1. **Fill in the DOMAIN blocks** (every section marked with a `DOMAIN` sentinel comment) in this README and in `CLAUDE.md`.
+2. Configure GitHub secrets (see below).
+3. Install dev + docs tooling: `uv sync --all-extras --all-groups`.
+4. Install pre-commit hooks: `uv run pre-commit install`.
+5. Run the gate locally: `uv run pytest -x -q && uv run ruff check --fix . && uv run ruff format . && uv run mypy src/ tests/`.
+6. Push the first commit. CI should be green.
 ## GitHub secrets
 
 CI workflows reference three repository secrets. Configure them via **Settings → Secrets and variables → Actions** or with `gh secret set`:
 
 | Secret | Used by | How to generate |
 |---|---|---|
-| `RELEASE_TOKEN` | `release.yml`, `copier-update.yml` | Fine-grained PAT at <https://github.com/settings/personal-access-tokens/new> with `contents: write` and `pull_requests: write` (the `copier-update` cron opens PRs). Scoped to this repo. |
-| `CODECOV_TOKEN` | `ci.yml` | <https://codecov.io> — sign in with GitHub, add the repo, copy the upload token from the repo settings page. |
+| `RELEASE_TOKEN` | `release.yml`, `copier-update.yml`, `renovate.yml`, `bootstrap.yml` | Fine-grained PAT at <https://github.com/settings/personal-access-tokens/new> with `contents: write`, `pull_requests: write`, and `administration: write` (bootstrap sets branch protection + auto-merge). Scoped to this repo. |
+| `CODECOV_TOKEN` | `ci.yml` | <https://codecov.io>: sign in with GitHub, add the repo, copy the upload token from the repo settings page. |
 | `CLAUDE_CODE_OAUTH_TOKEN` | `claude.yml`, `claude-code-review.yml` | Run `claude setup-token` locally and paste the result. |
 
 ```bash
@@ -266,7 +292,13 @@ gh secret set CODECOV_TOKEN
 gh secret set CLAUDE_CODE_OAUTH_TOKEN
 ```
 
-`GITHUB_TOKEN` is auto-provided — no action needed.
+> Dependency updates are handled by **Renovate** (`renovate.yml`), which reuses
+> `RELEASE_TOKEN`. It maintains `uv.lock` and auto-merges patch/minor bumps once
+> the `CI Success` check is green; `bootstrap.yml` enables auto-merge and branch
+> protection on first push. GitHub Actions are updated in the copier template
+> and arrive via `copier update`, not per-repo.
+
+`GITHUB_TOKEN` is auto-provided; no action needed.
 
 ## Local development
 
@@ -290,14 +322,14 @@ Pre-commit runs a subset of the gate on each commit; see `.pre-commit-config.yam
 
 ```bash
 rm -rf .venv
-uv sync --all-extras --dev
+uv sync --all-extras --all-groups
 ```
 
 `uv run python -m pytest` also works as a one-shot workaround (bypasses the stale entry-script shim).
 
 ### `uv.lock` refresh after `copier update`
 
-When `copier update` introduces new dependencies (e.g. a new extra added to `pyproject.toml.jinja`), CI runs `uv sync --frozen` which fails against a stale lockfile. Run `uv lock` locally and commit the refreshed `uv.lock` alongside accepting the copier-update PR.
+When `copier update` introduces new dependencies (such as a new extra added to `pyproject.toml.jinja`), CI runs `uv sync --frozen` which fails against a stale lockfile. Run `uv lock` locally and commit the refreshed `uv.lock` alongside accepting the copier-update PR.
 
 ## Links
 

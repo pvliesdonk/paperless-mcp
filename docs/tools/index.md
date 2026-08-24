@@ -1,6 +1,10 @@
-# MCP Tools
+# Tools
 
-Paperless MCP exposes the following tools to MCP clients.
+The tools registered in this server are listed below. See the
+[FastMCP tools documentation](https://gofastmcp.com/servers/tools)
+for the full tool API.
+
+<!-- DOMAIN-TOOLS-LIST-START -->
 
 ## Document tools
 
@@ -104,3 +108,4 @@ in the README env-var table).
 |---|---|
 | `get_statistics` | Retrieve Paperless system statistics |
 | `get_remote_version` | Check the Paperless-NGX version and update status |
+<!-- DOMAIN-TOOLS-LIST-END -->
