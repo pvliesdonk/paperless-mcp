@@ -3,11 +3,6 @@ name: Documentation
 on:
   push:
     branches: [main]
-    # Tag-push is a SMOKE TEST: it runs `build` only (confirms docs still
-    # compile against a release tag) — the `upload-artifact` and `deploy`
-    # steps below are gated on `github.event_name == 'release'`, so actual
-    # GitHub Pages deployment still only happens via the release event.
-    tags: ["v*"]
   pull_request:
     branches: [main]
   release:
@@ -17,30 +12,30 @@ on:
 permissions:
   contents: read
 
-# Include github.event_name so tag-push and release runs don't share a
-# concurrency key — without this, the tag-push run fired by ``git push``
-# and the release run fired by ``release:published`` collide on the same
-# ref+workflow key and `cancel-in-progress: true` cancels whichever
-# arrived first (usually the one carrying the deployment).
+# Include event_name so push/PR/release runs on the same ref get separate
+# concurrency buckets and don't cancel each other.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
   cancel-in-progress: true
 
 jobs:
   build:
+    # Validation only: strict docs build. Never deploys; publishing happens
+    # in `deploy` on release:published.
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
-          # On release events the triggering tag may move after the workflow is
-          # queued (the release workflow pushes a version-bump commit and
-          # updates the tag). Checkout main explicitly on releases to avoid the
-          # "ref does not point to the expected commit" error from
-          # actions/checkout's SHA-verification.
-          ref: ${{ github.event_name == 'release' && 'main' || github.ref }}
+          # On release events, build the released tag: the release may have
+          # been cut from a release/X.Y branch, where `main` describes code
+          # that is not in the release.  The tag is safe to build since the
+          # version stamps land inside the merged release PR the tag points
+          # at (knope + scripts/stamp_manifests.py) — tags never move.
+          ref: ${{ github.event_name == 'release' && github.event.release.tag_name || github.ref }}
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v8.1.0
+        uses: astral-sh/setup-uv@v8.2.0
         with:
           version: "latest"
 
@@ -48,28 +43,156 @@ jobs:
         run: uv python install 3.12
 
       - name: Install dependencies
-        run: uv sync --extra docs --frozen
+        run: uv sync --no-default-groups --group docs --frozen
 
       - name: Build documentation
         run: uv run mkdocs build --strict
 
-      - name: Upload artifact
-        if: github.event_name == 'release'
-        uses: actions/upload-pages-artifact@v5
+      - name: Install browser test deps
+        run: uv sync --no-default-groups --all-extras --group docs --group browser --frozen
+
+      # Playwright's browser archives only change when the pinned version
+      # does, so cache them rather than pulling ~300 MB from the CDN each run.
+      # `playwright install` checks this directory itself and skips the
+      # download when it is populated, so no cache-hit conditional is needed.
+      - name: Cache Playwright browsers
+        uses: actions/cache@v6
         with:
-          path: site/
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('uv.lock') }}
+          restore-keys: playwright-${{ runner.os }}-
+
+      # Split from the dependency install below, which is the unreliable half.
+      # This half only talks to Playwright's CDN, so the browser the tests need
+      # no longer depends on apt being reachable.
+      - name: Install Chromium
+        timeout-minutes: 8
+        run: uv run playwright install chromium
+
+      # apt on the hosted runners intermittently stalls (template#430, and
+      # upstream actions/runner-images#11347 / microsoft/playwright#34297, both
+      # unresolved).  On ubuntu-latest this step installs font packages only —
+      # the Chromium shared libraries already ship on the image — so a mirror
+      # outage should cost glyph coverage for CJK/Cyrillic/Thai text, not the
+      # whole job.  The failure stays visible in the log rather than silent.
+      #
+      # Projects doing visual or screenshot comparison, where fallback glyphs
+      # would be a real regression, should drop `continue-on-error` here.
+      - name: Install Chromium system dependencies (fonts)
+        timeout-minutes: 5
+        continue-on-error: true
+        run: uv run playwright install-deps chromium
+
+      - name: Run config-wizard browser tests
+        # Both the template-owned smoke suite and the project-owned domain suite
+        # (test_config_wizard_domain.py). -m browser selects the browser-marked
+        # tests in each; the seeded domain placeholder is skipped until a
+        # consumer replaces it with real assertions.
+        run: uv run pytest tests/test_config_wizard_smoke.py tests/test_config_wizard_domain.py -v -m browser
 
   deploy:
-    if: github.event_name == 'release'
-    permissions:
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
+    # Publish versioned docs with mike, serving from the gh-pages branch:
+    #   stable release -> version <major.minor>; the `latest` alias (and
+    #                     set-default) move ONLY when the release is at least
+    #                     the current `latest` — a backport patch cut from an
+    #                     old release/X.Y updates its own minor's page and
+    #                     never repoints `latest` at the older series
+    #   push to main   -> single rolling `unstable` version: the docs face of
+    #                     the edge channel, following merged code continuously
+    #   rc prerelease  -> no deploy; rcs are rare branch-scoped stabilisation
+    #                     builds whose docs ship when the stable ships
+    #
+    # One-time setup before the first deploy (per-project, cannot be templated):
+    #   1. Seed gh-pages:
+    #        uv run mike deploy --push --update-aliases unstable --title "unstable (<ver>)"
+    #   2. Repo Settings -> Pages -> Deploy from a branch -> gh-pages / (root).
+    #   Order matters: seed (1) before switching source (2) so the site is never empty.
+    if: github.event_name == 'push' || (github.event_name == 'release' && !github.event.release.prerelease)
     needs: build
+    # Separate buckets per trigger: rolling-unstable deploys may cancel each
+    # other (only the newest merge matters) but must never cancel a pending
+    # release deploy, which GitHub's one-pending-per-group rule would allow in
+    # a shared bucket.  Cross-bucket gh-pages pushes are reconciled by the
+    # fetch-reset-retry loop in the publish step.
+    concurrency:
+      group: ${{ github.workflow }}-deploy-${{ github.event_name }}
+      cancel-in-progress: ${{ github.event_name == 'push' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
     steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v5
+      # `needs: build` is a sequencing gate only — mike drives its own
+      # build internally; no artifact is passed from the build job.
+      - uses: actions/checkout@v7
+        with:
+          # Full history required: mike reads and pushes the gh-pages branch.
+          fetch-depth: 0
+          # Release deploys build the released tag (see the build job's ref
+          # comment); push deploys build the pushed main commit.
+          ref: ${{ github.event_name == 'release' && github.event.release.tag_name || github.ref }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8.2.0
+        with:
+          version: "latest"
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Install dependencies
+        run: uv sync --no-default-groups --group docs --frozen
+
+      - name: Configure git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      # No notes overlay here (template#419): the release-notes page travels
+      # inside the release PR, so the tagged tree this deploy builds already
+      # carries its own page — the tag is the source of truth.  A page
+      # edited on the default branch AFTER a release's docs deployed is
+      # refreshed by release-notes-publish.yml's redeploy instead.
+      - name: Publish versioned docs
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          # NOTE: deploy_docs is called from an `if` condition, where bash
+          # suppresses errexit — every failure path must propagate explicitly
+          # (bare `return` and the `&&` chain below), or a failed deploy would
+          # read as success.
+          deploy_docs() {
+            if [ "$EVENT" = "push" ]; then
+              uv run mike deploy --push unstable --title "unstable (${GITHUB_SHA:0:7})"
+              return
+            fi
+            version="${TAG#v}"
+            minor="$(echo "$version" | cut -d. -f1-2)"
+            # Order-aware `latest`: read which minor currently holds the alias
+            # from mike's manifest on gh-pages. Empty (no gh-pages yet, or no
+            # alias) means first release — claim it.
+            current="$(git cat-file -p origin/gh-pages:versions.json 2>/dev/null \
+              | python3 -c 'import json,sys; vs=json.load(sys.stdin); print(next((v["version"] for v in vs if "latest" in (v.get("aliases") or [])), ""))' \
+              || true)"
+            if [ -z "$current" ] || [ "$(printf '%s\n%s\n' "$current" "$minor" | sort -V | tail -1)" = "$minor" ]; then
+              uv run mike deploy --push --update-aliases --title "$version" "$minor" latest \
+                && uv run mike set-default --push latest
+            else
+              uv run mike deploy --push --title "$version" "$minor"
+            fi
+          }
+          # Deploys from the push and release buckets can race on gh-pages;
+          # on a rejected push, re-sync the local gh-pages ref to the remote
+          # and redo the deploy on the fresh tip.
+          for attempt in 1 2 3; do
+            git fetch origin gh-pages || true
+            if git rev-parse -q --verify refs/remotes/origin/gh-pages > /dev/null; then
+              git update-ref refs/heads/gh-pages refs/remotes/origin/gh-pages
+            fi
+            if deploy_docs; then
+              exit 0
+            fi
+          done
+          echo "::error::docs deploy failed after 3 attempts"
+          exit 1

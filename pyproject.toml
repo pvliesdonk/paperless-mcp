@@ -16,8 +16,37 @@ classifiers = [
     "License :: Other/Proprietary License",  # starter: TODO update when you pick a license (see LICENSE)
 ]
 dependencies = [
-    "fastmcp-pvl-core>=1.0,<2",
+    # >=4.11.3 for ServerConfig.oidc_advertised_scopes, which
+    # config-presentation.yml names: the config-surface generator rejects a
+    # presentation entry for a var core does not declare, so generation fails
+    # outright wherever an older core is resolved.  The field is the operator
+    # override for the scopes pvl-core advertises to MCP clients in
+    # protected-resource metadata — `openid offline_access` by default
+    # (pvl-core #280).  Before it, the advertised set was derived from
+    # oidc_required_scopes, which multi mode requires to be empty, so clients
+    # requested no scopes at all, the grant carried no refresh token, and
+    # every session ended at access-token expiry needing a human at a browser.
+    #
+    # 4.11.2 was the previous floor, for build_instructions without the
+    # read_only keyword: 4.11.1 declares that argument required and 4.11.2
+    # rejects it, so the floor and the server.py call site had to move in one
+    # change (#443).  4.11.2 also makes FetchResult.final_url mandatory, so a
+    # consumer constructing one — a project's test fakes included — must pass
+    # it from that floor on.
+    #
+    # 4.11.0 was the floor before that, for configure_task_backend +
+    # ServerConfig.tasks_url (the background-task backend surface, ADR 0002
+    # §4), which server.py wires unconditionally.  4.11.0 also moves
+    # fastmcp[tasks] into pvl-core's BASE dependencies, so pydocket arrives
+    # transitively — no extra to declare here, and no packaging plumbing.
+    # 4.10.1 was the floor for apply_tool_visibility, named in place of the
+    # 4.10.0 that was tagged but never reached PyPI: the generator resolves
+    # this whole constraint rather than the floor alone (#335), but a floor
+    # naming a release nobody can install is still a trap for anyone pinning
+    # to it.
+    "fastmcp-pvl-core>=4.11.3,<5",
     "typer>=0.12",
+
     # PROJECT-DEPS-START — add domain dependencies below; kept across copier update
     "httpx>=0.27",
     "pydantic-settings>=2.4",
@@ -26,13 +55,15 @@ dependencies = [
 
 [project.optional-dependencies]
 # PROJECT-EXTRAS-START — add domain-specific optional-dependency groups below; kept across copier update
+# Pulls debugpy transitively via fastmcp-pvl-core's [debug] extra.  The
+# version range is inherited from the [project] dependency on
+# fastmcp-pvl-core above; pip resolves a single, consistent version.
+debug = ["fastmcp-pvl-core[debug]"]
 # PROJECT-EXTRAS-END
 
-docs = [
-    "mkdocs-material>=9",
-    "mkdocstrings[python]>=0.28",
-]
-
+# Tooling lives under PEP 735 [dependency-groups] (not [project.optional-dependencies])
+# so it never ships to PyPI consumers and never lands in the security-audit input.
+[dependency-groups]
 dev = [
     "pytest>=8",
     "pytest-asyncio>=0.24",
@@ -42,7 +73,28 @@ dev = [
     "mypy>=1.11",
     "pre-commit>=3",
     "pip-audit>=2.7",
+<<<<<<< before updating
     "respx>=0.21",
+=======
+    "jsonschema>=4.18",
+    # scripts/gen_config_surface.py imports yaml. It arrived transitively via
+    # mkdocs-material in the `docs` group, so a plain `uv sync` left it out
+    # and the generator fell back to its network bootstrap — slower, offline-
+    # hostile, and liable to resolve a different fastmcp-pvl-core than this
+    # project pins (#262). Declared here so the requirement is stated.
+    "pyyaml>=6",
+]
+
+docs = [
+    "mike>=2",
+    "mkdocs-material>=9.7.6",
+    "mkdocstrings[python]>=0.28",
+    "mkdocs-llmstxt>=0.5",
+]
+
+browser = [
+    "pytest-playwright>=0.5",
+>>>>>>> after updating
 ]
 
 [project.scripts]
@@ -55,7 +107,19 @@ Issues = "https://github.com/pvliesdonk/paperless-mcp/issues"
 Changelog = "https://github.com/pvliesdonk/paperless-mcp/blob/main/CHANGELOG.md"
 
 [build-system]
-requires = ["hatchling"]
+# Bounded on purpose, at the minor.  hatchling emits the newest core-metadata
+# version it knows, and the publisher's twine refuses metadata it does not
+# know -- an invariant spanning this file and release.yml's
+# gh-action-pypi-publish pin.  Unpinned, this side moves on hatchling's
+# release schedule rather than on anyone's decision, and the break lands at
+# release time in every project at once (#479).
+#
+# The ceiling has to bind at the minor, because that is where the metadata
+# version moves: 1.27 took it to 2.4 and 1.32 took it to 2.5.  A `<2` ceiling
+# would have stopped neither, so it buys the look of a guard without one.
+# Patch releases stay open; a minor bump is a deliberate edit here, paired
+# with a publisher that accepts whatever the new minor emits.
+requires = ["hatchling>=1.32,<1.33"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
@@ -77,6 +141,7 @@ ignore = ["E501"]
 # FastMCP dependency injection pattern — B008 is a false positive here.
 # Context/FastMCP/Service imports must stay runtime (not TYPE_CHECKING) for
 # DI resolution — TC001/TC002/TC003.
+<<<<<<< before updating
 "src/paperless_mcp/cli.py" = ["B008"]
 "src/paperless_mcp/server.py" = ["TC003"]
 "src/paperless_mcp/_server_deps.py" = ["B008", "TC002", "TC003"]
@@ -99,6 +164,52 @@ ignore = ["E501"]
 # PaperlessHTTP is stored as self._http at runtime; TracebackType used in __aexit__.
 "src/paperless_mcp/client/*.py" = ["TC001", "TC002", "TC003"]
 # Add project-specific overrides below as needed.
+=======
+
+# Template-managed: the structural diff-gate adds `S` (security) on the diff
+# pass, so the shipped structural-gate test would self-block: its asserts trip
+# S101, and its bare-name `git` call trips S607 (a partial executable path —
+# the `sys.executable -m ...` calls are NOT flagged). S603 (subprocess use) is
+# included defensively: inert in current ruff but emitted by some versions.
+# Ignoring all three in tests keeps the gate from self-blocking on its own test
+# module; all three are safe in test code. No-op for the base whole-repo select
+# (which excludes S). If your project needs its own tests/** ignores, EXTEND
+# this list in place — do not add a second "tests/**" key (duplicate TOML key).
+"tests/**" = ["S101", "S603", "S607"]
+# The config-surface generator's bootstrap re-execs itself under `uv run`
+# (os.execvpe with a `shutil.which`-resolved absolute path — see
+# ensure_core_available). S606 flags any no-shell process start for review;
+# here the no-shell form is the safer one, and a `# noqa` instead of this
+# entry would trip RUF100 on the whole-repo pass, where `S` isn't selected.
+"scripts/gen_config_surface.py" = ["S606"]
+# The release stamper stages its rewrites with a fixed-argv `git add`
+# (subprocess with a list, never a shell). S607 flags the bare `git` name
+# (a partial executable path) and S603 the subprocess call itself; both are
+# safe here and would otherwise trip every adopter's structural diff-gate
+# the first time an update touches the template-owned parts of the script.
+"scripts/stamp_manifests.py" = ["S603", "S607"]
+
+# PROJECT-RUFF-IGNORES-START — replace, extend, or override the entries below
+# for your project's real source/test paths (split _server_apps.py into
+# per-domain modules, rename tests, add per-file overrides as needed); kept
+# across copier update.
+# PLR0913 (too-many-args) is ignored on the DI/wiring modules below: FastMCP
+# inflates their arg counts with `Context` + `Depends()` injections, so the
+# structural diff-gate would flag every new tool/resource/prompt and make
+# `# noqa: PLR0913` routine. It only bites when enable_structural_gate is on
+# (PLR0913 isn't in the base select); domain modules keep the check, and
+# C901/PLR0912/PLR0915 still catch a genuinely complex tool here.
+"src/paperless_mcp/cli.py" = ["B008", "PLR0913"]
+"src/paperless_mcp/_server_deps.py" = ["B008", "TC002", "TC003", "PLR0913"]
+"src/paperless_mcp/_server_apps.py" = ["B008", "TC001", "TC002", "PLR0913"]
+"src/paperless_mcp/tools.py" = ["B008", "TC001", "TC002", "PLR0913"]
+"src/paperless_mcp/resources.py" = ["B008", "TC001", "TC002", "PLR0913"]
+"src/paperless_mcp/prompts.py" = ["B008", "TC002", "PLR0913"]
+"tests/conftest.py" = ["TC002", "TC003"]
+"tests/test_smoke.py" = ["TC002", "TC003"]
+"tests/test_tools.py" = ["TC002"]
+# PROJECT-RUFF-IGNORES-END
+>>>>>>> after updating
 
 [tool.ruff.lint.isort]
 known-first-party = ["paperless_mcp"]
@@ -107,12 +218,31 @@ known-first-party = ["paperless_mcp"]
 quote-style = "double"
 indent-style = "space"
 
+
+# Structural-gate thresholds. These rules are NOT in the whole-repo `select`
+# above — they apply only on the diff via the structural gate's
+# `--extend-select` (see .pre-commit-config.yaml / ci.yml). Values are ruff
+# defaults, surfaced here as editable policy constants.
+[tool.ruff.lint.mccabe]
+max-complexity = 10
+
+[tool.ruff.lint.pylint]
+max-args = 5
+max-branches = 12
+max-returns = 6
+max-statements = 50
+
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = ["--strict-markers", "-ra"]
 asyncio_mode = "auto"
 markers = [
+<<<<<<< before updating
     "integration: live Paperless-NGX integration tests (opt-in)",
+=======
+    "browser: end-to-end test that drives a headless browser (requires the 'browser' dependency group + 'playwright install chromium')",
+>>>>>>> after updating
 ]
 
 [tool.coverage.run]
@@ -144,6 +274,7 @@ no_implicit_optional = true
 module = ["fastmcp_pvl_core", "fastmcp_pvl_core.*"]
 ignore_missing_imports = true
 
+<<<<<<< before updating
 # Relax strict typing for the existing test suite — predates the template's
 # mypy-on-tests expansion.  Newly scaffolded tests (tests/test_cli.py) remain
 # fully typed; legacy unit tests can be annotated incrementally.  Module
@@ -162,6 +293,11 @@ disallow_untyped_defs = false
 disallow_incomplete_defs = false
 check_untyped_defs = false
 
+=======
+[[tool.mypy.overrides]]
+module = ["jsonschema", "jsonschema.*"]
+ignore_missing_imports = true
+>>>>>>> after updating
 
 [tool.pyright]
 # Point Pyright at the uv-managed venv so editor diagnostics resolve
@@ -172,26 +308,3 @@ pythonVersion = "3.11"
 # src-layout editable installs use a .pth shim that Pyright does not execute;
 # point Pyright at src/ directly so IDE import resolution matches runtime.
 extraPaths = ["src"]
-
-[tool.semantic_release]
-version_toml = ["pyproject.toml:project.version"]
-commit_parser = "angular"
-tag_format = "v{version}"
-# Bump versioned manifests (server.json) inside the release commit rather
-# than in a follow-up commit + force-retag.  Extend scripts/bump_manifests.py
-# if your project adds more lockstep manifests (plugin.json, .mcp.json, ...).
-build_command = "python scripts/bump_manifests.py"
-# PSR stages and commits files listed in `assets` together with pyproject.toml
-# and CHANGELOG.md, so the release tag points at a single commit containing
-# all version-coupled files.  Add ".claude-plugin/plugin/.claude-plugin/plugin.json"
-# and ".claude-plugin/plugin/.mcp.json" once your project scaffolds them.
-assets = [
-    "server.json",
-]
-
-[tool.semantic_release.changelog]
-changelog_file = "CHANGELOG.md"
-
-[tool.semantic_release.commit_parser_options]
-minor_tags = ["feat"]
-patch_tags = ["fix", "perf"]

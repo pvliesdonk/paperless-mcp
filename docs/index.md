@@ -4,6 +4,7 @@ Paperless-NGX document management over MCP: search, tag, upload, and read docume
 
 ## Quick start
 
+<<<<<<< before updating
 ```bash
 pip install pvliesdonk-paperless-mcp
 paperless-mcp serve                                # stdio
@@ -28,3 +29,20 @@ All configuration goes via `PAPERLESS_MCP_*` environment variables. See [Configu
 - [FastMCP](https://gofastmcp.com)
 - [Paperless-NGX](https://docs.paperless-ngx.com/)
 - [GitHub](https://github.com/pvliesdonk/paperless-mcp)
+=======
+- [Installation](installation.md)
+- [Configuration](configuration.md)
+- [Tools](tools/index.md)
+
+<!-- DOMAIN-INDEX-FEATURES-START -->
+## Features
+
+- _Add features specific to your server here._
+<!-- DOMAIN-INDEX-FEATURES-END -->
+
+<!-- DOMAIN-INDEX-USE-CASES-START -->
+## What you can do
+
+- _Add usage examples here._
+<!-- DOMAIN-INDEX-USE-CASES-END -->
+>>>>>>> after updating

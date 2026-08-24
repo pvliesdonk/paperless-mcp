@@ -1,5 +1,6 @@
 # MCP Tools
 
+<<<<<<< before updating
 Paperless MCP exposes the following tools to MCP clients.
 
 ## Document tools
@@ -104,3 +105,16 @@ in the README env-var table).
 |---|---|
 | `get_statistics` | Retrieve Paperless system statistics |
 | `get_remote_version` | Check the Paperless-NGX version and update status |
+=======
+The tools registered in this server are listed below.
+
+<!-- DOMAIN-TOOLS-LIST-START -->
+## ping
+
+Health-check tool that returns `"pong"` if the service is alive.
+<!-- Replace with this server's real tools — one section per tool with its
+     arguments and behaviour. Register them in
+     src/paperless_mcp/tools.py (see
+     https://gofastmcp.com/servers/tools). Kept across copier update. -->
+<!-- DOMAIN-TOOLS-LIST-END -->
+>>>>>>> after updating

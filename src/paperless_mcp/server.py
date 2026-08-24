@@ -17,12 +17,16 @@ from typing import Any
 
 from fastmcp import FastMCP
 from fastmcp_pvl_core import (
-    ArtifactStore,
     ServerConfig,  # noqa: F401  — re-exported for downstream projects' convenience
+    apply_tool_visibility,
     build_auth,
     build_event_store,  # noqa: F401  — re-exported for downstream projects' convenience
     build_instructions,
+    build_kv_store,  # noqa: F401  — re-exported for downstream projects' convenience
     configure_logging_from_env,
+    configure_task_backend,
+    env,
+    register_server_info_tool,
     resolve_auth_mode,
     wire_middleware_stack,
 )
@@ -50,9 +54,10 @@ def make_server(
     """Construct the Paperless MCP FastMCP server.
 
     Args:
-        transport: ``"stdio"`` / ``"http"`` / ``"sse"``.  HTTP-only
-            features (artifact downloads) are wired only when transport
-            != ``"stdio"``.
+        transport: ``"stdio"`` / ``"http"`` / ``"sse"``.  Gates any
+            transport-specific wiring added in the DOMAIN-WIRING block
+            (e.g. HTTP-only custom routes, which cannot be served under
+            stdio) and appears as ``transport=%s`` in the startup log.
         config: Optional pre-loaded config; default loads from env.
 
     Returns:
@@ -61,6 +66,7 @@ def make_server(
     config = config or ProjectConfig.from_env()
     configure_logging_from_env()
 
+<<<<<<< before updating
     domain_cfg = load_domain_config()
     _client = PaperlessClient(
         base_url=domain_cfg.paperless_url,
@@ -83,6 +89,31 @@ def make_server(
             finally:
                 await _client.aclose()
                 logger.info("client_closed")
+=======
+    # Background-task backend (SEP-1686 / Docket).  Unconditional and
+    # template-owned: pydocket ships in fastmcp-pvl-core's base dependencies,
+    # so the backend is always configurable, and whether this server actually
+    # uses tasks is decided by registering ``task=True`` tools — not by
+    # packaging or by an opt-in switch here.  It mutates fastmcp's
+    # process-global settings, which fastmcp reads lazily at root-lifespan
+    # entry, so doing it inside ``make_server`` covers both CLI paths (
+    # ``server.run(...)`` and the uvicorn ``http_app()`` one).
+    # ``PAPERLESS_MCP_TASKS_URL`` selects the backend; unset, a
+    # ``redis://`` ``PAPERLESS_MCP_KV_STORE_URL`` is reused so one URL
+    # configures every stateful subsystem, and otherwise fastmcp's
+    # ``memory://`` default applies.  The queue name is derived from the env
+    # prefix, so two servers sharing one Redis do not share a queue.
+    configure_task_backend(_ENV_PREFIX, config.server)
+
+    # Operator overrides: SERVER_NAME renames this instance; INSTRUCTIONS
+    # replaces the default instructions text (the latter is the override that
+    # build_instructions' hint advertises). Both fall back when unset/empty.
+    server_name = env(_ENV_PREFIX, "SERVER_NAME", "paperless-mcp")
+    instructions = env(_ENV_PREFIX, "INSTRUCTIONS") or build_instructions(
+        env_prefix=_ENV_PREFIX,
+        domain_line="Paperless-NGX document management over MCP: search, tag, upload, and read documents; manage tags, correspondents, document types, and custom fields.",
+    )
+>>>>>>> after updating
 
     auth = build_auth(config.server)
     auth_mode = resolve_auth_mode(config.server) if auth is not None else "none"
@@ -99,12 +130,15 @@ def make_server(
         pkg_ver = "unknown"
 
     logger.info(
-        "Server config: version=%s name=paperless-mcp auth=%s",
+        "Server config: version=%s name=%s transport=%s auth=%s",
         pkg_ver,
+        server_name,
+        transport,
         auth_mode,
     )
 
     mcp = FastMCP(
+<<<<<<< before updating
         name="paperless-mcp",
         instructions=build_instructions(
             read_only=True,
@@ -112,6 +146,11 @@ def make_server(
             domain_line="Paperless-NGX document management over MCP: search, tag, upload, and read documents; manage tags, correspondents, document types, and custom fields.",
         ),
         lifespan=_lifespan,
+=======
+        name=server_name,
+        instructions=instructions,
+        lifespan=server_lifespan,
+>>>>>>> after updating
         auth=auth,
     )
 
@@ -122,8 +161,85 @@ def make_server(
     register_prompts(mcp)
     register_apps(mcp)
 
-    if transport != "stdio":
-        artifact_store = ArtifactStore(ttl_seconds=3600)
-        ArtifactStore.register_route(mcp, artifact_store)
+    register_server_info_tool(
+        mcp,
+        server_name=server_name,
+        server_version=pkg_ver,
+        # DOMAIN-UPSTREAM-START — wire upstream version reporting for servers
+        # that talk to a remote service (paperless-mcp, etc.). The provider is
+        # a zero-arg callable; the simplest pattern is a module-level upstream
+        # client (typically constructed from env vars at import time) whose
+        # version method is referenced here. ``CurrentContext()`` is a FastMCP
+        # DI marker — it only resolves to a live context when used as a
+        # parameter default in a tool/resource handler, so it cannot be called
+        # directly from a zero-arg provider.
+        # Uncomment the kwargs below as additional arguments to this call:
+        # upstream_version=lambda: _upstream_client.remote_version(),
+        # upstream_label="paperless",
+        # DOMAIN-UPSTREAM-END
+    )
+
+    # DOMAIN-WIRING-START — project-specific wiring (custom HTTP routes,
+    # transforms, mode toggles, alternative middleware, additional registrations);
+    # kept across copier update. Leave empty for projects that don't customise
+    # make_server() beyond the standard scaffold.
+    #
+    # -- Transfer subsystem (capability-link upload + download) ----------------
+    #
+    # Wiring the /transfer/{token} route needs HTTP transport (the route cannot
+    # be served under stdio) and, at build time, base_url — pvl-core raises
+    # ConfigurationError when it is unset, so gate only on the transport and let
+    # that error surface a misconfigured deployment rather than silently
+    # dropping the feature. Requires fastmcp-pvl-core >= 4.8.0.
+    #
+    # First compose a TransferConfig into ProjectConfig (config.py): add
+    # ``TransferConfig`` to its ``from fastmcp_pvl_core import (...)`` block, then
+    # a ``transfer: TransferConfig = field(default_factory=TransferConfig)`` field
+    # in CONFIG-FIELDS and ``transfer=TransferConfig.from_env(_ENV_PREFIX),`` in
+    # CONFIG-FROM-ENV. The second line is required — without it the
+    # PAPERLESS_MCP_TRANSFER_* env vars are ignored and the defaults always win.
+    #
+    # Path 1 — the generic tools, the common case. Registers create_download_link
+    # and create_upload_link with pvl-core's shared metadata (names, icons, tags):
+    #
+    # if transport != "stdio":
+    #     from fastmcp_pvl_core import register_transfer_routes
+    #
+    #     register_transfer_routes(
+    #         mcp,
+    #         config.server,
+    #         config.transfer,          # TransferConfig composed into ProjectConfig
+    #         sink=_my_transfer_sink,   # implements TransferSink (read/write)
+    #         validate=_my_validator,   # TransferValidator: (ref, kind) -> handle
+    #         # download_note/upload_note (optional) append a domain sentence to
+    #         # the generic tool descriptions — context only, no shape change.
+    #     )
+    #
+    # Path 2 — your own tool over the same capability-link machinery, when the
+    # generic pair cannot express it (a different name, a domain-accurate
+    # description, domain-specific parameters). build_transfer_links mounts the
+    # route and returns a minter, registering no tools; your tool validates the
+    # caller ref itself, then mints over the already-validated sink handle:
+    #
+    # if transport != "stdio":
+    #     from fastmcp_pvl_core import build_transfer_links
+    #
+    #     links = build_transfer_links(
+    #         mcp, config.server, config.transfer, sink=_my_transfer_sink
+    #     )
+    #
+    #     @mcp.tool
+    #     async def share_document(doc_id: str) -> dict[str, object]:
+    #         """Mint a one-shot download link for a document."""
+    #         handle = _resolve_and_check(doc_id)  # your validation -> sink handle
+    #         return await links.mint_download(handle)
+    # DOMAIN-WIRING-END
+
+    # Operator tool visibility (PAPERLESS_MCP_TOOLS_ALLOW /
+    # PAPERLESS_MCP_TOOLS_DENY) applies last: fastmcp resolves visibility
+    # transforms in call order, so the operator's lists win over any
+    # visibility calls in the wiring above, and pvl-core's zero-tools-exposed
+    # diagnostic judges the full registered tool set.
+    apply_tool_visibility(mcp, config.server)
 
     return mcp
