@@ -15,6 +15,7 @@ from paperless_mcp.tools import (
     custom_fields,
     document_types,
     documents,
+    downloads,
     saved_views,
     share_links,
     storage_paths,
@@ -36,6 +37,7 @@ def _register_all(mcp: FastMCP, ctx: ToolContext) -> None:
     share_links.register(mcp, ctx)
     tasks.register(mcp, ctx)
     system.register(mcp, ctx)
+    downloads.register(mcp, ctx)
 
 
 def register_tools(
