@@ -1,3 +1,7 @@
+# `pre-commit install` wires both stages so the pre-push structural gate is
+# installed alongside the commit-time hooks.
+default_install_hook_types: [pre-commit, pre-push]
+
 repos:
   - repo: local
     hooks:
@@ -19,9 +23,20 @@ repos:
         name: mypy
         language: system
         entry: uv run mypy
-        files: ^src/
+        files: ^(src|tests)/
+        types: [python]
         pass_filenames: false
-        args: [src/]
+        args: [src/, tests/]
+
+      # Structural-health gate: strict ruff structural rules on changed lines
+      # only (diff vs origin/main), mirroring the CI `structure` job.
+      - id: structural-diff-gate
+        name: structural quality (diff vs origin/main)
+        entry: bash -c 'uv run diff-quality --violations=ruff.check --options="--extend-select=C901,PLR0911,PLR0912,PLR0913,PLR0915,S" --compare-branch=origin/main --fail-under=100'
+        language: system
+        pass_filenames: false
+        types: [python]
+        stages: [pre-push]
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
@@ -31,3 +46,38 @@ repos:
       - id: check-yaml
       - id: check-added-large-files
       - id: check-json
+
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks
+
+  # Vale prose lint for user-facing documentation.
+  - repo: local
+    hooks:
+      - id: vale-sync
+        name: vale sync (download style packages if missing)
+        language: system
+        entry: |
+          bash -c '
+            command -v vale >/dev/null 2>&1 || {
+              echo "vale not on PATH — install: https://vale.sh/docs/install" >&2
+              exit 1
+            }
+            for p in Google proselint write-good ai-tells; do
+              if [ ! -d ".vale/styles/$p" ]; then
+                vale sync || exit 1
+                break
+              fi
+            done
+          '
+        pass_filenames: false
+        files: ^(docs/|\.vale\.ini$)
+        exclude: ^docs/superpowers/
+
+  - repo: https://github.com/vale-cli/vale
+    rev: v3.14.2
+    hooks:
+      - id: vale
+        files: ^(docs/|README\.md$)
+        exclude: ^docs/(superpowers|design|decisions)/
