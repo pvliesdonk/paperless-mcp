@@ -13,7 +13,6 @@ from dataclasses import dataclass, field
 
 from fastmcp_pvl_core import (
     ServerConfig,
-    TransferConfig,
     env,  # noqa: F401  — re-exported so CONFIG-FROM-ENV additions don't need a new import
 )
 
@@ -27,7 +26,8 @@ class ProjectConfig:
     server: ServerConfig = field(default_factory=ServerConfig)
 
     # CONFIG-FIELDS-START — add domain fields below; kept across copier update
-    transfer: TransferConfig = field(default_factory=TransferConfig)
+    # (example)
+    # vault_path: Path = Path("/data/vault")
     # CONFIG-FIELDS-END
 
     @classmethod
@@ -36,6 +36,7 @@ class ProjectConfig:
         return cls(
             server=ServerConfig.from_env(_ENV_PREFIX),
             # CONFIG-FROM-ENV-START — populate domain fields below; kept across copier update
-            transfer=TransferConfig.from_env(_ENV_PREFIX),
+            # (example)
+            # vault_path=Path(env(_ENV_PREFIX, "VAULT_PATH", "/data/vault")),
             # CONFIG-FROM-ENV-END
         )
