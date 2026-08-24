@@ -17,12 +17,12 @@ from typing import Any
 
 from fastmcp import FastMCP
 from fastmcp_pvl_core import (
-    ArtifactStore,
     ServerConfig,  # noqa: F401  — re-exported for downstream projects' convenience
     build_auth,
     build_event_store,  # noqa: F401  — re-exported for downstream projects' convenience
     build_instructions,
     configure_logging_from_env,
+    register_transfer_routes,
     resolve_auth_mode,
     wire_middleware_stack,
 )
@@ -36,6 +36,7 @@ from paperless_mcp.prompts import register_prompts
 from paperless_mcp.resources import register_resources
 from paperless_mcp.tools import register_tools
 from paperless_mcp.tools._context import ToolContext
+from paperless_mcp.tools._transfer_sink import PaperlessTransferSink
 
 logger = logging.getLogger(__name__)
 
@@ -51,8 +52,8 @@ def make_server(
 
     Args:
         transport: ``"stdio"`` / ``"http"`` / ``"sse"``.  HTTP-only
-            features (artifact downloads) are wired only when transport
-            != ``"stdio"``.
+            features (download links) are wired only when transport
+            != ``"stdio"`` and ``PAPERLESS_MCP_BASE_URL`` is set.
         config: Optional pre-loaded config; default loads from env.
 
     Returns:
@@ -107,7 +108,6 @@ def make_server(
     mcp = FastMCP(
         name="paperless-mcp",
         instructions=build_instructions(
-            read_only=True,
             env_prefix=_ENV_PREFIX,
             domain_line="Paperless-NGX document management over MCP: search, tag, upload, and read documents; manage tags, correspondents, document types, and custom fields.",
         ),
@@ -122,8 +122,27 @@ def make_server(
     register_prompts(mcp)
     register_apps(mcp)
 
-    if transport != "stdio":
-        artifact_store = ArtifactStore(ttl_seconds=3600)
-        ArtifactStore.register_route(mcp, artifact_store)
+    # One-time capability-link downloads via pvl-core's Transfer API. HTTP-only
+    # (the /transfer/{token} route needs an HTTP server) and only with base_url
+    # set, since register_transfer_routes raises without a public base URL —
+    # gate on both so a stdio or unconfigured deployment simply omits the
+    # feature rather than failing to start. create_upload_link has no matching
+    # Paperless write operation (upload_document already covers ingestion with
+    # real metadata), so it's removed right after registration.
+    if transport != "stdio" and config.server.base_url:
+        transfer_sink = PaperlessTransferSink(_client)
+        register_transfer_routes(
+            mcp,
+            config.server,
+            config.transfer,
+            sink=transfer_sink,
+            validate=transfer_sink.validate,
+            download_note=(
+                'For this server, ref is a document ID (e.g. "982"), optionally '
+                'suffixed with ":archived" or ":preview" to select a variant '
+                "other than the original file."
+            ),
+        )
+        mcp.local_provider.remove_tool("create_upload_link")
 
     return mcp

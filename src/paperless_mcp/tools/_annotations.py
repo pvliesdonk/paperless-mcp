@@ -98,12 +98,4 @@ ANNOTATION_REGISTRY: dict[str, dict[str, bool]] = {
     "wait_for_task": _READ,
     "get_statistics": _READ,
     "get_remote_version": _READ,
-    # Downloads — mints a new URL each call but kept read-only so it's
-    # available in read-only mode (observe + share).
-    "create_download_link": {
-        "readOnlyHint": True,
-        "destructiveHint": False,
-        "idempotentHint": False,
-        "openWorldHint": True,
-    },
 }
