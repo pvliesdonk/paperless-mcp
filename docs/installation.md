@@ -12,6 +12,8 @@ pip install pvliesdonk-paperless-mcp
 docker pull ghcr.io/pvliesdonk/paperless-mcp:latest
 ```
 
+The `latest` tag is the newest stable release. The rolling `edge` tag tracks every merge to `main` and carries no version identity; see [Image tags](deployment/docker.md#image-tags) for the full list.
+
 ## From source
 
 ```bash

@@ -29,7 +29,9 @@ htmlcov/
 # MkDocs build output
 site/
 
-# Vale downloads style packages; retain only the tracked configuration/vocabulary.
+# Vale-synced style packages (downloaded by `vale sync`). Custom config
+# (vocabularies, ini overrides) under .vale/styles/config/ stays
+# versioned — sync never touches that subtree.
 .vale/styles/*
 !.vale/styles/config/
 
@@ -40,17 +42,17 @@ site/
 # --- Development / ecosystem ignores (don't ship)
 .mcpregistry_*
 .worktrees/
-.superpowers/
 docs/superpowers/
 # Everything under .claude/ is local EXCEPT skills/ — that subtree ships the
 # contributor-facing authoring skill(s), template-owned and re-rendered on
 # copier update (project additions live inside its DOMAIN-AUTHORING sentinel).
 .claude/*
 !.claude/skills/
-# Keep only the root client-local manifest ignored. Plugin manifests are release
-# assets and must remain tracked for clean-checkout version stamping.
-/.mcp.json
+# No trailing slash: `.mcp.json/` would match a *directory* of that name and
+# leave the actual file tracked.
+.mcp.json
 .repowise/
+.superpowers/
 
 # Editor-local config. Deliberately just this one — a contributor's choice of
 # editor is theirs, and this list is not meant to grow into a catalogue of
