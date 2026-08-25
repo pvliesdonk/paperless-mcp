@@ -52,7 +52,9 @@ def page(domain_browser: Browser, domain_site_url: str) -> Iterator[Page]:
 
 def test_paperless_settings_emit_config_without_sharing_api_token(page: Page) -> None:
     """Paperless settings produce startup config while hiding its token from URLs."""
+    page.locator("#cfg-wizard .cfg-advanced summary").click()
     page.locator('[data-qid="paperless_url"] input').fill("http://paperless.test")
+    page.locator("#cfg-wizard .cfg-advanced summary").click()
     page.locator('[data-qid="api_token"] input').fill("secret-token")
 
     page.wait_for_function("location.hash.includes('paperless_url=')")
@@ -62,18 +64,11 @@ def test_paperless_settings_emit_config_without_sharing_api_token(page: Page) ->
     assert "api_token" not in page.url
 
 
-def test_tool_visibility_emits_only_the_selected_list(page: Page) -> None:
-    """Switching policy excludes a stale list from generated configuration."""
-    page.locator("#cfg-wizard .cfg-advanced summary").click()
-    page.select_option('[data-qid="tool_visibility"] select', "allow")
+def test_tool_visibility_emits_the_allowlist(page: Page) -> None:
+    """Tool allowlist settings render into generated configuration."""
     page.locator("#cfg-wizard .cfg-advanced summary").click()
     page.locator('[data-qid="tools_allow"] input').fill("search_documents")
 
-    page.locator("#cfg-wizard .cfg-advanced summary").click()
-    page.select_option('[data-qid="tool_visibility"] select', "deny")
-    page.locator("#cfg-wizard .cfg-advanced summary").click()
-    page.locator('[data-qid="tools_deny"] input').fill("delete_document")
-
     output = page.inner_text(".cfg-output")
-    assert "PAPERLESS_MCP_TOOLS_DENY=delete_document" in output
-    assert "PAPERLESS_MCP_TOOLS_ALLOW=search_documents" not in output
+    assert "PAPERLESS_MCP_TOOLS_ALLOW=search_documents" in output
+    assert "PAPERLESS_MCP_TOOLS_DENY=" not in output

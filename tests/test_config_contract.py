@@ -12,6 +12,7 @@ that silently breaks it fails here rather than in every downstream.
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -19,6 +20,9 @@ import pytest
 
 from paperless_mcp import config as config_module
 from paperless_mcp.config import ProjectConfig
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+WIZARD_SPEC = REPO_ROOT / "docs" / "javascripts" / "config-wizard" / "wizard-spec.json"
 
 
 def _config_text() -> str:
@@ -135,3 +139,15 @@ def test_config_is_frozen_so_validation_must_not_assign() -> None:
         pass
     else:  # pragma: no cover - frozen dataclasses always raise here
         raise AssertionError("ProjectConfig is no longer frozen")
+
+
+def test_generated_wizard_requires_paperless_connection_and_marks_token_secret() -> (
+    None
+):
+    """The shareable wizard config keeps Paperless credentials out of URLs."""
+    spec = json.loads(WIZARD_SPEC.read_text(encoding="utf-8"))
+    questions = {question["id"]: question for question in spec["questions"]}
+
+    assert questions["paperless_url"]["var"] == "PAPERLESS_MCP_PAPERLESS_URL"
+    assert questions["api_token"]["var"] == "PAPERLESS_MCP_API_TOKEN"
+    assert "PAPERLESS_MCP_API_TOKEN" in spec["secretKeys"]

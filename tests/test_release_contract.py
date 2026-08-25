@@ -32,6 +32,7 @@ BUMPER = REPO_ROOT / "scripts" / "bump_manifests.py"
 PYPROJECT = REPO_ROOT / "pyproject.toml"
 PLUGIN_MANIFEST = REPO_ROOT / ".claude-plugin/plugin/.claude-plugin/plugin.json"
 PLUGIN_MCP_CONFIG = REPO_ROOT / ".claude-plugin/plugin/.mcp.json"
+MCPB_MANIFEST = REPO_ROOT / "packaging/mcpb/manifest.json.in"
 SERVER_MANIFEST = REPO_ROOT / "server.json"
 
 # Manifests the template itself bumps, mapped to the marker that proves the
@@ -160,3 +161,29 @@ def test_claude_plugin_manifests_are_tracked_and_version_locked() -> None:
         for server in mcp.values()
         for argument in server["args"]
     )
+
+
+def test_generated_install_manifests_expose_paperless_configuration() -> None:
+    """MCPB and Claude plugin screens map the same required Paperless settings."""
+    mcpb = json.loads(MCPB_MANIFEST.read_text(encoding="utf-8"))
+    plugin = json.loads(PLUGIN_MANIFEST.read_text(encoding="utf-8"))
+    plugin_mcp = json.loads(PLUGIN_MCP_CONFIG.read_text(encoding="utf-8"))
+
+    for manifest in (mcpb, plugin):
+        user_config = manifest.get("user_config", manifest.get("userConfig"))
+        assert user_config["paperless_url"]["required"] is True
+        assert user_config["api_token"]["required"] is True
+        assert user_config["api_token"]["sensitive"] is True
+
+    api_token_reference = "${user_config." + "api_token}"
+    assert (
+        mcpb["server"]["mcp_config"]["env"]["PAPERLESS_MCP_PAPERLESS_URL"]
+        == "${user_config.paperless_url}"
+    )
+    assert (
+        mcpb["server"]["mcp_config"]["env"]["PAPERLESS_MCP_API_TOKEN"]
+        == api_token_reference
+    )
+    env = plugin_mcp["paperless-mcp"]["env"]
+    assert env["PAPERLESS_MCP_PAPERLESS_URL"] == "${user_config.paperless_url}"
+    assert env["PAPERLESS_MCP_API_TOKEN"] == api_token_reference
