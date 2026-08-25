@@ -10,6 +10,7 @@ env_prefix: PAPERLESS_MCP
 github_org: pvliesdonk
 human_name: Paperless MCP
 include_mcp_apps_scaffold: false
+include_claude_plugin: true
 project_name: paperless-mcp
 pypi_name: pvliesdonk-paperless-mcp
 python_module: paperless_mcp
