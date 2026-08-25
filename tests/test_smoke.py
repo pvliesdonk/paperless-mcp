@@ -38,6 +38,7 @@ async def test_tool_allowlist_hides_unlisted_tools(
 ) -> None:
     """Operator tool visibility limits both listings and invocation surfaces."""
     from fastmcp import Client
+    from fastmcp.exceptions import ToolError
 
     monkeypatch.setenv("PAPERLESS_MCP_PAPERLESS_URL", "http://paperless.test")
     monkeypatch.setenv("PAPERLESS_MCP_API_TOKEN", "test-token-smoke")
@@ -45,5 +46,7 @@ async def test_tool_allowlist_hides_unlisted_tools(
     server = make_server()
     async with Client(server) as client:
         tools = await client.list_tools()
+        with pytest.raises(ToolError, match=r"Unknown tool: 'create_tag'"):
+            await client.call_tool("create_tag", {})
 
     assert {tool.name for tool in tools} == {"list_documents"}
