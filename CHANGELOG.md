@@ -5,6 +5,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 <!-- version list -->
 
+## 1.0.2 (2026-08-25)
+
+### Bug Fixes
+
+- rebuild create_download_link on pvl-core's Transfer API (#75)
+
 ## 1.0.2-rc.0 (2026-08-25)
 
 ### Bug Fixes
