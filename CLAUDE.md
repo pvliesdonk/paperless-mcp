@@ -35,7 +35,7 @@ Every PR must pass **all** of the following before merge. Do not open or push a 
 1. **CI passes** — `uv run pytest -x -q` all tests pass
 2. **Lint passes** — run in this exact order: `uv run ruff check --fix .` then `uv run ruff format .` then verify with `uv run ruff format --check .`. Always run format *after* check --fix because check --fix can leave files needing reformatting.
 3. **Type-check passes** — `uv run mypy src/ tests/` reports no errors
-4. **Patch coverage ≥ 80%** — Codecov measures only lines added/changed in the PR diff. Run `uv run pytest --cov=<changed_module> --cov-report=term-missing` and verify new code is exercised. Add tests for every uncovered branch before pushing.
+4. **Patch coverage ≥ 80%** — Codecov measures only lines added/changed in the PR diff. Run `uv run pytest --cov=src/paperless_mcp --cov-report=term-missing` and verify new code is exercised. Use the path form for `--cov`: a dotted module target (e.g. `--cov=paperless_mcp.config`) makes coverage.py import the module speculatively, which leaves an orphaned beartype import hook behind and aborts the whole session at conftest load. Add tests for every uncovered branch before pushing.
 
 5. **Structural quality (diff) passes** — new/changed code must introduce no new structural violations (complexity, too-many-*, security). Enforced on the diff only, so pre-existing code is never blocked. Run before pushing:
    ```bash
@@ -59,7 +59,7 @@ This project ships a `.pre-commit-config.yaml` that runs ruff (check + format), 
 
 - **Never bypass with `--no-verify`.** A failing hook means the same check will fail in CI; fix the underlying issue rather than silencing it.
 
-The config is in `_skip_if_exists`, so domain-specific additions (shellcheck, yamllint, project-specific linters, additional file checks) on top of the shipped defaults survive `copier update`.
+Domain-specific additions (shellcheck, yamllint, project-specific linters, additional file checks) belong between the `DOMAIN-HOOKS` markers at the end of the config, never outside them; hooks inside that block on top of the shipped defaults survive `copier update`.
 
 
 ## Structural health
@@ -83,12 +83,7 @@ uv run --with vulture vulture src/                     # dead-code candidates
 
 Each analyzer is optional and degrades gracefully if absent. `vulture` over-reports on importable/decorated/framework-registered code — **confirm before deleting** and keep a whitelist.
 
-**When you notice decay outside the current change's scope** — a god class forming, a dead branch, a leaking abstraction, a name that no longer matches behaviour, or an audit hotspot — do **not** fix it inline (scope creep) and do **not** pass over it silently. **Open an issue** using this template:
-
-> **What:** the structural problem in one sentence.
-> **Where:** file/symbol and the metric or observation that flagged it.
-> **Why it compounds:** what gets harder or riskier if it's left.
-> **Suggested direction:** a starting point, not a prescribed refactor.
+**When you notice decay outside the current change's scope** — a god class forming, a dead branch, a leaking abstraction, a name that no longer matches behaviour, or an audit hotspot — do **not** fix it inline (scope creep) and do **not** pass over it silently. **Open an issue** using the **Decay** form (`.github/ISSUE_TEMPLATE/decay.yml`): What / Where / Why it compounds / Suggested direction.
 
 Constrain issues to **decay that will compound**, not anything imperfect. The diff-gate blocks new debt; these issues are the refactor-later backlog for pre-existing debt — neither blocks the current PR.
 
@@ -204,13 +199,17 @@ Env var prefix is `PAPERLESS_MCP_` — all env reads go through `fastmcp_pvl_cor
 
 ### Config wizard
 
-`docs/javascripts/config-wizard/wizard-spec.json` drives the guided-setup page. It is **domain-owned and write-once** (`_skip_if_exists`): the runtime (`wizard.js`, `generators.js`, `wizard-spec-schema.json`, the generic tests) is template-owned and re-rendered, but the spec itself is never re-rendered, so it does **not** auto-update when you add config or when the template grows new questions. Reconcile it by hand.
+`docs/javascripts/config-wizard/wizard-spec.json` drives the guided-setup page. It is **generated**, produced by `scripts/gen_config_surface.py` on every `copier copy`/`copier update` and re-verified by `scripts/gen_config_surface.py --check` in CI — never hand-edit it. The runtime (`wizard.js`, `generators.js`, `wizard-spec-schema.json`, the generic tests) is template-owned and re-rendered the same way it always was.
 
-Two rules keep the spec honest:
+To change what the wizard asks:
 
-- **Cover the `ServerConfig` surface.** The seed covers the full `ServerConfig` surface plus logging; the drift test enforces completeness, so no explicit field list needs hand-maintaining here. When you add a domain setting that an operator would plausibly configure, add a question for it. When you adopt a new upstream setting, surface it too.
-- **Coverage is CI-enforced:** `tests/test_config_wizard_drift.py` fails if the wizard offers a var no read site consumes (orphan) or omits a setting the server reads: both `ServerConfig` (via `server_config_env_suffixes()`) and your `ProjectConfig` (via `domain_env_suffixes(ProjectConfig)`, which recurses into any sub-config sections it composes — not just the reads in `ProjectConfig.from_env` itself). Offer every setting; hide niche ones with `advancedGroup`, never by omission. For the coverage check, the only escape is `_COVERED_BY_INFERENCE`, for settings with no dedicated control by design (for example, `AUTH_MODE`, inferred from which auth vars are set). For the orphan check, `FASTMCP_*` vars are exempt: their prefix never matches `PAPERLESS_MCP_`, so they sit outside the coverage check by construction, and they are read by FastMCP itself rather than by project code.
-- **Only offer vars the server actually consumes.** Every `var` must resolve to a real read site (`ServerConfig.from_env`, your `ProjectConfig.from_env`, the CLI, or a native `FASTMCP_*` var) — *advertised but unread* env vars (e.g. a hint that mentions `PAPERLESS_MCP_SERVER_NAME` while the scaffold hardcodes the name) must not appear. List secret-bearing vars in `secretKeys` so the wizard masks them and keeps them out of the shareable link. A question may legitimately have **no `var`** when it is a wizard-internal routing key — the seed's `auth` select drives `showIf` but maps to no single env var (auth mode is inferred by `ServerConfig` from which vars are set), so it is not an orphan. Gate `showIf`/`guards` on the questions that are actually visible, and make every `showIf` self-contained: because the runtime checks raw answers with no cascade, a question gated on `auth` must *also* gate on `deployment=server` (the gate on `auth` itself), or it leaks — and emits its var — when `auth` is hidden but its stale answer lingers.
+- **A domain setting your project reads** — give its `ProjectConfig` field (between the `CONFIG-FIELDS-START`/`-END` sentinels in `config.py`) a `metadata={"help": ..., "tags": (...)}`. The generator's AST scan discovers it from there; no wizard-spec edits needed.
+- **A var the scan cannot see** (a deprecated alias no longer read inside `ProjectConfig.from_env`, or something read outside it entirely) — declare it in `config-presentation.domain.yml` instead.
+- **Coverage is enforced, not automatic** — the generator fails loudly (`SystemExit`, naming the var and its tags) if a collected `Var`'s tags match no env-file section, rather than silently dropping it from every generated file. Giving a domain field a tag no section lists is a config-presentation bug, and this catches it at generation time instead of shipping an undocumented var. There is, however, **no orphan check**: a stale or mistaken entry in `config-presentation.domain.yml` that nothing actually reads will generate into the wizard and env files anyway. Keep that file's contents matched to real reads yourself.
+
+### mcpb install screen
+
+`packaging/mcpb/manifest.json.in`'s `user_config` and `server.mcp_config.env` objects are **generated** the same way (`kind: mcpb-user-config`): both derive from one curated `fields:` map, so a screen field and its env wiring cannot drift apart, and hand edits to those two objects are overwritten on the next generation — the rest of the manifest stays yours. The template baseline shows a deliberately minimal screen (server name, log level). Curate this project's screen in `config-presentation.domain.yml` under `files:` → `packaging/mcpb/manifest.json.in` → `fields:`: map an env var name to `{id: ..., title: ..., type: string|boolean|number|directory|file, required: ..., default: ..., sensitive: ...}` (everything but `id` falls back to the var's own metadata), or to `null` to drop a baseline field. A `files:` entry for a path the template does not declare is taken wholesale — that is how a project drives its own additional install-channel manifest from the same source of truth.
 
 ### Tool icons
 
@@ -224,6 +223,26 @@ These sentinel blocks in `Dockerfile` are preserved across `copier update`. Add 
 - `# DOCKERFILE-UV-EXTRAS-START` / `-END` — `--extra <name>` flags added to both `uv sync` invocations (deps cache layer + project install — adding only to one breaks the cache layer)
 - `# DOCKERFILE-STATE-DIRS-START` / `-END` — state subdirectories created under `/data` (chowned to the runtime user)
 - `# DOCKERFILE-VOLUMES-START` / `-END` — `VOLUME` declarations on the final image
+
+### Release manifest extension points
+
+`scripts/bump_manifests.py` bumps `server.json` and refreshes `uv.lock`'s self-version entry inside the release commit, so the tag never points at a manifest whose version lags it. These sentinel blocks in that script are preserved across `copier update`. Add bumps for this project's own version-coupled manifests (a Claude Code `plugin.json`, an `.mcp.json`, another lockstep JSON/TOML) inside them:
+
+- `# DOMAIN-MANIFESTS-HELPERS-START` / `-END` — module-level helpers (use `_load` / `_dump` for JSON so the byte format matches what `scripts/gen_config_surface.py` asserts)
+- `# DOMAIN-MANIFESTS-START` / `-END` — the calls, inside `main()`, where `version` is in scope
+
+Every path bumped there must also appear in `pyproject.toml`'s `[tool.semantic_release] assets`, or PSR leaves it out of the release commit. The two are checked against each other by `tests/test_release_contract.py`, so a manifest named in one and not the other fails the gate rather than shipping a release commit with a stale file in it.
+
+
+## Claude Code plugin channel
+
+`.claude-plugin/plugin/` ships this server as a Claude Code plugin: `.claude-plugin/plugin.json` (identity + version) and an exec-form `.mcp.json` that launches the released PyPI package with `uvx --from <pkg>==<version>`. Both manifests are version-coupled to the release — `scripts/bump_manifests.py` bumps them in the release commit and `[tool.semantic_release] assets` stages them, so the marketplace entry published by the release workflow always installs the version it points at (`tests/test_release_contract.py` gates that pairing). The `env` block in `.mcp.json`, the plugin README, and any `skills/` directories are project-owned content: the files are seeded once and never re-rendered by template updates. Values in `env` may reference plugin `userConfig` entries as `${user_config.<id>}` declared in `plugin.json` — exec-form fields only; shell-form command strings reject the substitution.
+
+To generate the plugin's configuration screen from the config surface instead of hand-editing it, declare a `files:` pair in `config-presentation.domain.yml`: the plugin.json path with `kind: claude-plugin-user-config` and a `fields:` map (same field specs as the mcpb screen above), plus the `.mcp.json` path with `kind: claude-plugin-env` and `fields_from:` naming the first entry. One fields map then drives both the `userConfig` object and the `${user_config.<id>}` env wiring, and `scripts/gen_config_surface.py --check` gates the pair against drift.
+
+## Pre-release artifact smoke test
+
+The `Pre-release check` workflow (Actions tab, `workflow_dispatch`) builds and validates the mcpb bundle from any branch at a caller-supplied version (default `0.0.0-dev`), uploads it as a workflow artifact for manual install testing, and can optionally attach it to a deletable `v<version>-rc` pre-release. It runs the exact same steps a real release runs — both call the shared `.github/actions/build-mcpb` composite — so a green pre-release check means the release path's bundle build is green too. Project-specific artifact assertions (extra bundles, plugin manifests) belong in `packaging/pre-release-checks.sh` — an executable script the workflow runs when present, with `VERSION` and `BUNDLE` exported; the file is project-owned, and template updates never touch it.
 
 ## Tool Registration Checklist
 
@@ -250,13 +269,11 @@ Shared infrastructure (auth providers, middleware stack, logging bootstrap, even
 - [`fastmcp-pvl-core`](https://github.com/pvliesdonk/fastmcp-pvl-core) — the Python library that provides `ServerConfig`, auth builders, middleware helpers, and the `make_serve_parser` / `configure_logging_from_env` / `normalise_http_path` CLI helpers.
 - [`fastmcp-server-template`](https://github.com/pvliesdonk/fastmcp-server-template) — the copier template this project was generated from. Ships the CI/release workflows, `Dockerfile`, `packaging/nfpm.yaml`, `packaging/mcpb/*`, `scripts/bump_manifests.py`, server.py skeleton, and this very section of CLAUDE.md.
 
-Fixes and improvements to shared code land in those repos and propagate here via `copier update` against the template's latest tag — run manually or via the weekly `.github/workflows/copier-update.yml` cron. Starter files listed in `_skip_if_exists` (e.g. `scripts/bump_manifests.py`, `packaging/mcpb/*`, the `tools.py` / `resources.py` / `prompts.py` / `domain.py` scaffolds, `README.md`, `CHANGELOG.md`, `LICENSE`, `.env.example`) are written once and require manual reconciliation on template updates — review `_skip_if_exists` in the template's `copier.yml` if you need to force-sync a file. Domain-specific code (tools, resources, prompts, and the fields and logic inside the `CONFIG-FIELDS-START` / `CONFIG-FIELDS-END`, `CONFIG-FROM-ENV-START` / `CONFIG-FROM-ENV-END`, and `CONFIG-VALIDATE-START` / `CONFIG-VALIDATE-END` sentinels) stays in this repo.
+Fixes and improvements to shared code land in those repos and propagate here via `copier update` against the template's latest tag — run manually or via the weekly `.github/workflows/copier-update.yml` cron. Starter files listed in `_skip_if_exists` (e.g. `packaging/mcpb/*`, the `tools.py` / `resources.py` / `prompts.py` / `domain.py` scaffolds, `CHANGELOG.md`, `LICENSE`) are written once and require manual reconciliation on template updates; `CLAUDE.md`, `README.md`, `.pre-commit-config.yaml` and `scripts/bump_manifests.py` are deliberately *not* among them — all four are re-rendered on update, and only content inside their domain sentinels survives (`DOMAIN-START` / `DOMAIN-END` in the two Markdown files, `DOMAIN-HOOKS` in the pre-commit config, `DOMAIN-MANIFESTS-HELPERS` / `DOMAIN-MANIFESTS` in the bumper) — review `_skip_if_exists` in the template's `copier.yml` if you need to force-sync a file. Domain-specific code (tools, resources, prompts, and the fields and logic inside the `CONFIG-FIELDS-START` / `CONFIG-FIELDS-END`, `CONFIG-FROM-ENV-START` / `CONFIG-FROM-ENV-END`, and `CONFIG-VALIDATE-START` / `CONFIG-VALIDATE-END` sentinels) stays in this repo.
 
 ## Contributing fixes upstream
 
-- **Library-level fix** (anything you'd change in `fastmcp_pvl_core`): open a PR on `pvliesdonk/fastmcp-pvl-core`. After merge + release, bump `fastmcp-pvl-core` in this project's `pyproject.toml`. (Copier update alone won't pick it up unless the template's version constraint in `pyproject.toml.jinja` is also bumped.)
-- **Template-level fix** (anything template-owned — `Dockerfile`, workflows, `server.py` skeleton, `CLAUDE.md` sections): open a PR on `pvliesdonk/fastmcp-server-template`. After merge + release, this project gets the fix on the next weekly `copier update` cron (or dispatch the workflow manually).
-- **Domain-only fix** (anything inside a `DOMAIN-*`, `CONFIG-*`, or `PROJECT-*` sentinel block, `tools.py`, `resources.py`, `prompts.py`, `domain.py`, `tests/`): PR on this repo directly.
+See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the three-tier routing (library to `fastmcp-pvl-core`, template to `fastmcp-server-template`, domain to this repo), the issue/PR discipline, and the uncertainty rule. CONTRIBUTING.md is the single source; this section is a pointer.
 
 If a conflict marker appears in a copier-update bot PR, the conflict itself often signals a template bug — investigate whether the template's version needs fixing before resolving locally.
 <!-- TEMPLATE-TRACKING-END -->
