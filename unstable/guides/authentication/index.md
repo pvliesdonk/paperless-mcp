@@ -1,0 +1,232 @@
+# Authentication
+
+This guide covers how to protect your MCP server with authentication. Choose the mode that fits your deployment.
+
+Transport requirement
+
+Authentication only works with HTTP transport (`--transport http` or `sse`). It has no effect with `--transport stdio`.
+
+## Auth modes
+
+The server supports four authentication modes:
+
+| Mode             | When to use                                                                              | Configuration                                                     |
+| ---------------- | ---------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| **Multi-auth**   | Mixed clients, such as Claude web (OIDC) + Claude Code (bearer token) on the same server | Set both `PAPERLESS_MCP_BEARER_TOKEN` and all four OIDC variables |
+| **Bearer token** | Simple deployments behind a VPN, Docker compose stacks, development                      | Set `PAPERLESS_MCP_BEARER_TOKEN` only                             |
+| **OIDC**         | Production with user identity, SSO, multi-user access                                    | Set all four OIDC variables only                                  |
+| **No auth**      | Local stdio usage, trusted networks                                                      | Default (nothing to configure)                                    |
+
+When both bearer token and OIDC are configured, the server accepts **either** credential: a valid bearer token or a valid OIDC session. This is useful when different clients require different authentication flows against the same server instance.
+
+______________________________________________________________________
+
+## Bearer token
+
+The simplest way to protect your server. A single static token shared between server and clients.
+
+### Setup
+
+1. Generate a random token:
+
+   ```
+   openssl rand -hex 32
+   ```
+
+1. Set the environment variable:
+
+   ```
+   PAPERLESS_MCP_BEARER_TOKEN=your-generated-token
+   ```
+
+1. Start the server with HTTP transport:
+
+   ```
+   paperless-mcp serve --transport http --port 8000
+   ```
+
+### Client usage
+
+Clients must include the token in every request:
+
+```
+Authorization: Bearer your-generated-token
+```
+
+### When to use bearer token
+
+- Deployments behind a VPN or firewall
+- Docker compose stacks where services communicate internally
+- Development and testing environments
+- Any scenario where full OIDC is overkill
+
+### Mapped bearer tokens (multi-subject)
+
+The bearer-token mode above shares one subject across every authenticated caller. By default this is the library's `bearer-anon`; override with `PAPERLESS_MCP_BEARER_DEFAULT_SUBJECT`. For audit logs and authorization that distinguish callers, switch to mapped-token mode by pointing `PAPERLESS_MCP_BEARER_TOKENS_FILE` at a TOML file:
+
+```
+# tokens.toml
+[tokens]
+"ghp_alice_xxxxxxxx" = "user:alice@example.com"
+"sk_ci_yyyyyyyy"     = "service:ci-bot"
+```
+
+Each token resolves to a distinct subject string for downstream attribution. Subject strings are opaque: the `<kind>:<id>` convention (`user:`, `service:`, `token:`) is documentation only. When `BEARER_TOKENS_FILE` is set it overrides `BEARER_TOKEN` (a `WARNING` is logged if both are present). A missing or malformed file aborts startup with `ConfigurationError` rather than silently denying every request.
+
+______________________________________________________________________
+
+## OIDC
+
+Full OAuth 2.1 authentication using an external identity provider. Supports user login flows, SSO, and multi-user access control.
+
+### How it works
+
+The server proxies OIDC itself, with no external auth sidecar to deploy:
+
+```
+Client → paperless-mcp → OIDC Provider
+```
+
+1. Client connects to the server
+1. Server redirects to the OIDC provider for login
+1. Provider authenticates the user and returns a code
+1. Server exchanges the code for tokens
+1. Subsequent requests include the JWT
+
+### Required variables
+
+| Variable                           | Description                                                                                                                                                        |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `PAPERLESS_MCP_BASE_URL`           | Public base URL of the deployed server (`https://mcp.example.com`). Required for OIDC. Also the fallback source of the MCP Apps domain when `app_domain` is unset. |
+| `PAPERLESS_MCP_OIDC_CONFIG_URL`    | OIDC discovery document URL (`https://auth.example.com/.well-known/openid-configuration`).                                                                         |
+| `PAPERLESS_MCP_OIDC_CLIENT_ID`     | OIDC client identifier registered with the provider.                                                                                                               |
+| `PAPERLESS_MCP_OIDC_CLIENT_SECRET` | OIDC client secret registered with the provider.                                                                                                                   |
+
+### Optional variables
+
+| Variable                                 | Default   | Description                                                                                                                                                                                                                                                                                                                                                                   |
+| ---------------------------------------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PAPERLESS_MCP_OIDC_AUDIENCE`            | (none)    | Expected `aud` claim; tokens issued for another audience are rejected.                                                                                                                                                                                                                                                                                                        |
+| `PAPERLESS_MCP_OIDC_REQUIRED_SCOPES`     | `openid`  | Scopes a caller must present, space- or comma-separated. Defaults to `openid` in oidc-proxy mode.                                                                                                                                                                                                                                                                             |
+| `PAPERLESS_MCP_OIDC_ADVERTISED_SCOPES`   | (none)    | Scopes advertised to MCP clients in protected-resource metadata, space- or comma-separated. Overrides the default `openid offline_access`; `oidc_required_scopes` is always added on top. Set this when the registered client is not permitted `offline_access`, or to have clients request extra claim scopes (such as `groups`) without also requiring them in every token. |
+| `PAPERLESS_MCP_OIDC_JWT_SIGNING_KEY`     | `derived` | Signing key for issued JSON Web Tokens; used in oidc-proxy mode only. When unset, the key is derived deterministically from `oidc_client_secret`, so tokens survive a restart. Rotating that secret invalidates every issued token. Set this explicitly to decouple token validity from secret rotation. Generate with `openssl rand -hex 32`.                                |
+| `PAPERLESS_MCP_OIDC_VERIFY_ACCESS_TOKEN` | `false`   | Validate the access token instead of the id token.                                                                                                                                                                                                                                                                                                                            |
+
+JWT signing key and secret rotation
+
+When `PAPERLESS_MCP_OIDC_JWT_SIGNING_KEY` is unset, FastMCP derives the signing key from the OIDC client secret, so the key stays the same across restarts. Rotating the client secret changes the derived key and invalidates every token issued under the old one. Set an explicit key to decouple token validity from client-secret rotation:
+
+```
+openssl rand -hex 32
+```
+
+Long-running sessions
+
+Current MCP clients do not reliably refresh tokens; see [Known Limitations](#known-limitations-mcp-oauth-token-refresh). Configure **all** token lifetimes (access, id, refresh) on your identity provider to cover a full workday (8 hours or more). For simpler deployments, bearer token auth is unaffected by these limitations.
+
+For the full OIDC reference (env vars, Docker Compose, subpath deployments, architecture):
+
+- [OIDC Authentication reference](https://pvliesdonk.github.io/paperless-mcp/unstable/deployment/oidc/index.md)
+
+______________________________________________________________________
+
+## Troubleshooting
+
+### "invalid client" error
+
+The `client_id` and/or `redirect_uris` in your OIDC provider config don't match the values in your `.env` file. Verify both sides match exactly.
+
+### Tokens invalidated after a client-secret rotation
+
+You're missing `PAPERLESS_MCP_OIDC_JWT_SIGNING_KEY`. Without it, FastMCP derives the signing key from the OIDC client secret, so rotating that secret changes the derived key and invalidates every token issued under the old one. Generate and set a stable key to decouple token validity from secret rotation:
+
+```
+openssl rand -hex 32
+```
+
+### Auth has no effect
+
+Authentication only works with HTTP transport. If you're using `--transport stdio`, auth is silently ignored. Switch to `--transport http`.
+
+### Bearer token not working
+
+- Verify the env var is set and non-empty (whitespace-only values are ignored)
+- Check that clients send `Authorization: Bearer <token>` (not `Basic` or other schemes)
+- If OIDC is also configured, multi-auth is active: both bearer and OIDC are accepted simultaneously
+
+### OIDC redirect fails
+
+- Verify `BASE_URL` matches your public URL exactly (including any subpath prefix)
+- For subpath deployments, see the [subpath deployment guide](https://pvliesdonk.github.io/paperless-mcp/unstable/deployment/oidc/#subpath-deployments); `BASE_URL` must include the prefix, `HTTP_PATH` must not
+- Check that `redirect_uris` in your provider config includes your callback URL (such as `https://mcp.example.com/auth/callback`)
+
+### Session drops after token expiry
+
+**Symptom:** the MCP client works for a period (often ~1 hour), then starts returning 401 errors or stops responding. Restarting the client fixes it temporarily.
+
+**Root cause:** this is almost always a token lifetime issue, not a server bug. Check three things:
+
+1. **id_token lifetime** (most common): When using `verify_id_token` mode (the default for Authelia), the server re-validates the upstream `id_token` on every request. If your provider's `id_token` lifetime is shorter than the `access_token` lifetime, the session dies at the `id_token` expiry, even though the access token is still valid. Authelia defaults `id_token` to 1 hour. **Fix: set `id_token` lifetime to match `access_token`** in your provider config.
+1. **access_token lifetime**: If both `id_token` and `access_token` are set correctly but sessions still drop, check that the provider's `expires_in` response matches your configured lifetime.
+1. **No refresh token**: See [Known Limitations](#known-limitations-mcp-oauth-token-refresh) below; current MCP clients cannot refresh tokens, so sessions are limited to the token lifetime.
+
+**Workaround:** configure **all** token lifetimes on your identity provider to cover a full workday:
+
+```
+# Authelia example
+lifespans:
+  custom:
+    mcp_long_lived:
+      access_token: '8h'
+      id_token: '8h'        # must match access_token for verify_id_token mode
+      refresh_token: '30d'
+```
+
+### Opaque access tokens (Authelia)
+
+Authelia issues opaque (non-JWT) access tokens. This is handled automatically: the server verifies the `id_token` instead. No extra configuration needed.
+
+______________________________________________________________________
+
+## Known Limitations: MCP OAuth token refresh
+
+Ecosystem-wide issue
+
+The limitations below affect **all** OAuth-protected MCP servers, not just this one. They are caused by issues in the MCP client implementations (Claude Code, Claude.ai, Claude Desktop) and the MCP Python SDK. Check the linked tracking issues for current status.
+
+### The problem
+
+MCP clients cannot maintain sessions beyond the token lifetime because token refresh does not work. When tokens expire, the session drops and requires manual re-authentication. This affects every provider: Authelia, Keycloak, Google, and others.
+
+### Why refresh doesn't work
+
+Three independent issues prevent token refresh:
+
+| Layer              | Issue                                                                                                                          | Impact                                                                                         |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------- |
+| **Claude Code**    | Stores refresh tokens but never uses them ([claude-code#21333](https://github.com/anthropics/claude-code/issues/21333))        | Refresh tokens are obtained and saved but never sent back to refresh expired access tokens     |
+| **Claude Code**    | Never requests `offline_access` scope ([claude-code#7744](https://github.com/anthropics/claude-code/issues/7744))              | Most OIDC providers won't issue a refresh token without this scope                             |
+| **MCP Python SDK** | Token refresh deadlocks inside SSE streams ([python-sdk#1326](https://github.com/modelcontextprotocol/python-sdk/issues/1326)) | Even with a valid refresh token, the SDK hangs when attempting refresh during an active stream |
+
+The server-side refresh architecture (FastMCP's `OAuthProxy.exchange_refresh_token()`) is correctly implemented and would work, but it requires the client to initiate the refresh, which none of the current clients do reliably.
+
+### What works today
+
+**Bearer token auth** is unaffected by all of the above. If your deployment allows it (such as Claude Code with env vars, or API clients), bearer tokens are the simplest and most reliable option.
+
+**Long token lifetimes** are the only viable workaround for OIDC. Set all three lifetimes (access, id, refresh) to cover your typical session duration:
+
+- `access_token: '8h'`: covers a workday
+- `id_token: '8h'`: **must match access_token** when using `verify_id_token` mode (critical for Authelia)
+- `refresh_token: '30d'`: ready for when clients support refresh
+- Include `offline_access` in provider-side scopes; no effect today, but enables refresh when clients are fixed
+
+### Tracking
+
+These upstream issues are actively tracked:
+
+- [anthropics/claude-code#21333](https://github.com/anthropics/claude-code/issues/21333): refresh tokens stored but never used
+- [anthropics/claude-code#7744](https://github.com/anthropics/claude-code/issues/7744): `offline_access` scope never requested
+- [modelcontextprotocol/python-sdk#1326](https://github.com/modelcontextprotocol/python-sdk/issues/1326): SSE refresh deadlock
+
+When these are resolved, OIDC sessions should persist indefinitely via automatic token refresh with no changes needed server-side.
