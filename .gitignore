@@ -29,6 +29,10 @@ htmlcov/
 # MkDocs build output
 site/
 
+# Vale downloads style packages; retain only the tracked configuration/vocabulary.
+.vale/styles/*
+!.vale/styles/config/
+
 # Local environment
 .env
 .env.local
