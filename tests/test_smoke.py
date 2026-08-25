@@ -30,3 +30,23 @@ async def test_all_tools_registered(monkeypatch: pytest.MonkeyPatch) -> None:
     assert "create_download_link" not in names
     for expected in ("list_documents", "create_tag", "wait_for_task", "get_statistics"):
         assert expected in names, f"missing tool: {expected}"
+
+
+@pytest.mark.asyncio
+async def test_tool_allowlist_hides_unlisted_tools(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Operator tool visibility limits both listings and invocation surfaces."""
+    from fastmcp import Client
+    from fastmcp.exceptions import ToolError
+
+    monkeypatch.setenv("PAPERLESS_MCP_PAPERLESS_URL", "http://paperless.test")
+    monkeypatch.setenv("PAPERLESS_MCP_API_TOKEN", "test-token-smoke")
+    monkeypatch.setenv("PAPERLESS_MCP_TOOLS_ALLOW", "list_documents")
+    server = make_server()
+    async with Client(server) as client:
+        tools = await client.list_tools()
+        with pytest.raises(ToolError, match=r"Unknown tool: 'create_tag'"):
+            await client.call_tool("create_tag", {})
+
+    assert {tool.name for tool in tools} == {"list_documents"}

@@ -30,8 +30,19 @@ jobs:
         run: uv python install 3.12
 
       - name: Install dependencies
-        run: uv sync --all-extras --all-groups
+        # `--locked` rather than a bare sync: an unfrozen `uv sync` re-locks
+        # when `uv.lock` is stale relative to `pyproject.toml`, which both
+        # hides the drift (the workspace silently self-heals while the branch
+        # stays broken) and mutates a tracked file mid-job. Fail loudly
+        # instead — this is the check that would have caught the release-commit
+        # lockfile drift in #325 on the release that introduced it, rather
+        # than in an unrelated workflow weeks later (#326). Fix a red install
+        # step with `uv lock`, and commit the result.
+        run: uv sync --all-extras --all-groups --locked
 
+
+      - name: Verify generated config artifacts are up-to-date
+        run: uv run python scripts/gen_config_surface.py --check
 
       - name: Run ruff check
         run: uv run ruff check src/ tests/
@@ -61,7 +72,8 @@ jobs:
         run: uv python install 3.12
 
       - name: Install dependencies
-        run: uv sync --all-extras --all-groups
+        # `--locked` — see the lint job's install step for why.
+        run: uv sync --all-extras --all-groups --locked
 
       - name: Run mypy
         run: uv run mypy src/ tests/
@@ -111,7 +123,8 @@ jobs:
         run: uv python install ${{ matrix.python-version }}
 
       - name: Install dependencies
-        run: uv sync --all-extras --all-groups
+        # `--locked` — see the lint job's install step for why.
+        run: uv sync --all-extras --all-groups --locked
 
       - name: Run tests with coverage
         run: uv run pytest --cov --cov-report=xml
@@ -281,9 +294,28 @@ jobs:
         # stay authoritative from checkout. Caching the whole .vale/styles tree
         # would let restore-keys overwrite a newly-added vocab term with the
         # stale snapshot on the exact PR that adds the term.
-        # Pack list mirrors the Packages = line in .vale.ini; if you add or
-        # remove a pack, update both. Bump the v1- prefix to evict all cached
+        # Pack list mirrors the Packages = line in .vale.ini. That line is the
+        # source of truth and THREE places restate it by hand: this path: list,
+        # BasedOnStyles in .vale.ini, and the `for p in` list in the vale-sync
+        # pre-commit hook. Adding or removing a pack means changing all three —
+        # a stale BasedOnStyles makes vale exit E100 [loadStyles], and a stale
+        # `for p in` leaves the pre-commit hook blind to the new pack so it
+        # never triggers a sync.
+        # Bump the v1- prefix to evict all cached
         # packs if Vale changes pack format backward-incompatibly.
+        #
+        # NOTE: this cache does not prevent a re-download, and cannot while
+        # this job uses vale-action. `vale sync` wipes and re-creates every
+        # directory in `Packages =` rather than consulting what is on disk
+        # (verified with canary files), so a restored cache is discarded before
+        # it is read unless the sync is skipped — and vale-action runs
+        # `vale sync` unconditionally (`src/input.ts:67`) with no input to skip
+        # it (both checked at the pinned SHA below). This is a constraint of
+        # the action, not a trade being declined: the only route to a
+        # load-bearing cache here is replacing vale-action with a direct
+        # invocation, giving up reviewdog annotations, filter_mode and
+        # fail_on_error. The template's own CI gate calls vale directly and so
+        # does guard its sync.
         uses: actions/cache@v6
         with:
           path: |
@@ -292,9 +324,12 @@ jobs:
             .vale/styles/write-good
             .vale/styles/ai-tells
           key: vale-styles-v1-${{ hashFiles('.vale.ini') }}
-          # Warm-start fallback: restores the most recent pack snapshot when
-          # .vale.ini changes (e.g. URL bump). vale sync then only re-fetches
-          # the changed pack rather than re-downloading all four.
+          # Warm-start fallback, kept for symmetry with the key. It does NOT
+          # save a re-fetch: per the NOTE above, `vale sync` discards whatever
+          # was restored and re-creates every pack directory. An earlier
+          # revision of this comment claimed the restore let vale sync
+          # "re-fetch only the changed pack"; that is not how vale sync
+          # behaves.
           restore-keys: vale-styles-v1-
 
       - name: Run Vale
@@ -373,7 +408,8 @@ jobs:
         run: uv python install 3.12
 
       - name: Install dependencies
-        run: uv sync --all-extras --all-groups
+        # `--locked` — see the lint job's install step for why.
+        run: uv sync --all-extras --all-groups --locked
 
       - name: Fetch base branch
         run: git fetch origin ${{ github.base_ref }} --depth=50

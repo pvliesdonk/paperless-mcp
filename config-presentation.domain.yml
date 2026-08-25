@@ -1,0 +1,124 @@
+# Domain presentation layer — YOURS to edit.  Preserved across copier update.
+#
+# Domain env vars are discovered automatically from your ProjectConfig's
+# CONFIG-FIELDS block, using each field's `metadata={"help": ..., "tags": ...}`.
+# Declare a var here only when it is read somewhere the scan cannot see it —
+# a deprecated alias no longer read inside ProjectConfig.from_env, or a var
+# read outside ProjectConfig.from_env entirely.
+#
+# Same shape as the template-owned config-presentation.yml.  `{PREFIX}` is
+# substituted with your env_prefix.
+#
+# A var's `default:` key controls whether it renders required, the same way
+# a dataclass field does: omit `default:` entirely to mark the var required,
+# or give it `default: null` (or a real default) to mark it optional.
+vars:
+  - name: "{PREFIX}_PAPERLESS_URL"
+    provenance: domain
+    type_name: str
+    help: "Base URL of the Paperless-NGX REST API, without a trailing slash."
+    tags: [paperless]
+    wizard: {group: Paperless}
+
+  - name: "{PREFIX}_API_TOKEN"
+    provenance: domain
+    type_name: SecretStr
+    help: "Paperless service-account token used for outbound API requests."
+    tags: [paperless]
+    wizard: {group: Paperless, secret: true}
+
+  - name: "{PREFIX}_HTTP_TIMEOUT_SECONDS"
+    provenance: domain
+    type_name: float
+    default: 30.0
+    help: "Per-request HTTP timeout in seconds."
+    tags: [paperless]
+    wizard: {group: Paperless}
+
+  - name: "{PREFIX}_HTTP_RETRIES"
+    provenance: domain
+    type_name: int
+    default: 2
+    help: "Retries for idempotent requests after network errors or 5xx responses."
+    tags: [paperless]
+    wizard: {group: Paperless}
+
+  - name: "{PREFIX}_DEFAULT_PAGE_SIZE"
+    provenance: domain
+    type_name: int
+    default: 25
+    help: "Default page size for list tools, from 1 through 100."
+    tags: [paperless]
+    wizard: {group: Paperless}
+
+  - name: "{PREFIX}_PAPERLESS_PUBLIC_URL"
+    provenance: domain
+    type_name: str
+    default: null
+    help: "Public Paperless UI URL for user-visible links; defaults to PAPERLESS_URL."
+    tags: [paperless]
+    wizard: {group: Paperless}
+
+# The generator fails when from_env passes a suffix-shaped string literal
+# (ALL_CAPS_WITH_UNDERSCORES) to anything other than env()/env_int()/
+# env_float() and nothing documents that var — such a read is invisible to
+# the AST scan, so the var would silently vanish from every generated
+# artifact. List a literal here only when it is NOT an env var at all
+# (a dict key, a mode name) and the failure is a false positive.
+scan_ignore: []
+
+# Extra wizard questions specific to this project.  Rendered after the
+# template's routing questions, ahead of the per-var questions.  Same shape
+# as the template-owned wizard_routing, e.g.:
+#   - id: storage
+#     label: "Storage backend"
+#     type: select
+#     options:
+#       - {value: local, label: "Local disk", emit: {"{PREFIX}_BACKEND": local}}
+#       - {value: s3, label: "S3", emit: {"{PREFIX}_BACKEND": s3}}
+wizard_routing: []
+
+# Extra wizard guards specific to this project, appended after the
+# template's.  Same shape as the template-owned wizard_guards, e.g.:
+#   - when: {storage: [s3]}
+#     level: warning
+#     message: "S3 storage needs credentials via the standard AWS env vars."
+wizard_guards: []
+
+files:
+  packaging/mcpb/manifest.json.in:
+    fields:
+      "{PREFIX}_PAPERLESS_URL":
+        id: paperless_url
+        title: "Paperless API URL"
+        required: true
+      "{PREFIX}_API_TOKEN":
+        id: api_token
+        title: "Paperless API token"
+        required: true
+        sensitive: true
+      "{PREFIX}_HTTP_TIMEOUT_SECONDS": {id: http_timeout_seconds}
+      "{PREFIX}_HTTP_RETRIES": {id: http_retries}
+      "{PREFIX}_DEFAULT_PAGE_SIZE": {id: default_page_size}
+      "{PREFIX}_PAPERLESS_PUBLIC_URL": {id: paperless_public_url}
+
+  .claude-plugin/plugin/.claude-plugin/plugin.json:
+    kind: claude-plugin-user-config
+    fields:
+      "{PREFIX}_PAPERLESS_URL":
+        id: paperless_url
+        title: "Paperless API URL"
+        required: true
+      "{PREFIX}_API_TOKEN":
+        id: api_token
+        title: "Paperless API token"
+        required: true
+        sensitive: true
+      "{PREFIX}_HTTP_TIMEOUT_SECONDS": {id: http_timeout_seconds}
+      "{PREFIX}_HTTP_RETRIES": {id: http_retries}
+      "{PREFIX}_DEFAULT_PAGE_SIZE": {id: default_page_size}
+      "{PREFIX}_PAPERLESS_PUBLIC_URL": {id: paperless_public_url}
+
+  .claude-plugin/plugin/.mcp.json:
+    kind: claude-plugin-env
+    fields_from: .claude-plugin/plugin/.claude-plugin/plugin.json

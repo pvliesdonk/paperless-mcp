@@ -18,11 +18,13 @@ from typing import Any
 from fastmcp import FastMCP
 from fastmcp_pvl_core import (
     ServerConfig,  # noqa: F401  — re-exported for downstream projects' convenience
+    apply_tool_visibility,
     build_auth,
     build_event_store,  # noqa: F401  — re-exported for downstream projects' convenience
     build_instructions,
     build_kv_store,  # noqa: F401  — re-exported for downstream projects' convenience
     configure_logging_from_env,
+    configure_task_backend,
     env,
     register_server_info_tool,
     resolve_auth_mode,
@@ -86,6 +88,21 @@ def make_server(
             finally:
                 await _client.aclose()
                 logger.info("client_closed")
+
+    # Background-task backend (SEP-1686 / Docket).  Unconditional and
+    # template-owned: pydocket ships in fastmcp-pvl-core's base dependencies,
+    # so the backend is always configurable, and whether this server actually
+    # uses tasks is decided by registering ``task=True`` tools — not by
+    # packaging or by an opt-in switch here.  It mutates fastmcp's
+    # process-global settings, which fastmcp reads lazily at root-lifespan
+    # entry, so doing it inside ``make_server`` covers both CLI paths (
+    # ``server.run(...)`` and the uvicorn ``http_app()`` one).
+    # ``PAPERLESS_MCP_TASKS_URL`` selects the backend; unset, a
+    # ``redis://`` ``PAPERLESS_MCP_KV_STORE_URL`` is reused so one URL
+    # configures every stateful subsystem, and otherwise fastmcp's
+    # ``memory://`` default applies.  The queue name is derived from the env
+    # prefix, so two servers sharing one Redis do not share a queue.
+    configure_task_backend(_ENV_PREFIX, config.server)
 
     # Operator overrides: SERVER_NAME renames this instance; INSTRUCTIONS
     # replaces the default instructions text (the latter is the override that
@@ -155,5 +172,12 @@ def make_server(
     # kept across copier update. Leave empty for projects that don't customise
     # make_server() beyond the standard scaffold.
     # DOMAIN-WIRING-END
+
+    # Operator tool visibility (PAPERLESS_MCP_TOOLS_ALLOW /
+    # PAPERLESS_MCP_TOOLS_DENY) applies last: fastmcp resolves visibility
+    # transforms in call order, so the operator's lists win over any
+    # visibility calls in the wiring above, and pvl-core's zero-tools-exposed
+    # diagnostic judges the full registered tool set.
+    apply_tool_visibility(mcp, config.server)
 
     return mcp
