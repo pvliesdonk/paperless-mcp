@@ -97,15 +97,15 @@ def test_install_manifests_expose_required_paperless_configuration() -> None:
         assert user_config["api_token"]["required"] is True
         assert user_config["api_token"]["sensitive"] is True
 
-    api_token_reference = "${user_config.api_token}"
+    config_reference = "${user_config.api_token}"
     assert (
         mcpb["server"]["mcp_config"]["env"]["PAPERLESS_MCP_PAPERLESS_URL"]
         == "${user_config.paperless_url}"
     )
     assert (
         mcpb["server"]["mcp_config"]["env"]["PAPERLESS_MCP_API_TOKEN"]
-        == api_token_reference
+        == config_reference
     )
     env = plugin_mcp["paperless-mcp"]["env"]
     assert env["PAPERLESS_MCP_PAPERLESS_URL"] == "${user_config.paperless_url}"
-    assert env["PAPERLESS_MCP_API_TOKEN"] == api_token_reference
+    assert env["PAPERLESS_MCP_API_TOKEN"] == config_reference
