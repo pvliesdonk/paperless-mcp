@@ -36,6 +36,7 @@ site/
 # --- Development / ecosystem ignores (don't ship)
 .mcpregistry_*
 .worktrees/
+.superpowers/
 docs/superpowers/
 # Everything under .claude/ is local EXCEPT skills/ — that subtree ships the
 # contributor-facing authoring skill(s), template-owned and re-rendered on
