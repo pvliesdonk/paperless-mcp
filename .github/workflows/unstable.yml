@@ -4,9 +4,11 @@
 # manifest churn — this channel answers "let me run the latest merged code"
 # without release machinery. Version-numbered pre-releases (rc) remain
 # release.yml's job, cut from short-lived release/X.Y stabilisation branches
-# and published only under their immutable vX.Y.Z-rc.N image tags (the
-# rc-fed rolling `unstable` tag is retired; `edge` is the one rolling
-# unstable tag, and one tag must have exactly one producer).
+# and published under their immutable vX.Y.Z-rc.N image tags plus the
+# rolling `rc` tag that follows the newest candidate. The two rolling
+# unstable tags answer different questions and have exactly one producer
+# each: `edge` is the newest commit on main (here), `rc` is the newest
+# release candidate (release.yml). Neither writes the other's tag.
 name: Unstable channel
 
 on:
@@ -81,7 +83,9 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
-          cache-to: type=gha,mode=max
+          # ignore-error: a cache-service outage must not fail the build —
+          # the cache is an optimization, never a correctness input.
+          cache-to: type=gha,mode=max,ignore-error=true
 
   mcpb-bundle:
     runs-on: ubuntu-latest
@@ -107,4 +111,36 @@ jobs:
         with:
           name: mcpb-bundle-edge
           path: dist/paperless-mcp-*.mcpb
+          if-no-files-found: error
+
+  # The edge plugin zip is the one unstable artifact that is genuinely
+  # installable.  It vendors the merged commit's own wheel, so it does not
+  # depend on `0.0.0-dev` existing on an index — which it never can, since a
+  # constant version cannot be published on every merge.  Test a merge with:
+  #
+  #   claude --plugin-url <artifact-url>
+  #
+  # which loads it for one session and leaves no install record behind.
+  plugin-zip-edge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Build and smoke-test plugin zip
+        id: build
+        uses: ./.github/actions/build-plugin-zip
+        with:
+          # Same constant the mcpb bundle uses, for the same reasons: valid
+          # semver, sorts below every real release, no version identity to
+          # claim.  Here it costs nothing, because the zip carries its code
+          # rather than resolving that version from an index.
+          version: 0.0.0-dev
+
+      - name: Upload plugin zip artifact
+        if: steps.build.outputs.present == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: plugin-zip-edge
+          path: dist/paperless-mcp-plugin-*.zip
           if-no-files-found: error
