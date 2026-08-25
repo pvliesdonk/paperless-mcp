@@ -16,7 +16,9 @@ invokes ``pytest ... -m browser``.
 
 from __future__ import annotations
 
+import json
 from collections.abc import Iterator
+from pathlib import Path
 
 import pytest
 from playwright.sync_api import Browser, Page
@@ -72,3 +74,38 @@ def test_tool_visibility_emits_the_allowlist(page: Page) -> None:
     output = page.inner_text(".cfg-output")
     assert "PAPERLESS_MCP_TOOLS_ALLOW=search_documents" in output
     assert "PAPERLESS_MCP_TOOLS_DENY=" not in output
+
+
+def test_install_manifests_expose_required_paperless_configuration() -> None:
+    """Generated MCPB and plugin screens expose the required Paperless settings."""
+    repo_root = Path(__file__).resolve().parents[1]
+    mcpb = json.loads(
+        (repo_root / "packaging/mcpb/manifest.json.in").read_text(encoding="utf-8")
+    )
+    plugin = json.loads(
+        (repo_root / ".claude-plugin/plugin/.claude-plugin/plugin.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    plugin_mcp = json.loads(
+        (repo_root / ".claude-plugin/plugin/.mcp.json").read_text(encoding="utf-8")
+    )
+
+    for manifest in (mcpb, plugin):
+        user_config = manifest.get("user_config", manifest.get("userConfig"))
+        assert user_config["paperless_url"]["required"] is True
+        assert user_config["api_token"]["required"] is True
+        assert user_config["api_token"]["sensitive"] is True
+
+    api_token_reference = "${user_config.api_token}"
+    assert (
+        mcpb["server"]["mcp_config"]["env"]["PAPERLESS_MCP_PAPERLESS_URL"]
+        == "${user_config.paperless_url}"
+    )
+    assert (
+        mcpb["server"]["mcp_config"]["env"]["PAPERLESS_MCP_API_TOKEN"]
+        == api_token_reference
+    )
+    env = plugin_mcp["paperless-mcp"]["env"]
+    assert env["PAPERLESS_MCP_PAPERLESS_URL"] == "${user_config.paperless_url}"
+    assert env["PAPERLESS_MCP_API_TOKEN"] == api_token_reference
