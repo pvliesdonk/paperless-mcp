@@ -1,5 +1,5 @@
 # Changes here will be overwritten by `copier update`.
-_commit: v4.1.0
+_commit: v5.6.3
 _src_path: gh:pvliesdonk/fastmcp-server-template
 docker_registry: ghcr.io/pvliesdonk
 domain_description: 'Paperless-NGX document management over MCP: search, tag, upload,
@@ -7,6 +7,7 @@ domain_description: 'Paperless-NGX document management over MCP: search, tag, up
 enable_authorization: false
 enable_structural_gate: true
 env_prefix: PAPERLESS_MCP
+extra_required_checks: []
 github_org: pvliesdonk
 human_name: Paperless MCP
 include_claude_plugin: true

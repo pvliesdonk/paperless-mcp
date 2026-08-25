@@ -25,6 +25,7 @@ id_token
 dataclass
 debugpy
 lockfile
+knope
 mypy
 namespace
 namespaced
