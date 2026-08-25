@@ -1,0 +1,19 @@
+{
+  "paperless-mcp": {
+    "command": "uvx",
+    "args": [
+      "--from",
+      "pvliesdonk-paperless-mcp[all]==1.0.1",
+      "paperless-mcp",
+      "serve"
+    ],
+    "env": {
+      "PAPERLESS_MCP_PAPERLESS_URL": "${user_config.paperless_url}",
+      "PAPERLESS_MCP_API_TOKEN": "${user_config.api_token}",
+      "PAPERLESS_MCP_HTTP_TIMEOUT_SECONDS": "${user_config.http_timeout_seconds}",
+      "PAPERLESS_MCP_HTTP_RETRIES": "${user_config.http_retries}",
+      "PAPERLESS_MCP_DEFAULT_PAGE_SIZE": "${user_config.default_page_size}",
+      "PAPERLESS_MCP_PAPERLESS_PUBLIC_URL": "${user_config.paperless_public_url}"
+    }
+  }
+}

@@ -19,6 +19,8 @@ keeps the two halves honest for anything added through those seams.
 
 from __future__ import annotations
 
+import json
+import subprocess
 import tomllib
 from pathlib import Path
 from typing import Any
@@ -28,6 +30,9 @@ import pytest
 REPO_ROOT = Path(__file__).resolve().parents[1]
 BUMPER = REPO_ROOT / "scripts" / "bump_manifests.py"
 PYPROJECT = REPO_ROOT / "pyproject.toml"
+PLUGIN_MANIFEST = REPO_ROOT / ".claude-plugin/plugin/.claude-plugin/plugin.json"
+PLUGIN_MCP_CONFIG = REPO_ROOT / ".claude-plugin/plugin/.mcp.json"
+SERVER_MANIFEST = REPO_ROOT / "server.json"
 
 # Manifests the template itself bumps, mapped to the marker that proves the
 # bumper still handles them.  A domain manifest added through the
@@ -127,3 +132,31 @@ def test_domain_manifest_calls_sentinel_lives_inside_main() -> None:
     end = text.index("# DOMAIN-MANIFESTS-END")
     assert main_def < start < end
     assert text.index("_bump_lockfile(version)") < start
+
+
+def test_claude_plugin_manifests_are_tracked_and_version_locked() -> None:
+    """Plugin manifests exist in a clean checkout and match the release version."""
+    paths = (PLUGIN_MANIFEST, PLUGIN_MCP_CONFIG)
+    tracked = subprocess.run(
+        [
+            "git",
+            "ls-files",
+            "--error-unmatch",
+            *(str(path.relative_to(REPO_ROOT)) for path in paths),
+        ],
+        cwd=REPO_ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert tracked.returncode == 0, tracked.stderr
+
+    version = json.loads(SERVER_MANIFEST.read_text(encoding="utf-8"))["version"]
+    plugin = json.loads(PLUGIN_MANIFEST.read_text(encoding="utf-8"))
+    mcp = json.loads(PLUGIN_MCP_CONFIG.read_text(encoding="utf-8"))
+    assert plugin["version"] == version
+    assert any(
+        argument.endswith(f"=={version}")
+        for server in mcp.values()
+        for argument in server["args"]
+    )

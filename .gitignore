@@ -43,9 +43,9 @@ docs/superpowers/
 # copier update (project additions live inside its DOMAIN-AUTHORING sentinel).
 .claude/*
 !.claude/skills/
-# No trailing slash: `.mcp.json/` would match a *directory* of that name and
-# leave the actual file tracked.
-.mcp.json
+# Keep only the root client-local manifest ignored. Plugin manifests are release
+# assets and must remain tracked for clean-checkout version stamping.
+/.mcp.json
 .repowise/
 
 # Editor-local config. Deliberately just this one — a contributor's choice of
