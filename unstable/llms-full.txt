@@ -222,13 +222,13 @@ Client → paperless-mcp → OIDC Provider
 
 ### Optional variables
 
-| Variable                                 | Default   | Description                                                                                                                                                                                                                                                                                                                                                                   |
-| ---------------------------------------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `PAPERLESS_MCP_OIDC_AUDIENCE`            | (none)    | Expected `aud` claim; tokens issued for another audience are rejected.                                                                                                                                                                                                                                                                                                        |
-| `PAPERLESS_MCP_OIDC_REQUIRED_SCOPES`     | `openid`  | Scopes a caller must present, space- or comma-separated. Defaults to `openid` in oidc-proxy mode.                                                                                                                                                                                                                                                                             |
-| `PAPERLESS_MCP_OIDC_ADVERTISED_SCOPES`   | (none)    | Scopes advertised to MCP clients in protected-resource metadata, space- or comma-separated. Overrides the default `openid offline_access`; `oidc_required_scopes` is always added on top. Set this when the registered client is not permitted `offline_access`, or to have clients request extra claim scopes (such as `groups`) without also requiring them in every token. |
-| `PAPERLESS_MCP_OIDC_JWT_SIGNING_KEY`     | `derived` | Signing key for issued JSON Web Tokens; used in oidc-proxy mode only. When unset, the key is derived deterministically from `oidc_client_secret`, so tokens survive a restart. Rotating that secret invalidates every issued token. Set this explicitly to decouple token validity from secret rotation. Generate with `openssl rand -hex 32`.                                |
-| `PAPERLESS_MCP_OIDC_VERIFY_ACCESS_TOKEN` | `false`   | Validate the access token instead of the id token.                                                                                                                                                                                                                                                                                                                            |
+| Variable                                 | Default                 | Description                                                                                                                                                                                                                                                                                                                                                                   |
+| ---------------------------------------- | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PAPERLESS_MCP_OIDC_AUDIENCE`            | (none)                  | Expected `aud` claim; tokens issued for another audience are rejected.                                                                                                                                                                                                                                                                                                        |
+| `PAPERLESS_MCP_OIDC_REQUIRED_SCOPES`     | `openid`                | Scopes a caller must present, space- or comma-separated. Defaults to `openid` in oidc-proxy mode.                                                                                                                                                                                                                                                                             |
+| `PAPERLESS_MCP_OIDC_ADVERTISED_SCOPES`   | `openid offline_access` | Scopes advertised to MCP clients in protected-resource metadata, space- or comma-separated. Overrides the default `openid offline_access`; `oidc_required_scopes` is always added on top. Set this when the registered client is not permitted `offline_access`, or to have clients request extra claim scopes (such as `groups`) without also requiring them in every token. |
+| `PAPERLESS_MCP_OIDC_JWT_SIGNING_KEY`     | `derived`               | Signing key for issued JSON Web Tokens; used in oidc-proxy mode only. When unset, the key is derived deterministically from `oidc_client_secret`, so tokens survive a restart. Rotating that secret invalidates every issued token. Set this explicitly to decouple token validity from secret rotation. Generate with `openssl rand -hex 32`.                                |
+| `PAPERLESS_MCP_OIDC_VERIFY_ACCESS_TOKEN` | `false`                 | Validate the access token instead of the id token.                                                                                                                                                                                                                                                                                                                            |
 
 JWT signing key and secret rotation
 
@@ -320,11 +320,11 @@ MCP clients cannot maintain sessions beyond the token lifetime because token ref
 
 Three independent issues prevent token refresh:
 
-| Layer              | Issue                                                                                                                          | Impact                                                                                         |
-| ------------------ | ------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------- |
-| **Claude Code**    | Stores refresh tokens but never uses them ([claude-code#21333](https://github.com/anthropics/claude-code/issues/21333))        | Refresh tokens are obtained and saved but never sent back to refresh expired access tokens     |
-| **Claude Code**    | Never requests `offline_access` scope ([claude-code#7744](https://github.com/anthropics/claude-code/issues/7744))              | Most OIDC providers won't issue a refresh token without this scope                             |
-| **MCP Python SDK** | Token refresh deadlocks inside SSE streams ([python-sdk#1326](https://github.com/modelcontextprotocol/python-sdk/issues/1326)) | Even with a valid refresh token, the SDK hangs when attempting refresh during an active stream |
+| Layer              | Issue                                                                                                                          | Impact                                                                                                                                                                                                                                                                    |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Claude Code**    | Stores refresh tokens but never uses them ([claude-code#21333](https://github.com/anthropics/claude-code/issues/21333))        | Refresh tokens are obtained and saved but never sent back to refresh expired access tokens                                                                                                                                                                                |
+| **Claude Code**    | Does not ask for `offline_access` on its own ([claude-code#7744](https://github.com/anthropics/claude-code/issues/7744))       | Most OIDC providers issue no refresh token without this scope. The server advertises `openid offline_access` in its protected-resource metadata, so a client that requests the advertised set gets a refresh-capable grant; one that ignores the metadata still does not. |
+| **MCP Python SDK** | Token refresh deadlocks inside SSE streams ([python-sdk#1326](https://github.com/modelcontextprotocol/python-sdk/issues/1326)) | Even with a valid refresh token, the SDK hangs when attempting refresh during an active stream                                                                                                                                                                            |
 
 The server-side refresh architecture (FastMCP's `OAuthProxy.exchange_refresh_token()`) is correctly implemented and would work, but it requires the client to initiate the refresh, which none of the current clients do reliably.
 
@@ -337,7 +337,7 @@ The server-side refresh architecture (FastMCP's `OAuthProxy.exchange_refresh_tok
 - `access_token: '8h'`: covers a workday
 - `id_token: '8h'`: **must match access_token** when using `verify_id_token` mode (critical for Authelia)
 - `refresh_token: '30d'`: ready for when clients support refresh
-- Include `offline_access` in provider-side scopes; no effect today, but enables refresh when clients are fixed
+- Permit `offline_access` for the registered client; the server advertises it by default, so a client that honours the advertised scopes requests it. Where the client may not hold that scope, narrow what the server advertises with `PAPERLESS_MCP_OIDC_ADVERTISED_SCOPES` rather than letting the authorization request fail
 
 ### Tracking
 
@@ -484,6 +484,8 @@ uv tool install pvliesdonk-paperless-mcp
 
 Or download the `.mcpb` bundle from the [GitHub Releases](https://github.com/pvliesdonk/paperless-mcp/releases) page and double-click to install; Claude Desktop prompts for required env vars via a GUI wizard, no manual JSON editing needed.
 
+The bundle does not carry the code. It pins `pvliesdonk-paperless-mcp[all]` at its own version and `uvx` fetches that from PyPI on first launch, so the machine needs network access the first time it starts. Release candidates publish to PyPI for exactly this reason, which makes a `vX.Y.Z-rc.N` bundle installable the same way a stable one is.
+
 ### 2. Configure Claude Desktop
 
 If you installed via `.mcpb`, skip this step. Claude Desktop was configured automatically by the wizard.
@@ -570,9 +572,12 @@ The server listens on port 8000 with HTTP transport by default.
 | `latest`     | Newest stable release                                        | Each stable release that is newest across all series |
 | `vX.Y.Z`     | That exact release (pre-releases included, as `vX.Y.Z-rc.N`) | Never (immutable)                                    |
 | `vX.Y`, `vX` | Newest stable release in that series                         | Each stable release that is newest in its series     |
+| `rc`         | Newest release candidate                                     | Each pre-release still ahead of `latest`             |
 | `edge`       | Newest commit on `main`                                      | Every merge to `main`                                |
 
-Rolling tags are ordering-aware: a patch release cut from an old `release/X.Y` branch after a newer stable has shipped updates its own series tags but never `latest`. A pre-release pushes only its immutable `vX.Y.Z-rc.N` tag. To run the latest merged code, use `edge`, which follows `main` continuously and carries no version identity. To find the commit behind an `edge` image, read its `org.opencontainers.image.revision` label:
+Rolling tags are ordering-aware: a patch release cut from an old `release/X.Y` branch after a newer stable has shipped updates its own series tags but never `latest`. The same rule governs `rc`: a candidate only moves the tag while its version is still ahead of the newest stable, so a candidate for an already-released version never pulls `rc` behind `latest`.
+
+The three rolling tags answer different questions. Use `latest` to run released code, `rc` to test the candidate for the next release, and `edge` to run the newest merged commit. Note that `rc` is not cleared when its release ships: it keeps pointing at the last candidate until the next one is cut, so `latest` is the tag to follow in production. To find the commit behind an `edge` image, read its `org.opencontainers.image.revision` label:
 
 ```
 docker inspect --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}' \
@@ -590,6 +595,8 @@ docker inspect --format '{{ index .Config.Labels "org.opencontainers.image.revis
 | `PAPERLESS_MCP_DEBUG_WAIT`   | `false`               | Block startup until IDE attaches (see [Remote debugging](#remote-debugging))                                  |
 
 For OIDC auth variables, see [Authentication](https://pvliesdonk.github.io/paperless-mcp/unstable/guides/authentication/index.md).
+
+Running behind a reverse proxy on a path prefix (`https://mcp.example.com/myservice/mcp`) rather than its own hostname needs two routing rules, one of which sits outside the prefix: see [Subpath Deployments](https://pvliesdonk.github.io/paperless-mcp/unstable/deployment/oidc/#subpath-deployments).
 
 ## Volumes
 
@@ -668,13 +675,13 @@ OIDC requires `--transport http` (or `sse`). It has no effect with `--transport 
 
 ## Optional Variables
 
-| Variable                                 | Default   | Description                                                                                                                                                                                                                                                                                                                                                                   |
-| ---------------------------------------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `PAPERLESS_MCP_OIDC_AUDIENCE`            | (none)    | Expected `aud` claim; tokens issued for another audience are rejected.                                                                                                                                                                                                                                                                                                        |
-| `PAPERLESS_MCP_OIDC_REQUIRED_SCOPES`     | `openid`  | Scopes a caller must present, space- or comma-separated. Defaults to `openid` in oidc-proxy mode.                                                                                                                                                                                                                                                                             |
-| `PAPERLESS_MCP_OIDC_ADVERTISED_SCOPES`   | (none)    | Scopes advertised to MCP clients in protected-resource metadata, space- or comma-separated. Overrides the default `openid offline_access`; `oidc_required_scopes` is always added on top. Set this when the registered client is not permitted `offline_access`, or to have clients request extra claim scopes (such as `groups`) without also requiring them in every token. |
-| `PAPERLESS_MCP_OIDC_JWT_SIGNING_KEY`     | `derived` | Signing key for issued JSON Web Tokens; used in oidc-proxy mode only. When unset, the key is derived deterministically from `oidc_client_secret`, so tokens survive a restart. Rotating that secret invalidates every issued token. Set this explicitly to decouple token validity from secret rotation. Generate with `openssl rand -hex 32`.                                |
-| `PAPERLESS_MCP_OIDC_VERIFY_ACCESS_TOKEN` | `false`   | Validate the access token instead of the id token.                                                                                                                                                                                                                                                                                                                            |
+| Variable                                 | Default                 | Description                                                                                                                                                                                                                                                                                                                                                                   |
+| ---------------------------------------- | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PAPERLESS_MCP_OIDC_AUDIENCE`            | (none)                  | Expected `aud` claim; tokens issued for another audience are rejected.                                                                                                                                                                                                                                                                                                        |
+| `PAPERLESS_MCP_OIDC_REQUIRED_SCOPES`     | `openid`                | Scopes a caller must present, space- or comma-separated. Defaults to `openid` in oidc-proxy mode.                                                                                                                                                                                                                                                                             |
+| `PAPERLESS_MCP_OIDC_ADVERTISED_SCOPES`   | `openid offline_access` | Scopes advertised to MCP clients in protected-resource metadata, space- or comma-separated. Overrides the default `openid offline_access`; `oidc_required_scopes` is always added on top. Set this when the registered client is not permitted `offline_access`, or to have clients request extra claim scopes (such as `groups`) without also requiring them in every token. |
+| `PAPERLESS_MCP_OIDC_JWT_SIGNING_KEY`     | `derived`               | Signing key for issued JSON Web Tokens; used in oidc-proxy mode only. When unset, the key is derived deterministically from `oidc_client_secret`, so tokens survive a restart. Rotating that secret invalidates every issued token. Set this explicitly to decouple token validity from secret rotation. Generate with `openssl rand -hex 32`.                                |
+| `PAPERLESS_MCP_OIDC_VERIFY_ACCESS_TOKEN` | `false`                 | Validate the access token instead of the id token.                                                                                                                                                                                                                                                                                                                            |
 
 ## JWT Signing Key
 
@@ -813,78 +820,149 @@ Register this callback URI in your OIDC provider:
 https://mcp.example.com/myservice/auth/callback
 ```
 
+### What the server serves, and where
+
+The MCP endpoint and the OAuth discovery documents sit on opposite sides of the prefix, which is what makes subpath routing more than one strip rule. With `BASE_URL=https://mcp.example.com/myservice` and `HTTP_PATH=/mcp`:
+
+| Public URL                                                                  | Path the container listens on        | Served when                                         |
+| --------------------------------------------------------------------------- | ------------------------------------ | --------------------------------------------------- |
+| `/myservice/mcp`                                                            | `/mcp`                               | always                                              |
+| `/myservice/authorize`, `/token`, `/register`, `/auth/callback`, `/consent` | the same path without the prefix     | the server proxies OAuth (client ID and secret set) |
+| `/.well-known/oauth-protected-resource/myservice/mcp`                       | the identical path, prefix included  | OIDC is enabled, in every mode                      |
+| `/.well-known/oauth-authorization-server`                                   | the identical path, at the host root | the server proxies OAuth (client ID and secret set) |
+
+Two properties of that table drive every routing rule below:
+
+1. The MCP endpoint and the OAuth endpoints listen **without** the prefix, so the proxy has to strip it.
+1. The protected-resource document's path **contains** the prefix, because RFC 9728 §3.1 appends the resource path after the well-known segment. The server registers that full path verbatim, so stripping the prefix from this request returns 404.
+
+A server holding no client ID and secret verifies tokens the provider issued directly. It serves protected-resource metadata only and answers `/.well-known/oauth-authorization-server` with 404. That is the correct answer, because the provider is the authorization server, so do not route that path to a server configured this way.
+
 ### Reverse proxy routing
 
-The reverse proxy must:
+The reverse proxy needs two routers pointing at the same service, because a prefix rule cannot express both halves:
 
-1. **Strip the prefix** (`/myservice`) from operational routes before forwarding to the app
-1. **Forward OAuth discovery routes** to this service (without stripping prefixes):
-   - `/.well-known/oauth-authorization-server`: authorization server metadata
-   - `/.well-known/oauth-protected-resource/myservice/mcp`: protected resource metadata
-
-Example Traefik configuration:
+1. **Operational routes** match the prefix and strip it: `/myservice/mcp` and, in proxy mode, the OAuth endpoints.
+1. **Discovery routes** match their own well-known paths and pass through untouched. Their URLs do not begin with `/myservice`, so a `PathPrefix(/myservice)` rule never sees them.
 
 ```
 labels:
-  # Operational routes: strip /myservice prefix before forwarding
+  # Operational routes: strip the /myservice prefix before forwarding
   - "traefik.http.routers.mcp-app.rule=Host(`mcp.example.com`) && PathPrefix(`/myservice`)"
   - "traefik.http.middlewares.strip-myservice.stripprefix.prefixes=/myservice"
   - "traefik.http.routers.mcp-app.middlewares=strip-myservice"
   - "traefik.http.services.mcp-app.loadbalancer.server.port=8000"
-  # OAuth discovery routes: forward without stripping
-  - "traefik.http.routers.mcp-wellknown.rule=Host(`mcp.example.com`) && (PathPrefix(`/.well-known/oauth-authorization-server`) || PathPrefix(`/.well-known/oauth-protected-resource/myservice/mcp`))"
+  # Discovery routes: same service, no strip middleware
+  - "traefik.http.routers.mcp-wellknown.rule=Host(`mcp.example.com`) && (PathPrefix(`/.well-known/oauth-protected-resource/myservice/mcp`) || PathPrefix(`/.well-known/oauth-authorization-server`))"
   - "traefik.http.routers.mcp-wellknown.service=mcp-app"
 ```
 
-Note
+Drop the `oauth-authorization-server` clause when the server holds no client ID and secret. That path returns 404 in such a configuration, and claiming it on a shared hostname takes the document away from whichever service does answer.
 
-This configuration requires that no other OAuth service claims `/.well-known/oauth-authorization-server` on this hostname. See [Shared-hostname limitation](#shared-hostname-limitation) below.
+Two routers rather than one is deliberate. A single router carrying the strip rule would apply it to the discovery request as well. Nothing here relies on how a given proxy treats a strip prefix that fails to match: separate routers state the untouched route outright, in any proxy that has the concept.
 
-### Shared-hostname limitation
+### Sharing a hostname
 
-Shared-hostname subpath with native OIDC is not supported
+The failure that follows from point 2 above is worth spelling out, because its symptom points somewhere else entirely.
 
-When multiple OAuth-capable services share a hostname, native OIDC on a subpath does not work.
+The discovery URL sits outside the prefix, so on a hostname shared with other services, prefix-based routing cannot claim it. Without a router that matches it explicitly, the request falls through to whatever else holds the host: an OAuth gateway, an SSO portal, or another MCP server at the root. That service answers with **its** metadata, the client builds an authorization URL from another service's endpoints, and the visible symptom is an authorization URL 404ing at a path nobody configured. It reads as a client bug or an auth bug; it is a routing rule one path too narrow.
 
-**Why:** FastMCP serves the OAuth authorization-server metadata at `/.well-known/oauth-authorization-server` (host root), regardless of the subpath in `BASE_URL`. The FastMCP codebase contains an RFC 8414 path-aware override (`OIDCProxy.get_well_known_routes()`) that would serve it at `/.well-known/oauth-authorization-server/myservice`. However, this method is not wired into the route mounting flow and is effectively dead code.
+The `mcp-wellknown` router above is the fix. In Traefik it also wins by default: routers sort by rule length, so a rule naming the full well-known path outranks a bare `Host(...)` catch-all. Where the competing service sets an explicit `priority`, set a higher one here, because Traefik ignores its rule-length default for any router that carries one.
 
-The protected-resource metadata (`/.well-known/oauth-protected-resource/myservice/mcp`) is correctly path-namespaced and does not collide. Only the authorization-server discovery route is the problem.
+One document still collides: `oauth-authorization-server`
 
-This works when the MCP server is the **only** OAuth service on the hostname. It breaks when another service already owns `/.well-known/oauth-authorization-server`.
+In proxy mode the server serves authorization-server metadata at `/.well-known/oauth-authorization-server`, at the **host root**, whatever prefix `BASE_URL` carries. FastMCP does contain an RFC 8414 path-aware override, `OAuthProvider.get_well_known_routes()`, which would serve it at `/.well-known/oauth-authorization-server/myservice`. Nothing reaches it: the HTTP app mounts `get_routes()` instead, leaving the path-aware form unreachable. (Verified against FastMCP 3.4.7.)
 
-**Recommendations for shared-hostname scenarios:**
+Only this one document collides. Protected-resource metadata is path-namespaced, so several servers can share a hostname without contending for it.
 
-- **Dedicated hostname** (preferred): give the MCP server its own hostname (such as `myservice.example.com`) so discovery routes do not collide.
-- **External auth gateway**: use `mcp-auth-proxy` as a sidecar instead of native OIDC. The MCP server runs unauthenticated behind the proxy, and the proxy handles OAuth discovery at its own routes.
+Where another OAuth service already owns the root path, either give this server its own hostname, or run it without client ID and secret so it never serves the document. An authorization-server metadata request then belongs to the provider, where the `authorization_servers` entry in this server's protected-resource metadata sends the client anyway.
+
+### Verifying the routing
+
+Probe the container first, to separate what the server serves from what the proxy does with it. The image ships no HTTP client, so borrow one. Passing `--network container:` puts the throwaway container inside the server's network namespace, which makes `localhost:8000` the server itself:
+
+```
+NS="container:$(docker compose ps -q paperless-mcp)"
+docker run --rm --network "$NS" curlimages/curl -s -o /dev/null \
+  -w '%{http_code}\n' localhost:8000/mcp
+docker run --rm --network "$NS" curlimages/curl -s \
+  localhost:8000/.well-known/oauth-protected-resource/myservice/mcp
+```
+
+Expect `401` for the first, meaning the endpoint is there and authentication is on, and the metadata JSON for the second. A `404` instead of the `401` means `HTTP_PATH` carries the prefix it should not. Then repeat from outside, through the proxy:
+
+```
+curl -s -o /dev/null -w '%{http_code}\n' https://mcp.example.com/myservice/mcp
+curl -s https://mcp.example.com/.well-known/oauth-protected-resource/myservice/mcp
+```
+
+Both must reach this server, and the `resource` field in the JSON must read `https://mcp.example.com/myservice/mcp`. A `resource` naming a different service is the shared-hostname problem above, not an incorrect `BASE_URL`.
 
 # Release Process
 
-`main` is trunk: every change merges there, and merging is not releasing. A merge feeds the rolling `edge` channel and nothing else. A release is a separate, deliberate event, cut by dispatching the **Release** workflow, and this page describes what each kind of release publishes and where releases come from.
+`main` is trunk: every change merges there, and merging a feature is not releasing. A merge feeds the rolling `edge` channel and nothing else. A release is a separate, deliberate event: a maintainer dispatches the **Release Prepare** workflow, reviews the release pull request it opens, and merges it. The merge is what tags and publishes. This page describes that flow, what each kind of release publishes, and where releases come from.
 
 ## Channels
 
-| Channel     | Version identity                 | What it promises                                                                                                                                                                                                                                                                                                           |
-| ----------- | -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `edge`      | None; the commit is the identity | The newest merged code. Every merge to `main` rebuilds the rolling Docker tag plus an `.mcpb` bundle workflow artifact, and the rolling `unstable` docs version deploys from the same trigger. It leaves no git tag, GitHub release, or PyPI entry behind.                                                                 |
-| Pre-release | `vX.Y.Z-rc.N`, fixed at cut time | A stabilisation step toward exactly that version, cut from a `release/X.Y` branch. Publishes a GitHub release with wheels, `sdist`, `.mcpb` bundle, and SBOM attached, plus a Docker image under its immutable version tag. Skips PyPI, `.deb`/`.rpm` packages, the marketplace and registry entries, and the docs deploy. |
-| Stable      | `vX.Y.Z`                         | The full artifact set: PyPI, Docker, Linux packages, GitHub release assets (wheels, `sdist`, `.mcpb` bundle, SBOM), marketplace and registry entries, versioned docs.                                                                                                                                                      |
+| Channel     | Version identity                                                 | What it promises                                                                                                                                                                                                                                                                                                                                                                           |
+| ----------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `edge`      | None; the commit is the identity                                 | The newest merged code. Every merge to `main` rebuilds the rolling Docker tag plus an `.mcpb` bundle and a Claude Code plugin `.zip` as workflow artifacts, and the rolling `unstable` docs version deploys from the same trigger. It leaves no git tag, GitHub release, or PyPI entry behind.                                                                                             |
+| Pre-release | `vX.Y.Z-rc.N`, computed and reviewed in its release pull request | A stabilisation step toward exactly that version, normally cut from a `release/X.Y` branch. Publishes a GitHub release with wheels, `sdist`, `.deb`/`.rpm` packages, `.mcpb` bundle, plugin `.zip`, and SBOM attached, plus the wheel on PyPI and a Docker image under its immutable version tag and the rolling `rc` tag. Skips the marketplace and registry entries and the docs deploy. |
+| Stable      | `vX.Y.Z`                                                         | The full artifact set: PyPI, Docker, Linux packages, GitHub release assets (wheels, `sdist`, `.mcpb` bundle, SBOM), marketplace and registry entries, versioned docs.                                                                                                                                                                                                                      |
 
-Pre-release and `edge` builds never reach PyPI: PyPI is where every ordinary installer looks, and unstable builds do not belong in front of it. A pre-release's wheels are still attached to its [GitHub release](https://github.com/pvliesdonk/paperless-mcp/releases) and installable by URL for anyone who opts in.
+Pre-releases do reach PyPI, and that does not put them in front of ordinary installers. A PEP 440 resolver skips pre-releases unless the requirement pins one or you pass `--pre`, so `pip install pvliesdonk-paperless-mcp` and `uv add pvliesdonk-paperless-mcp` still resolve to the newest stable. Ask for a candidate by name to get one:
 
-Rolling pointers are ordering-aware. The Docker `latest`, `vX`, and `vX.Y` tags, the GitHub latest-release pointer, the docs `latest` alias, and the marketplace and registry entries follow a release only when it is the newest in the relevant series, so a patch release cut from an old `release/X.Y` branch never moves them back to older content. See [Image tags](https://pvliesdonk.github.io/paperless-mcp/unstable/deployment/docker/#image-tags) for the Docker tag list.
+```
+pip install pvliesdonk-paperless-mcp==X.Y.ZrcN
+```
+
+Note the spelling. Tags and the changelog use SemVer (`vX.Y.Z-rc.N`); PyPI uses the PEP 440 canonical form (`X.Y.ZrcN`).
+
+Candidates need PyPI because the `.mcpb` bundle points there rather than carrying the code. Its manifest launches `uvx --from pvliesdonk-paperless-mcp[all]==<version>`, so a candidate absent from PyPI ships a bundle that fails on the tester's machine at install time. `edge` still publishes nothing to PyPI: it has no version identity to publish under.
+
+Rolling pointers are ordering-aware. The Docker `latest`, `vX`, and `vX.Y` tags, the GitHub latest-release pointer, the docs `latest` alias, and the marketplace and registry entries follow a release only when it is the newest in the relevant series, so a patch release cut from an old `release/X.Y` branch never moves them back to older content. The Docker `rc` tag follows the same rule on the pre-release side: it moves only while the candidate's version is still ahead of the newest stable. This holds even when two releases overlap: each rolling channel checks the tag ordering again inside its own publish job. See [Image tags](https://pvliesdonk.github.io/paperless-mcp/unstable/deployment/docker/#image-tags) for the Docker tag list.
+
+## Testing a candidate's Claude Code plugin
+
+Every release attaches `paperless-mcp-plugin-<version>.zip`, and every merge to `main` produces the same archive as the `plugin-zip-edge` workflow artifact. Load one without installing anything:
+
+```
+claude --plugin-url https://github.com/pvliesdonk/paperless-mcp/releases/download/vX.Y.Z-rc.N/paperless-mcp-plugin-X.Y.Z-rc.N.zip
+```
+
+The plugin loads for that session only and leaves no install record, so this is the way to try a candidate without disturbing the installed copy. Check it came up with `/plugin`, or from the shell:
+
+```
+claude --plugin-url <url> plugin details paperless-mcp
+```
+
+The zip carries its own wheel and launches it from `${CLAUDE_PLUGIN_ROOT}`, so it works at versions no index serves: every candidate, and the `edge` build, whose constant `0.0.0-dev` could never be published. Its dependencies still resolve normally at launch, so the machine needs network access the first time the server starts.
+
+The marketplace entry is the other half of the channel and works differently: it is a thin pointer that installs `pvliesdonk-paperless-mcp` from PyPI, it is what `/plugin install` reads, and it follows stable releases only. Claude Code has no marketplace-free way to install a plugin permanently, so a candidate is something you load per session rather than install.
+
+## The release pull request
+
+Dispatching **Release Prepare** on the branch to release from has the release tool, [knope](https://knope.tech/), compute the next version from the conventional commits since the last release in that branch's history. It stamps the version-coupled files (`pyproject.toml` and `CHANGELOG.md` natively; `uv.lock`'s self-version entry on every prepare and the install-channel manifests on stable prepares, both through `scripts/stamp_manifests.py`) and opens a release pull request against the dispatched branch. The dispatch's `channel` input picks the release kind: `auto` prepares a release candidate on `release/X.Y` branches and a stable elsewhere, and an explicit `rc` or `stable` choice overrides that. The optional `override_version` input replaces the computed version with an explicit one, for the rare range whose commits the tool counts nothing in; the workflow refuses a dispatch on any branch other than the default branch or `release/X.Y`, and refuses a computed version whose tag already exists.
+
+The release pull request is an ordinary pull request: full CI runs on it, and the reviewer checks the computed version against the breaking-change policy and reads the changelog section in the diff. Merging it is the release decision. On merge, the **Release** workflow tags the merge commit and creates the GitHub release, then hands off to the publish fan-out; every publish gate derives from the reviewed version string.
+
+Two rules keep the flow sound:
+
+- Never press GitHub's "Update branch" button on a release pull request. If the base branch moves while the pull request is open, dispatch Release Prepare again: it recreates the preparation branch from the base and refreshes the same pull request in place.
+- A release candidate promotes through a plain `channel: stable` dispatch over the same commits. A guard verifies that nothing but release stamps and release-notes pages changed since the last candidate, first when the promotion is prepared (a drifted promotion refuses before its pull request even opens) and again before any tag is created; any other change forces a new candidate instead of a silently different stable.
 
 ## Releasing from trunk
 
-The default release path is trunk. When trunk is quiescent (no epic that must ship whole is mid-flight), dispatching Release on `main` cuts a stable from the head commit: no branch, no ceremony. The workflow prints an advisory warning when a release-named milestone still has open issues, or when an open `ships-atomically` epic shows work in flight. It counts the epic's native sub-issues, which may live in another repository, so a cross-repo epic stays visible. Either way the warning never blocks, since the cut may still be intentional.
+The default release path is trunk. When trunk is quiescent (no epic that must ship whole is mid-flight), dispatch Release Prepare on `main` and merge the release pull request: no branch, no ceremony. The prepare workflow prints an advisory warning when a release-named milestone still has open issues, or when an open `ships-atomically` epic shows work in flight. It counts the epic's native sub-issues, which may live in another repository, so a cross-repo epic stays visible. Either way the warning never blocks, since the cut may still be intentional.
 
 ## Stabilisation branches
 
 A short-lived `release/X.Y` branch is the exception tool, for two cases:
 
-1. **Trunk carries unfinished work** that the release must exclude. The branch is cut from the last quiescent commit behind the head, release candidates are cut there while fixes land, and the `finalize` dispatch input cuts the final stable `X.Y.Z`.
+1. **Trunk carries unfinished work** that the release must exclude. The branch is cut from the last quiescent commit behind the head, release candidates are cut there while fixes land, and a plain `channel: stable` dispatch promotes the final `X.Y.Z`.
 1. **A shipped release needs a patch** while `main` has moved on. The branch can be created retroactively from the release tag, so no branch needs to exist in advance of the need.
 
-Fixes flow from trunk to the branch: they land on `main` first and are cherry-picked over. After any release cut from a `release/X.Y` branch, an automated merge-back job merges the branch into `main`; that merge is the single reverse flow, and it carries only the release machinery's version commits, never features.
+Fixes flow from trunk to the branch: they land on `main` first and are cherry-picked over. After a stable release cut from a `release/X.Y` branch, an automated job opens an ordinary pull request that carries the release's changelog section back to `main`, reviewed and CI-gated like any other change, with no direct pushes to protected branches. Release candidates port nothing: the stable's changelog section covers the whole cycle.
 
 Release branches carry shipped releases, so they get the same protection as `main`: pull requests plus green CI, applied by the shipped rulesets. See [Repository Protection](https://pvliesdonk.github.io/paperless-mcp/unstable/deployment/repository-protection/index.md).
 
@@ -892,15 +970,17 @@ Release branches carry shipped releases, so they get the same protection as `mai
 
 Each release is described in three places with distinct jobs:
 
-- **The GitHub release body** carries a short user-facing summary and a link to the release's notes page on this site. The body is a pointer, not the record.
+- **The GitHub release body** carries the release's notes summary, its machine-written changelog section, and pointers: the versioned docs, the compare view, and a deep link to the notes page.
 - **The release notes pages on this docs site** are the canonical human-facing narrative of what changed and why it matters.
-- **`CHANGELOG.md`** in the repository is the machine-written, commit-level audit trail, generated from conventional commits by the release tooling.
+- **`CHANGELOG.md`** in the repository is the machine-written audit trail, generated from conventional commits into each release pull request.
 
 ### How the notes pages are produced
 
-The pages under [Release Notes](https://pvliesdonk.github.io/paperless-mcp/unstable/releases/index.md) cover one minor series each; a patch release adds a dated section to its series page. After every stable release, the **Release Notes** workflow drafts the page: an agent researches the release range through the GitHub API (the linked issues and pull requests, not commit subjects) and opens a pull request against `main`. Every causal claim in a page must cite a linked issue or pull request. The drafting agent runs the same prose lint as the rest of this site while it writes, and the notes pull request's own CI enforces it: the `vale` job must pass before the pull request can merge, the same gate every change to this site clears.
+The pages under [Release Notes](https://pvliesdonk.github.io/paperless-mcp/unstable/releases/index.md) cover one minor series each; a patch release adds a dated section to its series page. The page is part of every release pull request, exactly like the changelog. The Release Prepare workflow's notes job drafts or refreshes it. The drafting agent reads the release range through the GitHub API, working from the linked issues and pull requests rather than commit subjects, and the finished page is committed onto the release pull request's branch. Reviewing the release pull request covers the notes. Merging it lands the page in the release's own tag, and the published docs and the release body's summary and deep link all read the page from there. Release candidates carry their notes draft the same way, so a candidate is the full release artifact, narrative included. Every causal claim in a page must cite a linked issue or pull request, and the drafting agent runs the same prose lint as the rest of this site.
 
-A maintainer merge is the publication step. Nothing lands on the site without review, and until the merge the release keeps the short interim body the release workflow wrote; a failed or unconvincing draft never blocks or alters a release. On merge, the **Release Notes Publish** workflow updates the GitHub release body from the page's summary and redeploys that minor's versioned docs so the body's deep link resolves. Later hand edits to a merged page redeploy the docs the same way.
+The release pull request stays a draft until the notes job lands its page, so a release without its notes can never merge by accident. A drafting failure fails the prepare run visibly and leaves the pull request in draft; re-run the notes job, or re-dispatch Release Prepare with `skip_notes` to release without a notes refresh. For a release shipped that way, the **Release Notes** workflow's manual dispatch drafts a standalone notes pull request as a backfill. Later hand edits to a released page redeploy that minor's versioned docs through the **Release Notes Publish** workflow.
+
+A notes refresh is incremental by default: the drafting agent researches only the commits since the page's last accepted draft and leaves accepted prose alone. To rewrite a page from scratch under the current drafting rules, dispatch Release Prepare with `full_redraft`; the rewrite lands inside the release pull request like any other draft. The **Release Notes** workflow's manual dispatch accepts the same flag in both of its modes: a target version re-drafts against an open release pull request without re-running the whole prepare, and a tag produces a standalone backfill pull request for a shipped release.
 
 # Repository Protection
 
@@ -926,11 +1006,12 @@ The reasoning per branch class:
 
 Ruleset bypass lists name roles, teams, apps, or deploy keys, not user accounts. The shipped entry grants bypass to the **repository admin role** (`actor_id` 5, the one actor a template can name without knowing your account), with `bypass_mode: always`.
 
-The release flow depends on this. `RELEASE_TOKEN` is a personal access token, and a personal access token (classic or fine-grained) acts as its owner and holds the repository role of that owner. With the token owned by a repository admin, all of the release pipeline's direct pushes bypass the rules:
+The release flow depends on this. `RELEASE_TOKEN` is a personal access token, and a personal access token (classic or fine-grained) acts as its owner and holds the repository role of that owner. The release-PR flow shrank what the token does: version bumps reach `main` through reviewed pull requests now, so no release commit or merge-back is ever pushed directly to a protected branch. Its remaining operations still rely on the admin bypass:
 
-- the release commit and `vX.Y.Z` tag that python-semantic-release pushes to the released branch (`main` or `release/X.Y`),
-- the merge-back merge commit pushed to `main` after a release cut from a `release/*` branch,
+- the `vX.Y.Z` tag and GitHub release that knope creates after a release pull request merges (tag creation is open, but the token must satisfy the `v*` tag ruleset's other rules),
 - the owner's own hotfix pushes, preserving the escape hatch the previous classic protection provided via its disabled admin enforcement.
+
+The token's other release-flow duties (pushing the `knope/prepare/*` preparation branches, and opening the release, notes, and port pull requests) need no bypass at all. They use a personal token rather than `GITHUB_TOKEN` only so the resulting pull requests trigger CI, which a `GITHUB_TOKEN`-created pull request never does.
 
 Two clean-up operations the release model implies depend on this bypass too. `protect-release-branches` blocks deleting a `release/X.Y` branch, and `protect-release-tags` blocks deleting a `v*` tag, yet a stabilisation branch is short-lived, and the `Pre-release check` workflow describes its `v<version>-rc` pre-release as safe to delete. Both deletions are available only to the admin role, through the same bypass. A `RELEASE_TOKEN` that is not owned by a repository admin cannot perform them, and those spent branches and pre-release tags then accumulate until an admin removes them.
 
@@ -943,6 +1024,42 @@ If your release credential is a GitHub App installation token rather than a pers
 `bootstrap.yml` upserts each ruleset by name: it updates the existing ruleset when one matches and creates it otherwise, replacing the whole ruleset with the checked-in state every time. Edits made by hand in the GitHub UI are reset on the next run, so change the JSON files instead. A push that touches `.github/rulesets/` or the bootstrap workflow re-applies automatically; `workflow_dispatch` re-applies on demand. Rulesets with other names are never touched, so you can add your own alongside.
 
 The apply step needs `administration: write`, a permission the default `GITHUB_TOKEN` cannot be granted, so it runs with `RELEASE_TOKEN`, matching the permission set the README already asks for.
+
+## Requiring a check the template does not own
+
+`CI Success` is the only context the shipped rulesets require, and it is an aggregate: it passes when every job in the generated `ci.yml` passed, so adding a job there needs no ruleset change. A check that lives outside that workflow is a different matter. A workflow cannot list another workflow's job in its own `needs:`, so a domain workflow the project added itself cannot join the aggregate: it runs, it shows red on the pull request, and nothing stops the merge.
+
+List its context in the `extra_required_checks` copier answer instead:
+
+```
+# .copier-answers.yml
+extra_required_checks:
+  - SPA sources
+```
+
+Each name renders into the `required_status_checks` array of both branch rulesets, alongside `CI Success`, and applies to `main` and `release/*` alike. The answer is the project's own, so the rulesets stay template-owned and a `copier update` re-renders them with the project's checks intact. An empty answer, the default, renders exactly the single-context form every project already had.
+
+Write each name as the check appears on the pull request. That is the job's `name:` when it has one and the job id otherwise, not the workflow's name, and not the file it lives in.
+
+The rendered files reach GitHub the same way as any other ruleset change: commit them and push, and the `.github/rulesets/` path filter starts `bootstrap.yml`; a `workflow_dispatch` run applies them on demand.
+
+A required check must report on every pull request
+
+A required context that never reports blocks the merge forever. The pull request waits for a check that is not coming, and there is no timeout. This is easy to trigger by accident, because the natural way to write a domain workflow is to scope it:
+
+- a `paths:` filter means the check reports on the pull requests that touch those files and no others,
+- a job-level `if:` that evaluates false skips the job, which reports nothing,
+- a workflow that runs only on `push` never reports on a pull request at all.
+
+Let the workflow run on every pull request to a protected branch and decide inside the job whether there is work to do, exiting zero when there is not. Verify on a pull request that touches nothing the check cares about: the context must still appear, and pass.
+
+### `codecov/patch`, if you require it
+
+`codecov/patch` is the one context this rule applies to that the template itself ships, and it is worth knowing how it reaches a pull request before you add it to `extra_required_checks`.
+
+Two workflows post it. `ci.yml` posts it directly for a pull request from a branch in this repository. A pull request from a fork gets a read-only token, so `ci.yml` cannot write the status there; `coverage-status.yml` posts it instead, from a `workflow_run` that executes in this repository's context after CI finishes.
+
+Both post under every outcome, including an `error` state when the coverage result is missing. That is deliberate: an `error` is recoverable, because a maintainer can re-run the workflow, while a missing status is not. If you require this context and a fork pull request stalls on it, check the **Post Coverage Status** workflow's runs rather than the CI run: the status comes from there.
 
 ## Applying by hand
 
