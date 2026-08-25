@@ -29,4 +29,5 @@
 ## Release Notes
 
 - [Release Notes](https://pvliesdonk.github.io/paperless-mcp/unstable/releases/index.md)
+- [1.0](https://pvliesdonk.github.io/paperless-mcp/unstable/releases/1.0/index.md)
 

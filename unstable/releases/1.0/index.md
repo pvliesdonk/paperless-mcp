@@ -1,0 +1,27 @@
+# 1.0
+
+v1.0.2 modernizes the server on the latest shared `fastmcp-pvl-core` runtime and adds two new ways to get the server configured and installed: a browser-based guided configuration wizard and a Claude Code plugin distribution channel. It also removes `create_download_link`, a tool that had silently never worked on any transport.
+
+## Two new ways to get set up
+
+Paperless MCP carried its shared server runtime forward from `fastmcp-pvl-core` 1.0.0 to 4.11.3, adopting the underlying project template from v1.2.0 to v5.6.3 across four staged upgrades ([#77](https://github.com/pvliesdonk/paperless-mcp/pull/77), [#83](https://github.com/pvliesdonk/paperless-mcp/pull/83), [#85](https://github.com/pvliesdonk/paperless-mcp/pull/85), [#87](https://github.com/pvliesdonk/paperless-mcp/pull/87)). Two of the new capabilities that upgrade unlocked are directly useful for anyone setting the server up for the first time.
+
+**The [configuration generator](https://pvliesdonk.github.io/paperless-mcp/latest/configuration-generator/)** is a browser page that asks a few questions about your deployment and produces a ready-to-use configuration. Everything runs client-side, and nothing typed into it is sent anywhere. Secret fields such as your Paperless API token are excluded from any shareable link ([#76](https://github.com/pvliesdonk/paperless-mcp/issues/76)).
+
+**A Claude Code plugin channel** lets Claude Code install and run the server directly. Every stable release publishes a marketplace entry that installs the released PyPI package via `uvx`, and every release (plus every merge to `main`) also attaches a standalone `paperless-mcp-plugin-<version>.zip` that can be loaded for a single session with `claude --plugin-url <url>`, a way to try a release candidate without installing anything ([#82](https://github.com/pvliesdonk/paperless-mcp/issues/82); see [Testing a candidate's Claude Code plugin](https://pvliesdonk.github.io/paperless-mcp/unstable/deployment/release-process/#testing-a-candidates-claude-code-plugin)). The plugin's install screen collects your Paperless URL and API token, plus optional HTTP timeout, retry count, default page size, and public URL overrides.
+
+Both additions are new distribution/setup surfaces; as of this release [the installation guide](https://pvliesdonk.github.io/paperless-mcp/unstable/installation/index.md) still documents only the PyPI, Docker, and from-source paths.
+
+## Operator tool visibility controls
+
+The same runtime upgrade adds `PAPERLESS_MCP_TOOLS_ALLOW` and `PAPERLESS_MCP_TOOLS_DENY`, letting an operator expose only a chosen set of tools or hide specific ones from a given instance, useful for running a read-heavy or narrowly scoped deployment without a custom build. See [Configuration](https://pvliesdonk.github.io/paperless-mcp/unstable/configuration/#tool-visibility) for both variables.
+
+## Retiring `create_download_link`
+
+`create_download_link` is gone from this release. It was never actually reachable: `ToolContext` was built before the artifact store it depended on existed, so `ctx.artifact_store` was always `None` and the tool's own registration step returned early on every transport ([#74](https://github.com/pvliesdonk/paperless-mcp/issues/74)). Its underlying dependency, `fastmcp-pvl-core`'s `ArtifactStore`, has itself been replaced upstream by a Transfer API (`register_transfer_routes`/`TransferSink`); a rebuild on the new API landed and was reverted in the same release ([#75](https://github.com/pvliesdonk/paperless-mcp/pull/75), [#79](https://github.com/pvliesdonk/paperless-mcp/pull/79)) because it arrived out of sequence with the staged template upgrade, not because the approach was wrong. A supported replacement remains tracked in [#43](https://github.com/pvliesdonk/paperless-mcp/issues/43).
+
+Because the tool never worked in any released version, no working capability is lost by its removal.
+
+## Upgrading
+
+No operator action is required. `create_download_link`'s removal is not classified as breaking: the tool never functioned in any prior release, so there is no reachable behavior for an upgrade to take away. The `fastmcp-pvl-core` upgrade broadens the general server configuration surface inherited from the shared runtime. See `.env.example` and [Configuration](https://pvliesdonk.github.io/paperless-mcp/unstable/configuration/index.md) for the current reference.
