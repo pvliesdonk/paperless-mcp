@@ -1,7 +1,7 @@
 {
   "name": "paperless-mcp",
   "description": "Paperless-NGX document management over MCP: search, tag, upload, and read documents; manage tags, correspondents, document types, and custom fields.",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "author": {
     "name": "pvliesdonk"
   },
