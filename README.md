@@ -1,21 +1,23 @@
 # Paperless MCP
 
-[![CI](https://github.com/pvliesdonk/paperless-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/pvliesdonk/paperless-mcp/actions/workflows/ci.yml) [![codecov](https://codecov.io/gh/pvliesdonk/paperless-mcp/graph/badge.svg)](https://codecov.io/gh/pvliesdonk/paperless-mcp) [![PyPI](https://img.shields.io/pypi/v/pvliesdonk-paperless-mcp)](https://pypi.org/project/pvliesdonk-paperless-mcp/) [![Python](https://img.shields.io/pypi/pyversions/pvliesdonk-paperless-mcp)](https://pypi.org/project/pvliesdonk-paperless-mcp/) [![License](https://img.shields.io/github/license/pvliesdonk/paperless-mcp)](LICENSE) [![Docker](https://img.shields.io/github/v/release/pvliesdonk/paperless-mcp?label=ghcr.io&logo=docker)](https://github.com/pvliesdonk/paperless-mcp/pkgs/container/paperless-mcp) [![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://pvliesdonk.github.io/paperless-mcp/) [![llms.txt](https://img.shields.io/badge/llms.txt-available-brightgreen)](https://pvliesdonk.github.io/paperless-mcp/llms.txt)
+<!-- mcp-name: io.github.pvliesdonk/paperless-mcp -->
+
+[![CI](https://github.com/pvliesdonk/paperless-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/pvliesdonk/paperless-mcp/actions/workflows/ci.yml) [![codecov](https://codecov.io/gh/pvliesdonk/paperless-mcp/graph/badge.svg)](https://codecov.io/gh/pvliesdonk/paperless-mcp) [![PyPI](https://img.shields.io/pypi/v/pvliesdonk-paperless-mcp)](https://pypi.org/project/pvliesdonk-paperless-mcp/) [![Python](https://img.shields.io/pypi/pyversions/pvliesdonk-paperless-mcp)](https://pypi.org/project/pvliesdonk-paperless-mcp/) [![License](https://img.shields.io/github/license/pvliesdonk/paperless-mcp)](LICENSE) [![Docker](https://img.shields.io/github/v/release/pvliesdonk/paperless-mcp?label=ghcr.io&logo=docker)](https://github.com/pvliesdonk/paperless-mcp/pkgs/container/paperless-mcp) [![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://pvliesdonk.github.io/paperless-mcp/) [![llms.txt](https://img.shields.io/badge/llms.txt-available-brightgreen)](https://pvliesdonk.github.io/paperless-mcp/llms.txt) [![Template](https://img.shields.io/badge/dynamic/yaml?url=https://raw.githubusercontent.com/pvliesdonk/paperless-mcp/main/.copier-answers.yml&query=%24._commit&label=template)](https://github.com/pvliesdonk/fastmcp-server-template)
 
 Paperless-NGX document management over MCP: search, tag, upload, and read documents; manage tags, correspondents, document types, and custom fields.
 
-**[Documentation](https://pvliesdonk.github.io/paperless-mcp/)** | **[PyPI](https://pypi.org/project/pvliesdonk-paperless-mcp/)** | **[Docker](https://github.com/pvliesdonk/paperless-mcp/pkgs/container/paperless-mcp)**
+**[Documentation](https://pvliesdonk.github.io/paperless-mcp/)** | **[Config wizard](https://pvliesdonk.github.io/paperless-mcp/latest/configuration-generator/)** | **[PyPI](https://pypi.org/project/pvliesdonk-paperless-mcp/)** | **[Docker](https://github.com/pvliesdonk/paperless-mcp/pkgs/container/paperless-mcp)**
 
 ## Features
 
 <!-- DOMAIN-START -->
-- **Document search & retrieval** — full-text and filtered list queries against Paperless-NGX, plus access to extracted OCR text, metadata, thumbnails, and original-file downloads via short-lived signed URLs.
-- **Tag, correspondent, document-type, custom-field management** — full CRUD and bulk-edit for every classification dimension Paperless exposes.
-- **Document lifecycle** — upload new documents, update fields, attach notes, and inspect audit history and AI-suggested tags/correspondents/types.
-- **Operational introspection** — saved views, storage paths, share links, background tasks (with `wait_for_task`), statistics, and remote Paperless-NGX version.
-- **MCP tools** — 50 LLM-visible tools with Lucide icons and read-only gating; see `src/paperless_mcp/tools/`.
-- **MCP resources** — 20 URIs exposing documents and domain collections; see `src/paperless_mcp/resources/`.
-- **Read-only mode** — flip `PAPERLESS_MCP_READ_ONLY=true` to disable every mutating tool at startup.
+- **Document search & retrieval:** full-text and filtered list queries against Paperless-NGX, plus access to extracted OCR text, metadata, and thumbnails.
+- **Tag, correspondent, document-type, custom-field management:** full CRUD and bulk-edit for every classification dimension Paperless exposes.
+- **Document lifecycle** supports uploads, field changes, notes, audit history, and AI-suggested tags/correspondents/types.
+- **Operational introspection** covers saved views, storage paths, share links, background tasks (with `wait_for_task`), statistics, and remote Paperless-NGX version.
+- **MCP tools:** 50 LLM-visible tools with `Lucide` icons and read-only gating; see `src/paperless_mcp/tools/`.
+- **MCP resources:** 20 URIs exposing documents and domain collections; see `src/paperless_mcp/resources/`.
+- **Read-only mode:** flip `PAPERLESS_MCP_READ_ONLY=true` to disable every mutating tool at startup.
 <!-- DOMAIN-END -->
 
 ## What you can do with it
@@ -27,7 +29,6 @@ With this server mounted in an MCP client (Claude, etc.), you can:
 - **"Tag these three documents as 'reviewed' and move them to the Accounting correspondent."** Uses `bulk_edit_documents` in a single call.
 - **"Upload this PDF and wait until OCR finishes."** Composes `upload_document` + `wait_for_task` so the assistant only reports back once the document is indexed.
 - **"What changed on document 4213 in the last week?"** Reads `paperless://documents/4213/history` and summarises the audit trail.
-- **"Give me a time-limited link to the original file for document 982."** Calls `create_download_link` — the URL is valid for `PAPERLESS_MCP_DOWNLOAD_LINK_TTL_SECONDS` and does not expose the API token.
 <!-- DOMAIN-END -->
 
 <!-- ===== TEMPLATE-OWNED SECTIONS BELOW — DO NOT EDIT; CHANGES WILL BE OVERWRITTEN ON COPIER UPDATE ===== -->
@@ -43,7 +44,7 @@ pip install pvliesdonk-paperless-mcp
 If you add optional extras via the `PROJECT-EXTRAS-START` / `PROJECT-EXTRAS-END` sentinels in `pyproject.toml`, document them below:
 
 <!-- DOMAIN-START -->
-- `pip install pvliesdonk-paperless-mcp[docs]` — pulls in `mkdocs-material` and `mkdocstrings[python]` for building the documentation site locally (`uv run mkdocs serve`).
+- `pip install pvliesdonk-paperless-mcp[docs]`: installs `mkdocs-material` and `mkdocstrings[python]` for building the documentation site locally (`uv run mkdocs serve`).
 <!-- DOMAIN-END -->
 
 ### From source
@@ -51,7 +52,7 @@ If you add optional extras via the `PROJECT-EXTRAS-START` / `PROJECT-EXTRAS-END`
 ```bash
 git clone https://github.com/pvliesdonk/paperless-mcp.git
 cd paperless-mcp
-uv sync --all-extras --dev
+uv sync --all-extras --all-groups
 ```
 
 ### Docker
@@ -60,7 +61,9 @@ uv sync --all-extras --dev
 docker pull ghcr.io/pvliesdonk/paperless-mcp:latest
 ```
 
-A `compose.yml` ships at the repo root as a starting point — copy `.env.example` to `.env`, edit, and `docker compose up -d`.
+A `compose.yml` ships at the repo root as a starting point. Copy `.env.example` to `.env`, edit, and `docker compose up -d`.
+
+To attach a remote Python debugger (development only; the protocol is unauthenticated), see [Remote debugging](docs/deployment/docker.md#remote-debugging).
 
 ### Linux packages (.deb / .rpm)
 
@@ -74,7 +77,9 @@ Download the `.mcpb` bundle from the [GitHub Releases](https://github.com/pvlies
 mcpb install paperless-mcp-<version>.mcpb
 ```
 
-Claude Desktop prompts for required env vars via a GUI wizard — no manual JSON editing needed.
+Claude Desktop prompts for required env vars via a GUI wizard, with no manual JSON editing needed.
+
+For manual Claude Desktop configuration and setup options, see [Claude Desktop deployment](docs/deployment/claude-desktop.md).
 
 ## Quick start
 
@@ -83,7 +88,11 @@ paperless-mcp serve                                # stdio transport
 paperless-mcp serve --transport http --port 8000   # streamable HTTP
 ```
 
-For library usage (embedding the domain logic without the MCP transport), import from the `paperless_mcp` package directly — see `src/paperless_mcp/domain.py` for the entry point scaffold.
+For library usage (embedding the domain logic without the MCP transport), import from the `paperless_mcp` package directly. See the project's domain modules under `src/paperless_mcp/` for entry points.
+
+### Server info
+
+The server registers a built-in `get_server_info` tool (via `fastmcp_pvl_core.register_server_info_tool`) so operators can confirm the deployed version with a single MCP call. The default response carries `server_name`, `server_version`, and `core_version`. Servers that talk to a remote upstream wire upstream version reporting inside the `DOMAIN-UPSTREAM-START` / `DOMAIN-UPSTREAM-END` sentinel in `src/paperless_mcp/server.py`; see [`CLAUDE.md`](CLAUDE.md#server-info-tool-get_server_info) for the wiring pattern.
 
 ## Configuration
 
@@ -100,10 +109,9 @@ All settings come from environment variables with the `PAPERLESS_MCP_` prefix.
 
 | Variable | Default | Description |
 |---|---|---|
-| `PAPERLESS_MCP_PAPERLESS_PUBLIC_URL` | *(same as `PAPERLESS_MCP_PAPERLESS_URL`)* | Public-facing Paperless UI URL used to construct user-visible links (e.g. `web_url`, `share_url`). Defaults to the API URL when unset. |
+| `PAPERLESS_MCP_PAPERLESS_PUBLIC_URL` | *(same as `PAPERLESS_MCP_PAPERLESS_URL`)* | Public-facing Paperless UI URL used to construct user-visible links, including `web_url` and `share_url`. Defaults to the API URL when unset. |
 | `PAPERLESS_MCP_HTTP_TIMEOUT_SECONDS` | `30` | Per-request HTTP timeout (seconds). |
 | `PAPERLESS_MCP_HTTP_RETRIES` | `2` | Retries (not counting the initial attempt) on 5xx/network errors. |
-| `PAPERLESS_MCP_DOWNLOAD_LINK_TTL_SECONDS` | `300` | TTL of URLs issued by `create_download_link`. Clamped `[30, 3600]`. |
 | `PAPERLESS_MCP_DEFAULT_PAGE_SIZE` | `25` | Default `page_size` for list tools. Clamped `[1, 100]`. |
 | `PAPERLESS_MCP_READ_ONLY` | `false` | When `true`, disables every writable tool. |
 | `PAPERLESS_MCP_INSTRUCTIONS` | *(built-in)* | Operator-supplied description appended to MCP instructions. |
@@ -120,7 +128,7 @@ The following variables are inherited unchanged from [`fastmcp-server-template`]
 | `PAPERLESS_MCP_HOST` | Bind host for HTTP/SSE transport (default `127.0.0.1`). |
 | `PAPERLESS_MCP_PORT` | Bind port for HTTP/SSE transport (default `8000`). |
 | `PAPERLESS_MCP_HTTP_PATH` | URL path prefix for HTTP transport (default `/mcp`). |
-| `PAPERLESS_MCP_BASE_URL` | Public base URL for artifact download links. |
+| `PAPERLESS_MCP_BASE_URL` | Public base URL for OIDC and public HTTP server metadata. |
 | `PAPERLESS_MCP_OIDC_*` | OIDC provider settings when OIDC auth is enabled. |
 | `PAPERLESS_MCP_BEARER_TOKEN` | Static bearer token for simple token auth. |
 | `PAPERLESS_MCP_LOG_LEVEL` | Log level: `DEBUG`, `INFO`, `WARNING`, `ERROR`. |
@@ -132,7 +140,7 @@ The following variables are inherited unchanged from [`fastmcp-server-template`]
 
 | Tool | Description |
 |---|---|
-| `list_documents` | List documents with optional filtering; OCR `content` stripped by default (`include_content=True` for full text). `notes[].note` and `custom_fields[].value` are always stripped on listings — use single-document endpoints to fetch them. |
+| `list_documents` | List documents with optional filtering; OCR `content` stripped by default (`include_content=True` for full text). `notes[].note` and `custom_fields[].value` are always stripped on listings. Use single-document endpoints to fetch them. |
 | `search_documents` | Full-text search across documents; OCR `content` stripped by default (`include_content=True` for full text). `notes[].note` and `custom_fields[].value` are always stripped on search hits. |
 | `get_document` | Retrieve a document by ID; OCR `content` stripped by default (`include_content=True` for full text) |
 | `get_document_content` | Get the extracted text content of a document |
@@ -148,9 +156,9 @@ The following variables are inherited unchanged from [`fastmcp-server-template`]
 | `add_document_note` | Add a note to a document |
 | `delete_document_note` | Delete a note from a document |
 
-`get_document`, `list_documents`, `search_documents`, and `update_document` include a `web_url` field pointing to the document in the Paperless UI (e.g. `https://paperless.example.com/documents/42/`). Set `PAPERLESS_MCP_PAPERLESS_PUBLIC_URL` if the public URL differs from the API URL; otherwise the API URL is used.
+`get_document`, `list_documents`, `search_documents`, and `update_document` include a `web_url` field pointing to the document in the Paperless UI, such as `https://paperless.example.com/documents/42/`. Set `PAPERLESS_MCP_PAPERLESS_PUBLIC_URL` if the public URL differs from the API URL; otherwise the API URL is used.
 
-Paginated tools return `next`/`previous` as bare `page=N` markers (never full URLs) — callers pass `page=N` explicitly when walking pages. `None` means no further page.
+Paginated tools return `next`/`previous` as bare `page=N` markers (never full URLs). Callers pass `page=N` explicitly when walking pages. `None` means no further page.
 
 ### Tags
 
@@ -205,17 +213,11 @@ Paginated tools return `next`/`previous` as bare `page=N` markers (never full UR
 | `get_saved_view` | Get a saved view by ID |
 | `list_share_links` | List share links (includes `share_url`; uses `PAPERLESS_MCP_PAPERLESS_PUBLIC_URL` if set, otherwise `PAPERLESS_MCP_PAPERLESS_URL`) |
 | `get_share_link` | Get a share link by ID (includes `share_url`; uses `PAPERLESS_MCP_PAPERLESS_PUBLIC_URL` if set, otherwise `PAPERLESS_MCP_PAPERLESS_URL`) |
-| `list_tasks` | List background tasks. Paginates (`page`, `page_size` up to 100). By default returns only unacknowledged tasks — pass `include_acknowledged=True` to include acknowledged tasks, or `acknowledged=True` to return only acknowledged ones. |
+| `list_tasks` | List background tasks. Paginates (`page`, `page_size` up to 100). By default returns only unacknowledged tasks. Pass `include_acknowledged=True` to include acknowledged tasks, or `acknowledged=True` to return only acknowledged ones. |
 | `get_task` | Get a task by ID |
 | `wait_for_task` | Wait until a task completes |
 | `get_statistics` | Get server statistics |
 | `get_remote_version` | Get the Paperless-NGX version |
-
-### Downloads
-
-| Tool | Description |
-|---|---|
-| `create_download_link` | Create a time-limited download URL for a document |
 
 ## Resources
 
@@ -240,7 +242,7 @@ Paginated tools return `next`/`previous` as bare `page=N` markers (never full UR
 | `paperless://documents/{document_id}/preview` | PDF preview |
 | `paperless://documents/{document_id}/download` | Original file download |
 
-### Shared framework variables
+### Shared template variables
 
 Inherited from `fastmcp-pvl-core` across all services built on the template:
 
@@ -248,16 +250,32 @@ Inherited from `fastmcp-pvl-core` across all services built on the template:
 |---|---|---|
 | `FASTMCP_LOG_LEVEL` | `INFO` | Log level for FastMCP internals and app loggers (`DEBUG` / `INFO` / `WARNING` / `ERROR`). The `-v` CLI flag overrides to `DEBUG`. |
 | `FASTMCP_ENABLE_RICH_LOGGING` | `true` | Set to `false` for plain / structured JSON log output. |
-| `PAPERLESS_MCP_EVENT_STORE_URL` | `memory://` | Event store backend for HTTP session persistence — `memory://` (dev), `file:///path` (survives restarts). |
+| `PAPERLESS_MCP_KV_STORE_URL` | `file:///data/state` | Persistent-state backend URL for pvl-core subsystems: `file:///path` (survives restarts), `memory://` (dev/ephemeral). |
 
+Domain-specific variables go below under [Domain configuration](#domain-configuration).
+
+## Authentication
+
+Callers authenticate via a bearer token or OIDC (mutually exclusive). See the [Authentication guide](docs/guides/authentication.md) for setup, mapped multi-subject tokens, OIDC, and troubleshooting.
+
+## Post-scaffold checklist
+
+After `copier copy` and `gh repo create --push`:
+
+1. **Fill in the DOMAIN blocks** (every section marked with a `DOMAIN` sentinel comment) in this README and in `CLAUDE.md`.
+2. Configure GitHub secrets (see below).
+3. Install dev + docs tooling: `uv sync --all-extras --all-groups`.
+4. Install pre-commit hooks: `uv run pre-commit install`.
+5. Run the gate locally: `uv run pytest -x -q && uv run ruff check --fix . && uv run ruff format . && uv run mypy src/ tests/`.
+6. Push the first commit. CI should be green.
 ## GitHub secrets
 
 CI workflows reference three repository secrets. Configure them via **Settings → Secrets and variables → Actions** or with `gh secret set`:
 
 | Secret | Used by | How to generate |
 |---|---|---|
-| `RELEASE_TOKEN` | `release.yml`, `copier-update.yml` | Fine-grained PAT at <https://github.com/settings/personal-access-tokens/new> with `contents: write` and `pull_requests: write` (the `copier-update` cron opens PRs). Scoped to this repo. |
-| `CODECOV_TOKEN` | `ci.yml` | <https://codecov.io> — sign in with GitHub, add the repo, copy the upload token from the repo settings page. |
+| `RELEASE_TOKEN` | `release.yml`, `copier-update.yml`, `renovate.yml`, `bootstrap.yml` | Fine-grained PAT at <https://github.com/settings/personal-access-tokens/new> with `contents: write`, `pull_requests: write`, and `administration: write` (bootstrap sets branch protection + auto-merge). Scoped to this repo. |
+| `CODECOV_TOKEN` | `ci.yml` | <https://codecov.io>: Sign in with GitHub and copy the upload token from the repository settings page. |
 | `CLAUDE_CODE_OAUTH_TOKEN` | `claude.yml`, `claude-code-review.yml` | Run `claude setup-token` locally and paste the result. |
 
 ```bash
@@ -266,7 +284,13 @@ gh secret set CODECOV_TOKEN
 gh secret set CLAUDE_CODE_OAUTH_TOKEN
 ```
 
-`GITHUB_TOKEN` is auto-provided — no action needed.
+> Dependency updates are handled by **Renovate** (`renovate.yml`), which reuses
+> `RELEASE_TOKEN`. It maintains `uv.lock` and auto-merges patch/minor bumps once
+> the `CI Success` check is green; `bootstrap.yml` enables auto-merge and branch
+> protection on first push. GitHub Actions are updated in the copier template
+> and arrive via `copier update`, not per-repo.
+
+`GITHUB_TOKEN` is auto-provided; no action needed.
 
 ## Local development
 
@@ -290,14 +314,14 @@ Pre-commit runs a subset of the gate on each commit; see `.pre-commit-config.yam
 
 ```bash
 rm -rf .venv
-uv sync --all-extras --dev
+uv sync --all-extras --all-groups
 ```
 
 `uv run python -m pytest` also works as a one-shot workaround (bypasses the stale entry-script shim).
 
 ### `uv.lock` refresh after `copier update`
 
-When `copier update` introduces new dependencies (e.g. a new extra added to `pyproject.toml.jinja`), CI runs `uv sync --frozen` which fails against a stale lockfile. Run `uv lock` locally and commit the refreshed `uv.lock` alongside accepting the copier-update PR.
+When `copier update` introduces new dependencies (such as a new extra added to `pyproject.toml.jinja`), CI runs `uv sync --frozen` which fails against a stale lockfile. Run `uv lock` locally and commit the refreshed `uv.lock` alongside accepting the copier-update PR.
 
 ## Links
 
@@ -317,10 +341,9 @@ The full domain env-var surface is documented under [Configuration](#configurati
 ## Key design decisions
 
 <!-- DOMAIN-START -->
-- **Read-only gating at startup, not per-call.** `PAPERLESS_MCP_READ_ONLY=true` skips registration of every mutating tool so they simply aren't part of the advertised tool surface — clients can't invoke a write that will be refused.
-- **Download links are signed and time-limited.** `create_download_link` mints a short-lived URL (default 300 s, clamped to `[30, 3600]`) that proxies through the MCP server, so the Paperless API token never leaves the host.
+- **Read-only gating at startup, not per-call.** `PAPERLESS_MCP_READ_ONLY=true` skips registration of every mutating tool so they simply are not part of the advertised tool surface. Clients cannot invoke a write that will be refused.
 - **HTTP layer retries idempotent reads only.** `PAPERLESS_MCP_HTTP_RETRIES` applies to GETs on 5xx/network errors; writes never retry automatically, to avoid double-applying bulk edits or uploads.
-- **Tool icons come from Lucide.** Every tool carries a Lucide icon hint so MCP clients that render icons (Claude Desktop) get a coherent visual surface — see `src/paperless_mcp/tools/_icons.py`.
-- **Models accept unknown upstream fields.** Pydantic models use lenient validation for list-endpoint responses so newer Paperless-NGX versions don't break the client (the `Document.some_future_paperless_field` test pins this behaviour).
+- **Tool icons come from `Lucide`.** Every tool carries a `Lucide` icon hint so MCP clients that render icons (Claude Desktop) get a coherent visual surface. See `src/paperless_mcp/tools/_icons.py`.
+- **Models accept unknown upstream fields.** `Pydantic` models use lenient validation for list-endpoint responses so newer Paperless-NGX versions do not break the client (the `Document.some_future_paperless_field` test pins this behaviour).
 - **No prompts ship in v1.** `prompts.py` is intentionally empty; prompts land as concrete user-workflow patterns emerge in practice.
 <!-- DOMAIN-END -->

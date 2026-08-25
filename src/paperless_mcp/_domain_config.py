@@ -27,8 +27,6 @@ class DomainConfig(BaseSettings):
             read, write, and pool independently.
         http_retries: Retries (not counting the initial attempt) for
             idempotent requests on network errors or ``5xx`` responses.
-        download_link_ttl_seconds: Time-to-live of download URLs issued by
-            the ``create_download_link`` tool.  Clamped ``[30, 3600]``.
         default_page_size: Default ``page_size`` parameter for list tools.
             Clamped ``[1, 100]``.
         paperless_public_url: Optional public-facing Paperless UI URL used to
@@ -46,7 +44,6 @@ class DomainConfig(BaseSettings):
     api_token: SecretStr = Field(...)
     http_timeout_seconds: float = Field(default=30.0, gt=0, le=600)
     http_retries: int = Field(default=2, ge=0, le=10)
-    download_link_ttl_seconds: int = Field(default=300, ge=30, le=3600)
     default_page_size: int = Field(default=25, ge=1, le=100)
     paperless_public_url: str | None = Field(default=None)
 

@@ -15,7 +15,6 @@ def test_required_fields(monkeypatch: pytest.MonkeyPatch) -> None:
     assert cfg.api_token.get_secret_value() == "abc"
     assert cfg.http_timeout_seconds == 30
     assert cfg.http_retries == 2
-    assert cfg.download_link_ttl_seconds == 300
     assert cfg.default_page_size == 25
 
 
@@ -31,14 +30,6 @@ def test_page_size_clamped(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("PAPERLESS_MCP_API_TOKEN", "abc")
     monkeypatch.setenv("PAPERLESS_MCP_DEFAULT_PAGE_SIZE", "500")
     with pytest.raises(ValueError, match="default_page_size"):
-        load_domain_config()
-
-
-def test_ttl_clamped(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("PAPERLESS_MCP_PAPERLESS_URL", "http://paperless:8000")
-    monkeypatch.setenv("PAPERLESS_MCP_API_TOKEN", "abc")
-    monkeypatch.setenv("PAPERLESS_MCP_DOWNLOAD_LINK_TTL_SECONDS", "10")
-    with pytest.raises(ValueError, match="download_link_ttl_seconds"):
         load_domain_config()
 
 

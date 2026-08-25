@@ -76,6 +76,4 @@ ICON_REGISTRY: dict[str, list[Icon]] = {
     "wait_for_task": [_icon("hourglass")],
     "get_statistics": [_icon("bar-chart-3")],
     "get_remote_version": [_icon("cpu")],
-    # Downloads
-    "create_download_link": [_icon("link-2")],
 }

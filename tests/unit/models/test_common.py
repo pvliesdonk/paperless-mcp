@@ -8,7 +8,6 @@ from pydantic import BaseModel, ConfigDict
 from paperless_mcp.models.common import (
     BulkEditOperation,
     BulkEditResult,
-    DownloadLink,
     Paginated,
     UploadTaskAcknowledgement,
 )
@@ -134,16 +133,6 @@ def test_bulk_edit_operation_enum() -> None:
 def test_bulk_edit_result_parses() -> None:
     result = BulkEditResult.model_validate({"result": "OK"})
     assert result.result == "OK"
-
-
-def test_download_link_shape() -> None:
-    link = DownloadLink(
-        download_url="https://dl.example/abc",
-        expires_in_seconds=300,
-        content_type="application/pdf",
-        filename="invoice.pdf",
-    )
-    assert link.expires_in_seconds == 300
 
 
 def test_upload_task_acknowledgement() -> None:

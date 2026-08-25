@@ -17,12 +17,14 @@ from typing import Any
 
 from fastmcp import FastMCP
 from fastmcp_pvl_core import (
-    ArtifactStore,
     ServerConfig,  # noqa: F401  — re-exported for downstream projects' convenience
     build_auth,
     build_event_store,  # noqa: F401  — re-exported for downstream projects' convenience
     build_instructions,
+    build_kv_store,  # noqa: F401  — re-exported for downstream projects' convenience
     configure_logging_from_env,
+    env,
+    register_server_info_tool,
     resolve_auth_mode,
     wire_middleware_stack,
 )
@@ -50,9 +52,10 @@ def make_server(
     """Construct the Paperless MCP FastMCP server.
 
     Args:
-        transport: ``"stdio"`` / ``"http"`` / ``"sse"``.  HTTP-only
-            features (artifact downloads) are wired only when transport
-            != ``"stdio"``.
+        transport: ``"stdio"`` / ``"http"`` / ``"sse"``.  Gates any
+            transport-specific wiring added in the DOMAIN-WIRING block
+            (e.g. HTTP-only custom routes, which cannot be served under
+            stdio) and appears as ``transport=%s`` in the startup log.
         config: Optional pre-loaded config; default loads from env.
 
     Returns:
@@ -84,6 +87,15 @@ def make_server(
                 await _client.aclose()
                 logger.info("client_closed")
 
+    # Operator overrides: SERVER_NAME renames this instance; INSTRUCTIONS
+    # replaces the default instructions text (the latter is the override that
+    # build_instructions' hint advertises). Both fall back when unset/empty.
+    server_name = env(_ENV_PREFIX, "SERVER_NAME", "paperless-mcp")
+    instructions = env(_ENV_PREFIX, "INSTRUCTIONS") or build_instructions(
+        env_prefix=_ENV_PREFIX,
+        domain_line="Paperless-NGX document management over MCP: search, tag, upload, and read documents; manage tags, correspondents, document types, and custom fields.",
+    )
+
     auth = build_auth(config.server)
     auth_mode = resolve_auth_mode(config.server) if auth is not None else "none"
     if auth_mode == "none":
@@ -99,18 +111,16 @@ def make_server(
         pkg_ver = "unknown"
 
     logger.info(
-        "Server config: version=%s name=paperless-mcp auth=%s",
+        "Server config: version=%s name=%s transport=%s auth=%s",
         pkg_ver,
+        server_name,
+        transport,
         auth_mode,
     )
 
     mcp = FastMCP(
-        name="paperless-mcp",
-        instructions=build_instructions(
-            read_only=True,
-            env_prefix=_ENV_PREFIX,
-            domain_line="Paperless-NGX document management over MCP: search, tag, upload, and read documents; manage tags, correspondents, document types, and custom fields.",
-        ),
+        name=server_name,
+        instructions=instructions,
         lifespan=_lifespan,
         auth=auth,
     )
@@ -122,8 +132,28 @@ def make_server(
     register_prompts(mcp)
     register_apps(mcp)
 
-    if transport != "stdio":
-        artifact_store = ArtifactStore(ttl_seconds=3600)
-        ArtifactStore.register_route(mcp, artifact_store)
+    register_server_info_tool(
+        mcp,
+        server_name=server_name,
+        server_version=pkg_ver,
+        # DOMAIN-UPSTREAM-START — wire upstream version reporting for servers
+        # that talk to a remote service (paperless-mcp, etc.). The provider is
+        # a zero-arg callable; the simplest pattern is a module-level upstream
+        # client (typically constructed from env vars at import time) whose
+        # version method is referenced here. ``CurrentContext()`` is a FastMCP
+        # DI marker — it only resolves to a live context when used as a
+        # parameter default in a tool/resource handler, so it cannot be called
+        # directly from a zero-arg provider.
+        # Uncomment the kwargs below as additional arguments to this call:
+        # upstream_version=lambda: _upstream_client.remote_version(),
+        # upstream_label="paperless",
+        # DOMAIN-UPSTREAM-END
+    )
+
+    # DOMAIN-WIRING-START — project-specific wiring (custom HTTP routes,
+    # transforms, mode toggles, alternative middleware, additional registrations);
+    # kept across copier update. Leave empty for projects that don't customise
+    # make_server() beyond the standard scaffold.
+    # DOMAIN-WIRING-END
 
     return mcp

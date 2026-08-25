@@ -105,9 +105,9 @@
           ]
         },
         {
-          "name": "PAPERLESS_MCP_EVENT_STORE_URL",
-          "description": "Event store backend for HTTP session persistence (file:///path or memory://)",
-          "default": "file:///data/state/events"
+          "name": "PAPERLESS_MCP_KV_STORE_URL",
+          "description": "Persistent-state backend URL for pvl-core subsystems. Schemes: file:///path (survives restarts), memory:// (dev/ephemeral).",
+          "default": "file:///data/state"
         },
         {
           "name": "PAPERLESS_MCP_SERVER_NAME",

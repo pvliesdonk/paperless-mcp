@@ -9,6 +9,7 @@ import typer
 from fastmcp_pvl_core import (
     build_event_store,
     configure_logging_from_env,
+    maybe_start_debugpy,
     normalise_http_path,
 )
 
@@ -57,8 +58,12 @@ def serve(
     transport: Transport = typer.Option(
         "stdio", help="MCP transport (stdio / http / sse)."
     ),
-    host: str = typer.Option("0.0.0.0", help="Bind host (http only)."),
-    port: int = typer.Option(8000, help="Bind port (http only)."),
+    host: str | None = typer.Option(
+        None, help=f"Bind host (http only; default: ${_ENV_PREFIX}_HOST or 127.0.0.1)."
+    ),
+    port: int | None = typer.Option(
+        None, help=f"Bind port (http only; default: ${_ENV_PREFIX}_PORT or 8000)."
+    ),
     http_path: str | None = typer.Option(
         None,
         "--http-path",
@@ -70,6 +75,18 @@ def serve(
     import os
 
     from paperless_mcp.server import make_server
+
+    # Optional remote-debugger listener — placed in ``serve`` (not the
+    # typer root callback) so non-server commands like ``--help``,
+    # ``--version``, or future ``dump-config``-style subcommands are
+    # never blocked by ``PAPERLESS_MCP_DEBUG_WAIT=true``.  No-op
+    # unless ``PAPERLESS_MCP_DEBUG_PORT`` is set; ``debugpy`` is only
+    # present when the image was built with ``--build-arg DEBUG=true``
+    # (a missing import logs a WARNING and continues).  ``_root`` has
+    # already attached the StreamHandler by the time ``serve`` runs, so
+    # the helper's INFO/WARNING logs route through the configured
+    # formatter rather than Python's lastResort.
+    maybe_start_debugpy(_ENV_PREFIX)
 
     config = ProjectConfig.from_env()
     server = make_server(transport=transport, config=config)
@@ -87,13 +104,26 @@ def serve(
         # containers (Docker/k8s) stop cleanly.
         uvicorn.run(
             server.http_app(path=path, event_store=event_store),
-            host=host,
-            port=port,
+            host=host if host is not None else config.server.host,
+            port=port if port is not None else config.server.port,
             lifespan="on",
             timeout_graceful_shutdown=3,
         )
     else:
         server.run(transport=transport)
+
+
+# DOMAIN-COMMANDS-START — add domain @app.command()s (and their helpers) below; kept across copier update
+# Domain CLI subcommands live here so the rest of this file stays byte-identical
+# to the template and applies cleanly on copier update. Use function-local
+# imports for domain modules (as ``serve`` does) to keep the top-level import
+# surface template-owned.
+# (example)
+# @app.command()
+# def widgets() -> None:
+#     """List widgets."""
+#     typer.echo("...")
+# DOMAIN-COMMANDS-END
 
 
 def main() -> None:
