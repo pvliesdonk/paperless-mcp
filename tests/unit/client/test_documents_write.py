@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+from collections.abc import AsyncIterator, Callable
+from typing import Any
 
 import httpx
 import pytest
@@ -15,7 +17,7 @@ from paperless_mcp.models.document import DocumentPatch
 
 
 @pytest.fixture
-async def http():
+async def http() -> AsyncIterator[PaperlessHTTP]:
     client = PaperlessHTTP(
         base_url="http://paperless.test", api_token="t", max_retries=0
     )
@@ -30,7 +32,7 @@ def documents(http: PaperlessHTTP) -> DocumentsClient:
 
 @pytest.mark.asyncio
 async def test_update_sends_only_set_fields(
-    documents: DocumentsClient, load_fixture
+    documents: DocumentsClient, load_fixture: Callable[[str], Any]
 ) -> None:
     updated = load_fixture("document_minimal.json")
     updated["title"] = "Renamed"

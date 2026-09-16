@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+from collections.abc import AsyncIterator, Callable
+from typing import Any
 
 import httpx
 import pytest
@@ -16,7 +18,7 @@ from paperless_mcp.models.custom_field import (
 
 
 @pytest.fixture
-async def http():
+async def http() -> AsyncIterator[PaperlessHTTP]:
     client = PaperlessHTTP(
         base_url="http://paperless.test", api_token="t", max_retries=0
     )
@@ -30,7 +32,9 @@ def custom_fields(http: PaperlessHTTP) -> CustomFieldsClient:
 
 
 @pytest.mark.asyncio
-async def test_create(custom_fields, load_fixture) -> None:
+async def test_create(
+    custom_fields: CustomFieldsClient, load_fixture: Callable[[str], Any]
+) -> None:
     async with respx.mock(base_url="http://paperless.test") as mock:
         mock.post("/api/custom_fields/").mock(
             return_value=httpx.Response(201, json=load_fixture("custom_field.json"))
@@ -42,7 +46,9 @@ async def test_create(custom_fields, load_fixture) -> None:
 
 
 @pytest.mark.asyncio
-async def test_update(custom_fields, load_fixture) -> None:
+async def test_update(
+    custom_fields: CustomFieldsClient, load_fixture: Callable[[str], Any]
+) -> None:
     async with respx.mock(base_url="http://paperless.test") as mock:
         route = mock.patch("/api/custom_fields/2/").mock(
             return_value=httpx.Response(200, json=load_fixture("custom_field.json"))
@@ -53,7 +59,7 @@ async def test_update(custom_fields, load_fixture) -> None:
 
 
 @pytest.mark.asyncio
-async def test_delete(custom_fields) -> None:
+async def test_delete(custom_fields: CustomFieldsClient) -> None:
     async with respx.mock(base_url="http://paperless.test") as mock:
         route = mock.delete("/api/custom_fields/2/").mock(
             return_value=httpx.Response(204)

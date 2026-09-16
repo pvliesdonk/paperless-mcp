@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Callable
+from typing import Any
+
 import pytest
 from pydantic import ValidationError
 
@@ -10,7 +13,7 @@ from paperless_mcp.models.correspondent import (
 )
 
 
-def test_correspondent_roundtrip(load_fixture) -> None:
+def test_correspondent_roundtrip(load_fixture: Callable[[str], Any]) -> None:
     c = Correspondent.model_validate(load_fixture("correspondent.json"))
     assert c.id == 1
     assert c.name == "ACME Corporation"

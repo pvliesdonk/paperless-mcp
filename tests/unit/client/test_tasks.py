@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import AsyncIterator, Callable
 from typing import Any
 
 import httpx
@@ -15,7 +15,7 @@ from paperless_mcp.models.task import Task, TaskStatus
 
 
 @pytest.fixture
-async def http():
+async def http() -> AsyncIterator[PaperlessHTTP]:
     client = PaperlessHTTP(
         base_url="http://paperless.test", api_token="t", max_retries=0
     )
@@ -29,7 +29,7 @@ def tasks(http: PaperlessHTTP) -> TasksClient:
 
 
 @pytest.mark.asyncio
-async def test_list_all(tasks: TasksClient, load_fixture) -> None:
+async def test_list_all(tasks: TasksClient, load_fixture: Callable[[str], Any]) -> None:
     # /api/tasks/ returns a bare list; client-side pagination wraps it.
     bare = [load_fixture("task_pending.json")]
     async with respx.mock(base_url="http://paperless.test") as mock:
@@ -39,7 +39,9 @@ async def test_list_all(tasks: TasksClient, load_fixture) -> None:
 
 
 @pytest.mark.asyncio
-async def test_get_by_uuid_uses_list_filter(tasks: TasksClient, load_fixture) -> None:
+async def test_get_by_uuid_uses_list_filter(
+    tasks: TasksClient, load_fixture: Callable[[str], Any]
+) -> None:
     async with respx.mock(base_url="http://paperless.test") as mock:
         route = mock.get("/api/tasks/").mock(
             return_value=httpx.Response(200, json=[load_fixture("task_success.json")])
@@ -60,7 +62,9 @@ async def test_get_unknown_returns_none(tasks: TasksClient) -> None:
 
 
 @pytest.mark.asyncio
-async def test_wait_for_resolves_success(tasks: TasksClient, load_fixture) -> None:
+async def test_wait_for_resolves_success(
+    tasks: TasksClient, load_fixture: Callable[[str], Any]
+) -> None:
     pending = load_fixture("task_pending.json")
     success = load_fixture("task_success.json")
     success["task_id"] = pending["task_id"]
@@ -78,7 +82,9 @@ async def test_wait_for_resolves_success(tasks: TasksClient, load_fixture) -> No
 
 
 @pytest.mark.asyncio
-async def test_wait_for_times_out(tasks: TasksClient, load_fixture) -> None:
+async def test_wait_for_times_out(
+    tasks: TasksClient, load_fixture: Callable[[str], Any]
+) -> None:
     pending = load_fixture("task_pending.json")
     async with respx.mock(base_url="http://paperless.test") as mock:
         mock.get("/api/tasks/").mock(return_value=httpx.Response(200, json=[pending]))

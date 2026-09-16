@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import AsyncIterator, Callable
+from typing import Any
+
 import httpx
 import pytest
 import respx
@@ -9,7 +12,7 @@ from paperless_mcp.client.custom_fields import CustomFieldsClient
 
 
 @pytest.fixture
-async def http():
+async def http() -> AsyncIterator[PaperlessHTTP]:
     client = PaperlessHTTP(
         base_url="http://paperless.test", api_token="t", max_retries=0
     )
@@ -23,7 +26,9 @@ def custom_fields(http: PaperlessHTTP) -> CustomFieldsClient:
 
 
 @pytest.mark.asyncio
-async def test_list(custom_fields: CustomFieldsClient, load_fixture) -> None:
+async def test_list(
+    custom_fields: CustomFieldsClient, load_fixture: Callable[[str], Any]
+) -> None:
     page = {
         "count": 1,
         "next": None,
@@ -39,7 +44,9 @@ async def test_list(custom_fields: CustomFieldsClient, load_fixture) -> None:
 
 
 @pytest.mark.asyncio
-async def test_get(custom_fields: CustomFieldsClient, load_fixture) -> None:
+async def test_get(
+    custom_fields: CustomFieldsClient, load_fixture: Callable[[str], Any]
+) -> None:
     async with respx.mock(base_url="http://paperless.test") as mock:
         mock.get("/api/custom_fields/2/").mock(
             return_value=httpx.Response(200, json=load_fixture("custom_field.json"))

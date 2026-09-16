@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import AsyncIterator, Callable
+from typing import Any
+
 import httpx
 import pytest
 import respx
@@ -11,7 +14,7 @@ from paperless_mcp.client.storage_paths import StoragePathsClient
 
 
 @pytest.fixture
-async def http():
+async def http() -> AsyncIterator[PaperlessHTTP]:
     client = PaperlessHTTP(
         base_url="http://paperless.test", api_token="t", max_retries=0
     )
@@ -20,7 +23,9 @@ async def http():
 
 
 @pytest.mark.asyncio
-async def test_storage_paths_list(http: PaperlessHTTP, load_fixture) -> None:
+async def test_storage_paths_list(
+    http: PaperlessHTTP, load_fixture: Callable[[str], Any]
+) -> None:
     sp = StoragePathsClient(http)
     page = {
         "count": 1,
@@ -37,7 +42,9 @@ async def test_storage_paths_list(http: PaperlessHTTP, load_fixture) -> None:
 
 
 @pytest.mark.asyncio
-async def test_storage_paths_get(http: PaperlessHTTP, load_fixture) -> None:
+async def test_storage_paths_get(
+    http: PaperlessHTTP, load_fixture: Callable[[str], Any]
+) -> None:
     sp = StoragePathsClient(http)
     async with respx.mock(base_url="http://paperless.test") as mock:
         mock.get("/api/storage_paths/2/").mock(
@@ -48,7 +55,9 @@ async def test_storage_paths_get(http: PaperlessHTTP, load_fixture) -> None:
 
 
 @pytest.mark.asyncio
-async def test_saved_views_list(http: PaperlessHTTP, load_fixture) -> None:
+async def test_saved_views_list(
+    http: PaperlessHTTP, load_fixture: Callable[[str], Any]
+) -> None:
     sv = SavedViewsClient(http)
     page = {
         "count": 1,
@@ -63,7 +72,9 @@ async def test_saved_views_list(http: PaperlessHTTP, load_fixture) -> None:
 
 
 @pytest.mark.asyncio
-async def test_saved_views_get(http: PaperlessHTTP, load_fixture) -> None:
+async def test_saved_views_get(
+    http: PaperlessHTTP, load_fixture: Callable[[str], Any]
+) -> None:
     sv = SavedViewsClient(http)
     async with respx.mock(base_url="http://paperless.test") as mock:
         mock.get("/api/saved_views/1/").mock(
@@ -74,7 +85,9 @@ async def test_saved_views_get(http: PaperlessHTTP, load_fixture) -> None:
 
 
 @pytest.mark.asyncio
-async def test_share_links_list(http: PaperlessHTTP, load_fixture) -> None:
+async def test_share_links_list(
+    http: PaperlessHTTP, load_fixture: Callable[[str], Any]
+) -> None:
     sl = ShareLinksClient(http)
     page = {
         "count": 1,
@@ -92,7 +105,9 @@ async def test_share_links_list(http: PaperlessHTTP, load_fixture) -> None:
 
 
 @pytest.mark.asyncio
-async def test_share_links_get(http: PaperlessHTTP, load_fixture) -> None:
+async def test_share_links_get(
+    http: PaperlessHTTP, load_fixture: Callable[[str], Any]
+) -> None:
     sl = ShareLinksClient(http)
     async with respx.mock(base_url="http://paperless.test") as mock:
         mock.get("/api/share_links/5/").mock(

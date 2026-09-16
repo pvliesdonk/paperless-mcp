@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import AsyncIterator, Callable
+from typing import Any
+
 import httpx
 import pytest
 import respx
@@ -11,7 +14,7 @@ from paperless_mcp.client.documents import DocumentsClient
 
 
 @pytest.fixture
-async def http():
+async def http() -> AsyncIterator[PaperlessHTTP]:
     client = PaperlessHTTP(
         base_url="http://paperless.test", api_token="t", max_retries=0
     )
@@ -26,7 +29,7 @@ def documents(http: PaperlessHTTP) -> DocumentsClient:
 
 @pytest.mark.asyncio
 async def test_list_documents_passes_filters(
-    documents: DocumentsClient, load_fixture
+    documents: DocumentsClient, load_fixture: Callable[[str], Any]
 ) -> None:
     page = {
         "count": 1,
@@ -52,7 +55,7 @@ async def test_list_documents_passes_filters(
 
 @pytest.mark.asyncio
 async def test_search_uses_query_param(
-    documents: DocumentsClient, load_fixture
+    documents: DocumentsClient, load_fixture: Callable[[str], Any]
 ) -> None:
     page: dict[str, object] = {
         "count": 0,
@@ -70,7 +73,7 @@ async def test_search_uses_query_param(
 
 @pytest.mark.asyncio
 async def test_search_more_like_uses_more_like_id(
-    documents: DocumentsClient, load_fixture
+    documents: DocumentsClient, load_fixture: Callable[[str], Any]
 ) -> None:
     page: dict[str, object] = {
         "count": 0,
@@ -87,7 +90,9 @@ async def test_search_more_like_uses_more_like_id(
 
 
 @pytest.mark.asyncio
-async def test_get_document(documents: DocumentsClient, load_fixture) -> None:
+async def test_get_document(
+    documents: DocumentsClient, load_fixture: Callable[[str], Any]
+) -> None:
     async with respx.mock(base_url="http://paperless.test") as mock:
         mock.get("/api/documents/1/").mock(
             return_value=httpx.Response(200, json=load_fixture("document_minimal.json"))

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+from collections.abc import AsyncIterator, Callable
+from typing import Any
 
 import httpx
 import pytest
@@ -12,7 +14,7 @@ from paperless_mcp.models.tag import TagCreate, TagPatch
 
 
 @pytest.fixture
-async def http():
+async def http() -> AsyncIterator[PaperlessHTTP]:
     client = PaperlessHTTP(
         base_url="http://paperless.test", api_token="t", max_retries=0
     )
@@ -26,7 +28,7 @@ def tags(http: PaperlessHTTP) -> TagsClient:
 
 
 @pytest.mark.asyncio
-async def test_create(tags: TagsClient, load_fixture) -> None:
+async def test_create(tags: TagsClient, load_fixture: Callable[[str], Any]) -> None:
     async with respx.mock(base_url="http://paperless.test") as mock:
         mock.post("/api/tags/").mock(
             return_value=httpx.Response(201, json=load_fixture("tag.json"))
@@ -36,7 +38,7 @@ async def test_create(tags: TagsClient, load_fixture) -> None:
 
 
 @pytest.mark.asyncio
-async def test_update(tags: TagsClient, load_fixture) -> None:
+async def test_update(tags: TagsClient, load_fixture: Callable[[str], Any]) -> None:
     async with respx.mock(base_url="http://paperless.test") as mock:
         route = mock.patch("/api/tags/1/").mock(
             return_value=httpx.Response(200, json=load_fixture("tag.json"))

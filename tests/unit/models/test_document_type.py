@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Callable
+from typing import Any
+
 import pytest
 from pydantic import ValidationError
 
@@ -10,7 +13,7 @@ from paperless_mcp.models.document_type import (
 )
 
 
-def test_document_type_roundtrip(load_fixture) -> None:
+def test_document_type_roundtrip(load_fixture: Callable[[str], Any]) -> None:
     dt = DocumentType.model_validate(load_fixture("document_type.json"))
     assert dt.id == 3
     assert dt.name == "Invoice"
