@@ -14,8 +14,9 @@ services:
       # PAPERLESS_MCP_API_TOKEN comes from .env
 
       # Optional
-      PAPERLESS_MCP_READ_ONLY: "false"
       PAPERLESS_MCP_HTTP_TIMEOUT_SECONDS: "30"
+      # Hide the mutating tools on a read-only instance:
+      # PAPERLESS_MCP_TOOLS_DENY: "create_tag,update_tag,delete_tag"
 
       # Transport (inherited from template — HTTP example)
       PAPERLESS_MCP_TRANSPORT: http
