@@ -7,8 +7,8 @@ from enum import StrEnum
 from pydantic import BaseModel, ConfigDict
 
 from paperless_mcp.models._compat import (
-    AwareDatetime,
-    OptionalAwareDatetime,
+    OptionalPaperlessDatetime,
+    PaperlessDatetime,
     RelatedDocumentId,
 )
 
@@ -27,8 +27,8 @@ class Task(BaseModel):
     id: int
     task_id: str
     task_file_name: str | None = None
-    date_created: AwareDatetime
-    date_done: OptionalAwareDatetime = None
+    date_created: PaperlessDatetime
+    date_done: OptionalPaperlessDatetime = None
     type: str | None = None
     status: TaskStatus
     result: str | None = None

@@ -75,6 +75,6 @@ def _coerce_related_document(value: Any) -> Any:
 
 UserId = Annotated[int | None, BeforeValidator(_coerce_user_id)]
 Username = Annotated[str | None, BeforeValidator(_coerce_username)]
-AwareDatetime = Annotated[datetime, AfterValidator(_ensure_aware)]
-OptionalAwareDatetime = Annotated[datetime | None, AfterValidator(_ensure_aware)]
+PaperlessDatetime = Annotated[datetime, AfterValidator(_ensure_aware)]
+OptionalPaperlessDatetime = Annotated[datetime | None, AfterValidator(_ensure_aware)]
 RelatedDocumentId = Annotated[str | None, BeforeValidator(_coerce_related_document)]

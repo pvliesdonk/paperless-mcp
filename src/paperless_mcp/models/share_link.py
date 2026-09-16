@@ -6,7 +6,7 @@ from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict
 
-from paperless_mcp.models._compat import AwareDatetime, OptionalAwareDatetime
+from paperless_mcp.models._compat import OptionalPaperlessDatetime, PaperlessDatetime
 
 
 class ShareLinkFileVersion(StrEnum):
@@ -17,8 +17,8 @@ class ShareLinkFileVersion(StrEnum):
 class ShareLink(BaseModel):
     model_config = ConfigDict(extra="allow")
     id: int
-    created: AwareDatetime
-    expiration: OptionalAwareDatetime = None
+    created: PaperlessDatetime
+    expiration: OptionalPaperlessDatetime = None
     slug: str
     document: int
     file_version: ShareLinkFileVersion

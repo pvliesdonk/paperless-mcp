@@ -8,8 +8,8 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from paperless_mcp.models._compat import (
-    AwareDatetime,
-    OptionalAwareDatetime,
+    OptionalPaperlessDatetime,
+    PaperlessDatetime,
     UserId,
     Username,
 )
@@ -30,7 +30,7 @@ class DocumentNote(BaseModel):
     # payload size (see #30); single-document note endpoints return the full
     # text.
     note: str | None = None
-    created: AwareDatetime
+    created: PaperlessDatetime
     user: UserId = None
 
 
@@ -43,10 +43,10 @@ class Document(BaseModel):
     title: str
     content: str | None = None
     tags: list[int] = Field(default_factory=list)
-    created: AwareDatetime
+    created: PaperlessDatetime
     created_date: date | None = None
-    modified: OptionalAwareDatetime = None
-    added: OptionalAwareDatetime = None
+    modified: OptionalPaperlessDatetime = None
+    added: OptionalPaperlessDatetime = None
     archive_serial_number: str | int | None = None
     original_file_name: str | None = None
     archived_file_name: str | None = None
@@ -90,7 +90,7 @@ class DocumentMetadata(BaseModel):
 
 class DocumentHistoryEntry(BaseModel):
     model_config = ConfigDict(extra="allow")
-    timestamp: AwareDatetime
+    timestamp: PaperlessDatetime
     action: str
     actor: Username = None
     changes: dict[str, Any] | None = None
