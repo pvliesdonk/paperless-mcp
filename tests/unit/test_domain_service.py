@@ -50,6 +50,10 @@ def test_tool_context_is_shared_per_server_whichever_registrar_runs_first() -> N
     assert domain.pending_tool_context() is not resources_ctx, (
         "a second server adopted the first server's client"
     )
+    assert resources_ctx is not None
+    assert resources_ctx.client.http._client.is_closed, (
+        "staging over an unadopted context must close the client it held"
+    )
 
 
 @pytest.mark.asyncio

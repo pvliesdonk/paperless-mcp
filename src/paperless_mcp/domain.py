@@ -13,10 +13,10 @@ them runs first.  The order is decided in template-owned ``server.py``, which
 a ``copier update`` re-renders, so it is not an invariant this package can
 rely on.
 
-The slot holds one entry, so two servers constructed before either lifespan
-starts leave only the later server's context staged, and the earlier one's
-client is never closed.  Construct and enter servers pairwise (the way
-``Client(make_server())`` does) and that cannot happen.
+The slot holds one entry.  Staging a second server's context over an
+unadopted first closes the first one's client on the way out, so a process
+that builds servers it never enters — a test suite, mostly — does not
+accumulate them.
 
 Importers that need a typed Paperless client can do::
 
@@ -27,6 +27,7 @@ instead of reaching into ``paperless_mcp.client`` directly.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import TYPE_CHECKING
 
@@ -82,8 +83,11 @@ def tool_context_for(mcp: object) -> ToolContext:
     from paperless_mcp.tools._context import ToolContext
 
     global _pending
-    if _pending is not None and _pending[0] is mcp:
-        return _pending[1]
+    if _pending is not None:
+        if _pending[0] is mcp:
+            return _pending[1]
+        _discard(_pending[1])
+        _pending = None
 
     cfg = load_domain_config()
     client = PaperlessClient(
@@ -99,6 +103,28 @@ def tool_context_for(mcp: object) -> ToolContext:
     )
     _pending = (mcp, context)
     return context
+
+
+def _discard(context: ToolContext) -> None:
+    """Close a staged context that no lifespan will ever adopt.
+
+    Server construction is synchronous — pvl-core finalises the composed
+    instructions during it and refuses to do that inside a running loop — so
+    there is normally no loop here and the close completes. If there is one,
+    closing would mean blocking it, so the client is dropped instead: it opens
+    no sockets until its first request, and a context nothing adopted never
+    makes one.
+
+    Args:
+        context: The staged context being replaced.
+    """
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        asyncio.run(context.client.aclose())
+        logger.debug("unadopted_tool_context_closed")
+    else:
+        logger.debug("unadopted_tool_context_dropped reason=running_event_loop")
 
 
 def pending_tool_context() -> ToolContext | None:
