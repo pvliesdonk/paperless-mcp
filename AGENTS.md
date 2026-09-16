@@ -270,8 +270,16 @@ tool's job.
 `PaperlessObjectPermissions` maps `GET` to `<app_label>.view_<model_name>`, so
 the token's user needs `documents.view_uisettings` and a narrower service
 account gets `403`. That degrades to `{"version": null}` rather than failing
-the call, which is the contract the block already had. Evidence for all of this
-(with upstream line numbers and the commit it was read at) is in
-pvliesdonk/paperless-mcp#121 and #123, not repeated here, because line numbers
-in this file rot.
+the call, which is the contract the block already had.
+
+Evidence for all of this — what each of `/api/remote_version/`,
+`/api/ui_settings/` and `/api/status/` reports, where each value originates
+inside Paperless, and the permission each costs — lives in
+`docs/design/reference/paperless-version-endpoints.md`, dated and pinned to the
+upstream commit it was read at. It is not repeated here, because line numbers in
+this file rot. The `get_remote_version` tool and the `remote-version://paperless`
+resource keep Paperless's own route name, and answer "is there a newer release"
+in their *descriptions* instead. The name is the one part of the surface that
+was not wrong: it names the upstream route it calls. What misled was the prose
+around it, so that is what #123 changed.
 <!-- DOMAIN-END -->

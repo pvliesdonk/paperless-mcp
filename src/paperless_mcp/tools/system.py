@@ -25,5 +25,11 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
 
     @register_tool(mcp, "get_remote_version")
     async def get_remote_version() -> RemoteVersion:
-        """Fetch Paperless version info."""
+        """Check whether a newer release of Paperless-NGX exists upstream.
+
+        Answers the newest release published on GitHub, and whether it is newer
+        than the connected instance -- not the version installed on that
+        instance.  The two coincide only while the instance is up to date.
+        Call ``get_server_info`` for the installed version.
+        """
         return await client.system.remote_version()
