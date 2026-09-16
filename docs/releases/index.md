@@ -8,5 +8,6 @@ GitHub release links back to its page here.
 
 <!-- RELEASE-PAGES-START: newest series first; one list entry per page.
      The first real entry replaces the placeholder line below. -->
+- [2.0](2.0.md)
 - [1.0](1.0.md)
 <!-- RELEASE-PAGES-END -->
