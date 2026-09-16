@@ -117,10 +117,11 @@ without ever becoming an epic.
   lands untitled too. Doing it for 49 tools later is strictly worse than doing
   it once now, which is the argument for a cut rather than for the backlog.
 
-`020` before anything from the bytes theme is a **readiness** argument, not an
-information-gain one, and it is worth naming the difference rather than
-dressing it up. Nothing in `020` teaches us anything about `#111`/`#112`; the
-three issues in it are simply shaped enough to hand to an implementer today,
+`derived`: `020` before anything from the bytes theme is a **readiness**
+argument, not an information-gain one, and it is worth naming the difference
+rather than dressing it up. Nothing in `020` teaches us anything about
+`#111`/`#112`; the three issues in it are simply shaped enough to hand to an
+implementer today,
 while the bytes work is gated on a design decision nobody has made — which of
 the library's two transfer wirings this server takes. Committing a cut to work
 whose shape is undecided is what the horizon rule exists to prevent.
@@ -151,10 +152,13 @@ backlog that predates this index.
   condition — "if it turns out to decide scope for a whole package rather than
   for one feature" — was met: it decides which capabilities are worth exposing
   at all, so no feature issue beneath this theme would have been honest before
-  the inventory exists. One facet is already pinned: `docs/design/reference/`
-  records that `ALLOWED_VERSIONS` is `["9", "10"]` with `DEFAULT_VERSION` `10`
-  while this client sends `version=9`, and scopes the payload difference to
-  #113.
+  the inventory exists. One facet is already narrowed: #113's own body records,
+  `verified` against Paperless's settings module, that `ALLOWED_VERSIONS` is
+  `["9", "10"]` with `DEFAULT_VERSION` `10` while this client sends
+  `version=9`. `derived`: that is tracker working memory rather than the repo's
+  record, so it is on borrowed time — when the research lands it should be
+  repointed at a committed document, per the skill's rule on where research
+  output lives.
 - **Whether any Paperless call on the deployed instance blocks long enough to
   need a job.** `stated` in
   [#110](https://github.com/pvliesdonk/paperless-mcp/issues/110), with the
