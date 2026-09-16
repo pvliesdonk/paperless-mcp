@@ -138,6 +138,7 @@ ignore = ["E501"]
 # FastMCP dependency injection pattern — B008 is a false positive here.
 # Context/FastMCP/Service imports must stay runtime (not TYPE_CHECKING) for
 # DI resolution — TC001/TC002/TC003.
+
 # Template-managed: the structural diff-gate adds `S` (security) on the diff
 # pass, so the shipped structural-gate test would self-block: its asserts trip
 # S101, and its bare-name `git` call trips S607 (a partial executable path —
@@ -182,7 +183,12 @@ ignore = ["E501"]
 "src/paperless_mcp/resources/__init__.py" = ["B008", "TC001", "TC002"]
 "src/paperless_mcp/resources/*.py" = ["TC001", "TC002", "TC003"]
 "src/paperless_mcp/prompts.py" = ["B008", "TC002", "ARG001"]
-"tests/**/*.py" = ["TC001", "TC002", "TC003", "ARG001"]
+"tests/**/*.py" = ["TC001", "TC002", "TC003"]
+# ARG001 is scoped to the legacy unit suite, whose fixtures are taken for
+# ordering rather than use. A blanket `tests/**` entry made the template's
+# own `# noqa: ARG001` in tests/test_config_wizard_smoke.py unused, so
+# RUF100 stripped it on every `ruff check --fix` and forked that file.
+"tests/unit/**/*.py" = ["ARG001"]
 "src/paperless_mcp/models/*.py" = ["TC001", "TC002", "TC003"]
 "src/paperless_mcp/client/_errors.py" = ["TC002"]
 "src/paperless_mcp/client/_http.py" = ["TC003"]
