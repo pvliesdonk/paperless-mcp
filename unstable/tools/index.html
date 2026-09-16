@@ -1823,10 +1823,14 @@ report different numbers from the two tools:</p>
 </tr>
 </tbody>
 </table>
-<p>When Paperless cannot answer (it is down, the URL is wrong, or the token is
-rejected), the <code>paperless</code> block is <code>{"version": null}</code> and the rest of the
-response is unaffected. The version is extra information about a call whose
-job is reporting this server's build, so it never fails that call.</p>
+<p>When Paperless cannot answer, the <code>paperless</code> block is <code>{"version": null}</code> and
+the rest of the response is unaffected. The version is extra information about
+a call whose job is reporting this server's build, so it never fails that call.
+Paperless cannot answer when it is down, when the URL is wrong, when the token
+is rejected, and also when the token's Paperless user lacks permission to view
+UI settings, which is where this version is published. Grant that user the
+"view" permission on UI settings if you want the version reported; everything
+else the server does is unaffected either way.</p>
 <!-- DOMAIN-TOOLS-LIST-END -->
 
 

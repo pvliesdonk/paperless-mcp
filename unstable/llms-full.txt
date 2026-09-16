@@ -580,7 +580,7 @@ An instance running 2.14.7 reports `2.14.7` here whether or not a newer release 
 | Which Paperless am I connected to?        | `get_server_info`    | `2.14.7`                            |
 | Is there a newer Paperless to upgrade to? | `get_remote_version` | `2.20.14`, `update_available: true` |
 
-When Paperless cannot answer (it is down, the URL is wrong, or the token is rejected), the `paperless` block is `{"version": null}` and the rest of the response is unaffected. The version is extra information about a call whose job is reporting this server's build, so it never fails that call.
+When Paperless cannot answer, the `paperless` block is `{"version": null}` and the rest of the response is unaffected. The version is extra information about a call whose job is reporting this server's build, so it never fails that call. Paperless cannot answer when it is down, when the URL is wrong, when the token is rejected, and also when the token's Paperless user lacks permission to view UI settings, which is where this version is published. Grant that user the "view" permission on UI settings if you want the version reported; everything else the server does is unaffected either way.
 
 # Resources
 
