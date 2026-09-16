@@ -144,7 +144,22 @@ class Service:
         self._context: ToolContext | None = None
 
     async def start(self) -> None:
-        """Adopt the staged tool context; the lifespan now owns its client."""
+        """Adopt the staged tool context; the lifespan now owns its client.
+
+        Takes whatever is staged without checking which server it was built
+        for. That the two agree is an assumption, not something this method
+        can enforce: ``_server_deps.server_lifespan`` is template-owned, and it
+        constructs ``Service()`` and calls ``start()`` with no arguments, so
+        the server whose lifespan is starting is not in scope here. Checking
+        would mean editing a template-owned file, which is the drift this
+        module exists to avoid.
+
+        The assumption holds by construction — ``make_server`` registers tools
+        and resources for a server immediately before that server's lifespan is
+        entered, so the slot holds that server's context and nothing else's —
+        and :func:`tool_context_for` closes any context it displaces, so a
+        mismatch cannot silently outlive its server either.
+        """
         global _pending
         self._context = pending_tool_context()
         _pending = None
