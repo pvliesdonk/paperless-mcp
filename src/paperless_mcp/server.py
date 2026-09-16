@@ -75,7 +75,6 @@ def make_server(
     )
     _tool_ctx = ToolContext(
         client=_client,
-        read_only=False,
         default_page_size=domain_cfg.default_page_size,
         public_url=domain_cfg.public_url,
     )

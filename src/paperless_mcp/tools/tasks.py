@@ -18,12 +18,11 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
 
     Args:
         mcp: The FastMCP server instance.
-        ctx: Tool context with client and read-only flag.
+        ctx: Tool context with the Paperless client and pagination defaults.
     """
     client = ctx.client
-    read_only = ctx.read_only
 
-    @register_tool(mcp, "list_tasks", read_only_mode=read_only)
+    @register_tool(mcp, "list_tasks")
     async def list_tasks(
         page: Annotated[int, Field(ge=1)] = 1,
         page_size: Annotated[int, Field(ge=1, le=100)] = ctx.default_page_size,
@@ -44,12 +43,12 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
             include_acknowledged=include_acknowledged,
         )
 
-    @register_tool(mcp, "get_task", read_only_mode=read_only)
+    @register_tool(mcp, "get_task")
     async def get_task(task_uuid: str) -> Task | None:
         """Fetch a task by UUID.  Returns ``None`` if no such task exists."""
         return await client.tasks.get(task_uuid)
 
-    @register_tool(mcp, "wait_for_task", read_only_mode=read_only)
+    @register_tool(mcp, "wait_for_task")
     async def wait_for_task(
         task_uuid: str,
         timeout_seconds: Annotated[float, Field(gt=0, le=600)] = 60.0,

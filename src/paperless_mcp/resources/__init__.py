@@ -22,17 +22,13 @@ def _register_all(mcp: FastMCP, ctx: ToolContext) -> None:
     _tasks.register(mcp, ctx)
 
 
-def register_resources(
-    mcp: FastMCP, ctx: ToolContext | None = None, *, read_only: bool = False
-) -> None:
+def register_resources(mcp: FastMCP, ctx: ToolContext | None = None) -> None:
     """Register every paperless-mcp resource on *mcp*.
 
     Args:
         mcp: The FastMCP server instance to register resources on.
         ctx: Optional pre-built :class:`~paperless_mcp.tools._context.ToolContext`.
             When ``None``, a new client and context are created from env config.
-        read_only: When ``True``, only read-only resources are registered.
-            Ignored when *ctx* is supplied.
     """
     if ctx is None:
         cfg = load_domain_config()
@@ -44,7 +40,6 @@ def register_resources(
         )
         ctx = ToolContext(
             client=client,
-            read_only=read_only,
             default_page_size=cfg.default_page_size,
             public_url=cfg.public_url,
         )

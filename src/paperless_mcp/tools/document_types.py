@@ -22,12 +22,11 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
 
     Args:
         mcp: The FastMCP server instance.
-        ctx: Tool context with client and read-only flag.
+        ctx: Tool context with the Paperless client and pagination defaults.
     """
     client = ctx.client
-    read_only = ctx.read_only
 
-    @register_tool(mcp, "list_document_types", read_only_mode=read_only)
+    @register_tool(mcp, "list_document_types")
     async def list_document_types(
         page: Annotated[int, Field(ge=1)] = 1,
         page_size: Annotated[int, Field(ge=1, le=100)] = ctx.default_page_size,
@@ -42,29 +41,29 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
             name__icontains=name__icontains,
         )
 
-    @register_tool(mcp, "get_document_type", read_only_mode=read_only)
+    @register_tool(mcp, "get_document_type")
     async def get_document_type(document_type_id: int) -> DocumentType:
         """Fetch a document type by ID."""
         return await client.document_types.get(document_type_id)
 
-    @register_tool(mcp, "create_document_type", read_only_mode=read_only)
+    @register_tool(mcp, "create_document_type")
     async def create_document_type(body: DocumentTypeCreate) -> DocumentType:
         """Create a new document type."""
         return await client.document_types.create(body)
 
-    @register_tool(mcp, "update_document_type", read_only_mode=read_only)
+    @register_tool(mcp, "update_document_type")
     async def update_document_type(
         document_type_id: int, patch: DocumentTypePatch
     ) -> DocumentType:
         """Patch selected fields on a document type."""
         return await client.document_types.update(document_type_id, patch)
 
-    @register_tool(mcp, "delete_document_type", read_only_mode=read_only)
+    @register_tool(mcp, "delete_document_type")
     async def delete_document_type(document_type_id: int) -> None:
         """Delete a document type."""
         await client.document_types.delete(document_type_id)
 
-    @register_tool(mcp, "bulk_edit_document_types", read_only_mode=read_only)
+    @register_tool(mcp, "bulk_edit_document_types")
     async def bulk_edit_document_types(
         operation: str,
         ids: list[int],

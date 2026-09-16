@@ -18,12 +18,11 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
 
     Args:
         mcp: The FastMCP server instance.
-        ctx: Tool context with client and read-only flag.
+        ctx: Tool context with the Paperless client and pagination defaults.
     """
     client = ctx.client
-    read_only = ctx.read_only
 
-    @register_tool(mcp, "list_tags", read_only_mode=read_only)
+    @register_tool(mcp, "list_tags")
     async def list_tags(
         page: Annotated[int, Field(ge=1)] = 1,
         page_size: Annotated[int, Field(ge=1, le=100)] = ctx.default_page_size,
@@ -38,27 +37,27 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
             name__icontains=name__icontains,
         )
 
-    @register_tool(mcp, "get_tag", read_only_mode=read_only)
+    @register_tool(mcp, "get_tag")
     async def get_tag(tag_id: int) -> Tag:
         """Fetch a tag by ID."""
         return await client.tags.get(tag_id)
 
-    @register_tool(mcp, "create_tag", read_only_mode=read_only)
+    @register_tool(mcp, "create_tag")
     async def create_tag(body: TagCreate) -> Tag:
         """Create a new tag."""
         return await client.tags.create(body)
 
-    @register_tool(mcp, "update_tag", read_only_mode=read_only)
+    @register_tool(mcp, "update_tag")
     async def update_tag(tag_id: int, patch: TagPatch) -> Tag:
         """Patch selected fields on a tag."""
         return await client.tags.update(tag_id, patch)
 
-    @register_tool(mcp, "delete_tag", read_only_mode=read_only)
+    @register_tool(mcp, "delete_tag")
     async def delete_tag(tag_id: int) -> None:
         """Delete a tag."""
         await client.tags.delete(tag_id)
 
-    @register_tool(mcp, "bulk_edit_tags", read_only_mode=read_only)
+    @register_tool(mcp, "bulk_edit_tags")
     async def bulk_edit_tags(
         operation: str,
         ids: list[int],

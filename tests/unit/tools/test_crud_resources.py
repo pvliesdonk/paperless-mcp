@@ -49,31 +49,11 @@ _CRUD_MODULES: list[tuple[Any, str, bool]] = [
 
 
 @pytest.mark.parametrize(("module", "prefix", "has_bulk_edit"), _CRUD_MODULES)
-def test_read_only_registers_read_tools_only(
-    module: Any, prefix: str, has_bulk_edit: bool
-) -> None:
-    mcp = FastMCP("test")
-    ctx = ToolContext(
-        client=_mock_client(), read_only=True, default_page_size=25, public_url=""
-    )
-    module.register(mcp, ctx)
-    names = _names(mcp)
-    assert f"list_{prefix}s" in names
-    assert f"get_{prefix}" in names
-    assert f"create_{prefix}" not in names
-    assert f"update_{prefix}" not in names
-    assert f"delete_{prefix}" not in names
-    assert f"bulk_edit_{prefix}s" not in names
-
-
-@pytest.mark.parametrize(("module", "prefix", "has_bulk_edit"), _CRUD_MODULES)
 def test_all_tools_have_icons(module: Any, prefix: str, has_bulk_edit: bool) -> None:
     from paperless_mcp.tools._icons import ICON_REGISTRY
 
     mcp = FastMCP("test")
-    ctx = ToolContext(
-        client=_mock_client(), read_only=False, default_page_size=25, public_url=""
-    )
+    ctx = ToolContext(client=_mock_client(), default_page_size=25, public_url="")
     module.register(mcp, ctx)
     names = _names(mcp)
     for name in names:
@@ -85,9 +65,7 @@ def test_read_write_registers_all(
     module: Any, prefix: str, has_bulk_edit: bool
 ) -> None:
     mcp = FastMCP("test")
-    ctx = ToolContext(
-        client=_mock_client(), read_only=False, default_page_size=25, public_url=""
-    )
+    ctx = ToolContext(client=_mock_client(), default_page_size=25, public_url="")
     module.register(mcp, ctx)
     names = _names(mcp)
     expected = {
@@ -107,9 +85,7 @@ def test_read_write_registers_all(
 def test_custom_field_tool_descriptions_mention_select_options() -> None:
     """Regression test: docstrings document extra_data.select_options shape."""
     mcp = FastMCP("test")
-    ctx = ToolContext(
-        client=_mock_client(), read_only=False, default_page_size=25, public_url=""
-    )
+    ctx = ToolContext(client=_mock_client(), default_page_size=25, public_url="")
     custom_fields_mod.register(mcp, ctx)
     tools = {t.name: t for t in asyncio.run(mcp.list_tools())}
     for name in ("create_custom_field", "update_custom_field"):

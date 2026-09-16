@@ -19,9 +19,8 @@ Paperless-NGX over MCP: search, read, upload and tag documents; manage correspon
 - **Tag, correspondent, document-type, custom-field management:** full CRUD and bulk-edit for every classification dimension Paperless exposes.
 - **Document lifecycle** supports uploads, field changes, notes, audit history, and AI-suggested tags/correspondents/types.
 - **Operational introspection** covers saved views, storage paths, share links, background tasks (with `wait_for_task`), statistics, and remote Paperless-NGX version.
-- **MCP tools:** 50 LLM-visible tools with `Lucide` icons and read-only gating; see `src/paperless_mcp/tools/`.
+- **MCP tools:** 50 LLM-visible tools with `Lucide` icons; see `src/paperless_mcp/tools/`.
 - **MCP resources:** 20 URIs exposing documents and domain collections; see `src/paperless_mcp/resources/`.
-- **Read-only mode:** flip `PAPERLESS_MCP_READ_ONLY=true` to disable every mutating tool at startup.
 <!-- DOMAIN-END -->
 
 ## What you can do with it
@@ -135,7 +134,6 @@ All settings come from environment variables with the `PAPERLESS_MCP_` prefix.
 | `PAPERLESS_MCP_HTTP_TIMEOUT_SECONDS` | `30` | Per-request HTTP timeout (seconds). |
 | `PAPERLESS_MCP_HTTP_RETRIES` | `2` | Retries (not counting the initial attempt) on 5xx/network errors. |
 | `PAPERLESS_MCP_DEFAULT_PAGE_SIZE` | `25` | Default `page_size` for list tools. Clamped `[1, 100]`. |
-| `PAPERLESS_MCP_READ_ONLY` | `false` | When `true`, disables every writable tool. |
 | `PAPERLESS_MCP_INSTRUCTIONS` | *(built-in)* | Operator-supplied description appended to MCP instructions. |
 
 See the [Transport & Auth](#transport--auth) section below for the inherited transport, auth, and logging variables.
@@ -380,7 +378,7 @@ Domain-config fields are composed inside `src/paperless_mcp/config.py` between t
 ## Key design decisions
 
 <!-- DOMAIN-START -->
-- **Read-only gating at startup, not per-call.** `PAPERLESS_MCP_READ_ONLY=true` skips registration of every mutating tool so they simply are not part of the advertised tool surface. Clients cannot invoke a write that will be refused.
+- **Read-only deployments use tool visibility, not a domain switch.** Set `PAPERLESS_MCP_TOOLS_DENY` (or `PAPERLESS_MCP_TOOLS_ALLOW`) to hide the mutating tools. The template applies visibility last in `make_server`, so hidden tools leave `tools/list` and are rejected on `tools/call`. Clients cannot invoke a write that will be refused, and the rule lives in one place for every server built on this template.
 - **HTTP layer retries idempotent reads only.** `PAPERLESS_MCP_HTTP_RETRIES` applies to GETs on 5xx/network errors; writes never retry automatically, to avoid double-applying bulk edits or uploads.
 - **Tool icons come from `Lucide`.** Every tool carries a `Lucide` icon hint so MCP clients that render icons (Claude Desktop) get a coherent visual surface. See `src/paperless_mcp/tools/_icons.py`.
 - **Models accept unknown upstream fields.** `Pydantic` models use lenient validation for list-endpoint responses so newer Paperless-NGX versions do not break the client (the `Document.some_future_paperless_field` test pins this behaviour).

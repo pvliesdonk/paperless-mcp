@@ -18,12 +18,11 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
 
     Args:
         mcp: The FastMCP server instance.
-        ctx: Tool context with client and read-only flag.
+        ctx: Tool context with the Paperless client and pagination defaults.
     """
     client = ctx.client
-    read_only = ctx.read_only
 
-    @register_tool(mcp, "list_saved_views", read_only_mode=read_only)
+    @register_tool(mcp, "list_saved_views")
     async def list_saved_views(
         page: Annotated[int, Field(ge=1)] = 1,
         page_size: Annotated[int, Field(ge=1, le=100)] = ctx.default_page_size,
@@ -31,7 +30,7 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
         """List saved views."""
         return await client.saved_views.list(page=page, page_size=page_size)
 
-    @register_tool(mcp, "get_saved_view", read_only_mode=read_only)
+    @register_tool(mcp, "get_saved_view")
     async def get_saved_view(view_id: int) -> SavedView:
         """Fetch a saved view by ID."""
         return await client.saved_views.get(view_id)

@@ -19,7 +19,6 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
         snapshot = {
             "paperless_url": client.http.base_url,
             "paperless_public_url": ctx.public_url,
-            "read_only": ctx.read_only,
             "default_page_size": ctx.default_page_size,
         }
         return json.dumps(snapshot)

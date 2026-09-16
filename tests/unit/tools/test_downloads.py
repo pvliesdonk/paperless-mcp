@@ -15,7 +15,6 @@ def test_tool_registry_omits_download_link() -> None:
     mcp = FastMCP("test")
     ctx = ToolContext(
         client=object(),  # type: ignore[arg-type]
-        read_only=False,
         default_page_size=25,
         public_url="",
     )

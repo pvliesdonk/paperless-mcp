@@ -1,10 +1,9 @@
-"""Helpers for registering MCP tools with icons, annotations, and read-only gating.
+"""Helpers for registering MCP tools with icons and annotations.
 
 These are local utilities pending fastmcp-pvl-core#16 for upstream versions.
 
 The helper looks up icons and annotations from per-tool registries by tool
-name, so call sites stay compact: ``@register_tool(mcp, "list_tags",
-read_only_mode=read_only)``.
+name, so call sites stay compact: ``@register_tool(mcp, "list_tags")``.
 """
 
 from __future__ import annotations
@@ -99,17 +98,12 @@ def build_icon(path: Path) -> Icon:
 def register_tool(
     mcp: FastMCP,
     name: str,
-    *,
-    read_only_mode: bool = False,
     **tool_kwargs: object,
 ) -> Callable[[F], F]:
     """Return a decorator that registers *func* as an MCP tool named *name*.
 
     Looks up icons from :data:`paperless_mcp.tools._icons.ICON_REGISTRY`
     and annotations from :data:`paperless_mcp.tools._annotations.ANNOTATION_REGISTRY`.
-
-    When ``read_only_mode`` is ``True`` and the tool's ``readOnlyHint`` is
-    ``False``, the decorator returns the function unchanged (no registration).
 
     Raises:
         KeyError: If *name* is not present in either registry.
@@ -119,11 +113,8 @@ def register_tool(
 
     icons = ICON_REGISTRY[name]
     annotations = ANNOTATION_REGISTRY[name]
-    read_only_tool = bool(annotations.get("readOnlyHint", False))
 
     def decorator(func: F) -> F:
-        if read_only_mode and not read_only_tool:
-            return func
         wrapped = _wrap_with_error_handling(name, func)
         return mcp.tool(  # type: ignore[call-overload, no-any-return]
             name=name,

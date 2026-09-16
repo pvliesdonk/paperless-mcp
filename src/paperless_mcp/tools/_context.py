@@ -13,13 +13,11 @@ class ToolContext:
 
     Attributes:
         client: Authenticated Paperless REST client.
-        read_only: Whether writable tools should be skipped.
         default_page_size: Default pagination window for list tools.
         public_url: Public Paperless UI base URL.  Used to construct
             user-visible links (set from ``DomainConfig.paperless_public_url``).
     """
 
     client: PaperlessClient
-    read_only: bool
     default_page_size: int
     public_url: str

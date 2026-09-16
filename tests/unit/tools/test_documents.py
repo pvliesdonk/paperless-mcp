@@ -42,35 +42,9 @@ def _registered_names(mcp: FastMCP) -> set[str]:
     return {tool.name for tool in tools}
 
 
-def test_read_only_registers_read_tools(mock_client: Any) -> None:
-    mcp = FastMCP("test")
-    ctx = ToolContext(
-        client=mock_client, read_only=True, default_page_size=25, public_url=""
-    )
-    documents_mod.register(mcp, ctx)
-    names = _registered_names(mcp)
-    assert "list_documents" in names
-    assert "search_documents" in names
-    assert "get_document" in names
-    assert "get_document_content" in names
-    assert "get_document_thumbnail" in names
-    assert "get_document_metadata" in names
-    assert "get_document_notes" in names
-    assert "get_document_history" in names
-    assert "get_document_suggestions" in names
-    assert "update_document" not in names
-    assert "delete_document" not in names
-    assert "upload_document" not in names
-    assert "bulk_edit_documents" not in names
-    assert "add_document_note" not in names
-    assert "delete_document_note" not in names
-
-
 def test_read_write_registers_all(mock_client: Any) -> None:
     mcp = FastMCP("test")
-    ctx = ToolContext(
-        client=mock_client, read_only=False, default_page_size=25, public_url=""
-    )
+    ctx = ToolContext(client=mock_client, default_page_size=25, public_url="")
     documents_mod.register(mcp, ctx)
     names = _registered_names(mcp)
     expected = {
@@ -95,9 +69,7 @@ def test_read_write_registers_all(mock_client: Any) -> None:
 
 def test_all_tools_have_icons(mock_client: Any) -> None:
     mcp = FastMCP("test")
-    ctx = ToolContext(
-        client=mock_client, read_only=False, default_page_size=25, public_url=""
-    )
+    ctx = ToolContext(client=mock_client, default_page_size=25, public_url="")
     documents_mod.register(mcp, ctx)
     tools = asyncio.run(mcp.list_tools())
     for tool in tools:
@@ -106,9 +78,7 @@ def test_all_tools_have_icons(mock_client: Any) -> None:
 
 def test_list_and_search_expose_include_content(mock_client: Any) -> None:
     mcp = FastMCP("test")
-    ctx = ToolContext(
-        client=mock_client, read_only=True, default_page_size=25, public_url=""
-    )
+    ctx = ToolContext(client=mock_client, default_page_size=25, public_url="")
     documents_mod.register(mcp, ctx)
     tools = {t.name: t for t in asyncio.run(mcp.list_tools())}
     for name in ("list_documents", "search_documents"):
@@ -122,7 +92,6 @@ async def test_get_document_populates_web_url(mock_client: Any) -> None:
     mcp = FastMCP("t")
     ctx = ToolContext(
         client=mock_client,
-        read_only=True,
         default_page_size=25,
         public_url="https://docs.example.com",
     )
@@ -144,9 +113,7 @@ def test_get_document_and_update_document_expose_include_content(
     mock_client: Any,
 ) -> None:
     mcp = FastMCP("test")
-    ctx = ToolContext(
-        client=mock_client, read_only=False, default_page_size=25, public_url=""
-    )
+    ctx = ToolContext(client=mock_client, default_page_size=25, public_url="")
     documents_mod.register(mcp, ctx)
     tools = {t.name: t for t in asyncio.run(mcp.list_tools())}
     for name in ("get_document", "update_document"):
@@ -158,9 +125,7 @@ def test_get_document_and_update_document_expose_include_content(
 @pytest.mark.asyncio
 async def test_get_document_strips_content_by_default(mock_client: Any) -> None:
     mcp = FastMCP("t")
-    ctx = ToolContext(
-        client=mock_client, read_only=True, default_page_size=25, public_url=""
-    )
+    ctx = ToolContext(client=mock_client, default_page_size=25, public_url="")
     documents_mod.register(mcp, ctx)
     mock_client.documents.get.return_value = Document(
         id=42,
@@ -182,9 +147,7 @@ async def test_get_document_keeps_content_when_include_content_true(
     mock_client: Any,
 ) -> None:
     mcp = FastMCP("t")
-    ctx = ToolContext(
-        client=mock_client, read_only=True, default_page_size=25, public_url=""
-    )
+    ctx = ToolContext(client=mock_client, default_page_size=25, public_url="")
     documents_mod.register(mcp, ctx)
     mock_client.documents.get.return_value = Document(
         id=42,
@@ -206,9 +169,7 @@ async def test_get_document_keeps_content_when_include_content_true(
 @pytest.mark.asyncio
 async def test_update_document_strips_content_by_default(mock_client: Any) -> None:
     mcp = FastMCP("t")
-    ctx = ToolContext(
-        client=mock_client, read_only=False, default_page_size=25, public_url=""
-    )
+    ctx = ToolContext(client=mock_client, default_page_size=25, public_url="")
     documents_mod.register(mcp, ctx)
     mock_client.documents.update.return_value = Document(
         id=42,
@@ -232,9 +193,7 @@ async def test_update_document_keeps_content_when_include_content_true(
     mock_client: Any,
 ) -> None:
     mcp = FastMCP("t")
-    ctx = ToolContext(
-        client=mock_client, read_only=False, default_page_size=25, public_url=""
-    )
+    ctx = ToolContext(client=mock_client, default_page_size=25, public_url="")
     documents_mod.register(mcp, ctx)
     mock_client.documents.update.return_value = Document(
         id=42,
@@ -259,7 +218,6 @@ async def test_list_documents_populates_web_url(mock_client: Any) -> None:
     mcp = FastMCP("t")
     ctx = ToolContext(
         client=mock_client,
-        read_only=True,
         default_page_size=25,
         public_url="https://docs.example.com",
     )
@@ -288,7 +246,6 @@ async def test_search_documents_populates_web_url(mock_client: Any) -> None:
     mcp = FastMCP("t")
     ctx = ToolContext(
         client=mock_client,
-        read_only=True,
         default_page_size=25,
         public_url="https://docs.example.com",
     )
@@ -317,7 +274,6 @@ async def test_update_document_populates_web_url(mock_client: Any) -> None:
     mcp = FastMCP("t")
     ctx = ToolContext(
         client=mock_client,
-        read_only=False,
         default_page_size=25,
         public_url="https://docs.example.com",
     )
@@ -341,7 +297,6 @@ async def test_web_url_none_when_public_url_empty(mock_client: Any) -> None:
     mcp = FastMCP("t")
     ctx = ToolContext(
         client=mock_client,
-        read_only=True,
         default_page_size=25,
         public_url="",
     )
