@@ -17,7 +17,7 @@ from paperless_mcp.config import _ENV_PREFIX, ProjectConfig
 
 app = typer.Typer(
     name="paperless-mcp",
-    help="Paperless-NGX document management over MCP: search, tag, upload, and read documents; manage tags, correspondents, document types, and custom fields.",
+    help="Paperless-NGX over MCP: search, read, upload and tag documents; manage correspondents and types.",
     no_args_is_help=True,
     add_completion=False,
 )

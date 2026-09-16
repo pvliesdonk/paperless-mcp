@@ -110,7 +110,7 @@ def make_server(
     server_name = env(_ENV_PREFIX, "SERVER_NAME", "paperless-mcp")
     instructions = env(_ENV_PREFIX, "INSTRUCTIONS") or build_instructions(
         env_prefix=_ENV_PREFIX,
-        domain_line="Paperless-NGX document management over MCP: search, tag, upload, and read documents; manage tags, correspondents, document types, and custom fields.",
+        domain_line="Paperless-NGX over MCP: search, read, upload and tag documents; manage correspondents and types.",
     )
 
     auth = build_auth(config.server)
