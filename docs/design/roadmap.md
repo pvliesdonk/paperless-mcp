@@ -152,13 +152,14 @@ backlog that predates this index.
   condition — "if it turns out to decide scope for a whole package rather than
   for one feature" — was met: it decides which capabilities are worth exposing
   at all, so no feature issue beneath this theme would have been honest before
-  the inventory exists. One facet is already narrowed: #113's own body records,
-  `verified` against Paperless's settings module, that `ALLOWED_VERSIONS` is
-  `["9", "10"]` with `DEFAULT_VERSION` `10` while this client sends
-  `version=9`. `derived`: that is tracker working memory rather than the repo's
-  record, so it is on borrowed time — when the research lands it should be
-  repointed at a committed document, per the skill's rule on where research
-  output lives.
+  the inventory exists. One facet is already pinned, and pinned in the repo
+  rather than in the tracker: `evidenced`,
+  `docs/design/reference/paperless-version-endpoints.md` records
+  `[source: pngx-settings]` that `ALLOWED_VERSIONS` is `["9", "10"]` with
+  `DEFAULT_VERSION` `"10"` while this client pins `version=9`, and scopes the
+  payload difference to #113. That page reached `main` with #127 while this
+  correction was in review — which is exactly the repoint the skill asks for
+  when research output moves from working memory to the record.
 - **Whether any Paperless call on the deployed instance blocks long enough to
   need a job.** `stated` in
   [#110](https://github.com/pvliesdonk/paperless-mcp/issues/110), with the
