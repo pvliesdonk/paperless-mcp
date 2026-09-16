@@ -70,7 +70,7 @@ jobs:
             type=raw,value=edge
           labels: |
             org.opencontainers.image.title=paperless-mcp
-            org.opencontainers.image.description=Paperless-NGX document management over MCP: search, tag, upload, and read documents; manage tags, correspondents, document types, and custom fields.
+            org.opencontainers.image.description=Paperless-NGX over MCP: search, read, upload and tag documents; manage correspondents and types.
             org.opencontainers.image.vendor=pvliesdonk
             io.modelcontextprotocol.server.name=io.github.pvliesdonk/paperless-mcp
 

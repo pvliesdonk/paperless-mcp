@@ -32,17 +32,16 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
 
     Args:
         mcp: The FastMCP server instance.
-        ctx: Tool context with client and read-only flag.
+        ctx: Tool context with the Paperless client and pagination defaults.
     """
     client = ctx.client
-    read_only = ctx.read_only
 
     def _with_web_url(doc: Document) -> None:
         """Populate *doc*'s ``web_url`` when a public URL is configured."""
         if ctx.public_url:
             doc.web_url = f"{ctx.public_url}/documents/{doc.id}/"
 
-    @register_tool(mcp, "list_documents", read_only_mode=read_only)
+    @register_tool(mcp, "list_documents")
     async def list_documents(
         page: Annotated[int, Field(ge=1)] = 1,
         page_size: Annotated[int, Field(ge=1, le=100)] = ctx.default_page_size,
@@ -80,7 +79,7 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
             _with_web_url(doc)
         return result
 
-    @register_tool(mcp, "search_documents", read_only_mode=read_only)
+    @register_tool(mcp, "search_documents")
     async def search_documents(
         query: str,
         page: Annotated[int, Field(ge=1)] = 1,
@@ -109,7 +108,7 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
             _with_web_url(doc)
         return result
 
-    @register_tool(mcp, "get_document", read_only_mode=read_only)
+    @register_tool(mcp, "get_document")
     async def get_document(
         document_id: int,
         include_content: bool = False,
@@ -126,12 +125,12 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
         _with_web_url(doc)
         return doc
 
-    @register_tool(mcp, "get_document_content", read_only_mode=read_only)
+    @register_tool(mcp, "get_document_content")
     async def get_document_content(document_id: int) -> str:
         """Return the OCR'd text content of a document."""
         return await client.documents.get_content(document_id)
 
-    @register_tool(mcp, "get_document_thumbnail", read_only_mode=read_only)
+    @register_tool(mcp, "get_document_thumbnail")
     async def get_document_thumbnail(document_id: int) -> ImageContent:
         """Return the document's thumbnail as inline image content."""
         data, content_type = await client.documents.get_thumbnail(document_id)
@@ -141,27 +140,27 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
             mimeType=content_type or "image/png",
         )
 
-    @register_tool(mcp, "get_document_metadata", read_only_mode=read_only)
+    @register_tool(mcp, "get_document_metadata")
     async def get_document_metadata(document_id: int) -> DocumentMetadata:
         """Return technical metadata for a document (checksums, filenames, etc.)."""
         return await client.documents.get_metadata(document_id)
 
-    @register_tool(mcp, "get_document_notes", read_only_mode=read_only)
+    @register_tool(mcp, "get_document_notes")
     async def get_document_notes(document_id: int) -> list[DocumentNote]:
         """Return notes attached to a document."""
         return await client.documents.get_notes(document_id)
 
-    @register_tool(mcp, "get_document_history", read_only_mode=read_only)
+    @register_tool(mcp, "get_document_history")
     async def get_document_history(document_id: int) -> list[DocumentHistoryEntry]:
         """Return the audit history for a document."""
         return await client.documents.get_history(document_id)
 
-    @register_tool(mcp, "get_document_suggestions", read_only_mode=read_only)
+    @register_tool(mcp, "get_document_suggestions")
     async def get_document_suggestions(document_id: int) -> DocumentSuggestions:
         """Return Paperless's classifier suggestions for a document."""
         return await client.documents.get_suggestions(document_id)
 
-    @register_tool(mcp, "update_document", read_only_mode=read_only)
+    @register_tool(mcp, "update_document")
     async def update_document(
         document_id: int,
         patch: DocumentPatch,
@@ -178,12 +177,12 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
         _with_web_url(doc)
         return doc
 
-    @register_tool(mcp, "delete_document", read_only_mode=read_only)
+    @register_tool(mcp, "delete_document")
     async def delete_document(document_id: int) -> None:
         """Delete a document."""
         await client.documents.delete(document_id)
 
-    @register_tool(mcp, "upload_document", read_only_mode=read_only)
+    @register_tool(mcp, "upload_document")
     async def upload_document(
         filename: str,
         content_base64: str,
@@ -209,7 +208,7 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
             custom_fields=custom_fields,
         )
 
-    @register_tool(mcp, "bulk_edit_documents", read_only_mode=read_only)
+    @register_tool(mcp, "bulk_edit_documents")
     async def bulk_edit_documents(
         operation: BulkEditOperation,
         ids: list[int],
@@ -220,12 +219,12 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
             document_ids=ids, method=operation, parameters=parameters
         )
 
-    @register_tool(mcp, "add_document_note", read_only_mode=read_only)
+    @register_tool(mcp, "add_document_note")
     async def add_document_note(document_id: int, note: str) -> DocumentNote:
         """Append a note to a document."""
         return await client.documents.add_note(document_id, note)
 
-    @register_tool(mcp, "delete_document_note", read_only_mode=read_only)
+    @register_tool(mcp, "delete_document_note")
     async def delete_document_note(document_id: int, note_id: int) -> None:
         """Remove a note from a document."""
         await client.documents.delete_note(document_id, note_id)

@@ -18,17 +18,16 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
 
     Args:
         mcp: The FastMCP server instance.
-        ctx: Tool context with client and read-only flag.
+        ctx: Tool context with the Paperless client and pagination defaults.
     """
     client = ctx.client
-    read_only = ctx.read_only
 
     def _with_share_url(link: ShareLink) -> None:
         """Populate *link*'s ``share_url`` when a public URL is configured."""
         if ctx.public_url:
             link.share_url = f"{ctx.public_url}/share/{link.slug}"
 
-    @register_tool(mcp, "list_share_links", read_only_mode=read_only)
+    @register_tool(mcp, "list_share_links")
     async def list_share_links(
         page: Annotated[int, Field(ge=1)] = 1,
         page_size: Annotated[int, Field(ge=1, le=100)] = ctx.default_page_size,
@@ -42,7 +41,7 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
             _with_share_url(link)
         return result
 
-    @register_tool(mcp, "get_share_link", read_only_mode=read_only)
+    @register_tool(mcp, "get_share_link")
     async def get_share_link(share_link_id: int) -> ShareLink:
         """Fetch a share link by ID."""
         link = await client.share_links.get(share_link_id)

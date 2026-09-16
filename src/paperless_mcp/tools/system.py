@@ -14,17 +14,16 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
 
     Args:
         mcp: The FastMCP server instance.
-        ctx: Tool context with client and read-only flag.
+        ctx: Tool context with the Paperless client and pagination defaults.
     """
     client = ctx.client
-    read_only = ctx.read_only
 
-    @register_tool(mcp, "get_statistics", read_only_mode=read_only)
+    @register_tool(mcp, "get_statistics")
     async def get_statistics() -> Statistics:
         """Fetch collection-level statistics."""
         return await client.system.statistics()
 
-    @register_tool(mcp, "get_remote_version", read_only_mode=read_only)
+    @register_tool(mcp, "get_remote_version")
     async def get_remote_version() -> RemoteVersion:
         """Fetch Paperless version info."""
         return await client.system.remote_version()

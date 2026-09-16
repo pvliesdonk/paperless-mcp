@@ -1,3 +1,4 @@
+
 # `pre-commit install` wires both stages so the pre-push structural gate is
 # installed alongside the commit-time hooks.
 default_install_hook_types: [pre-commit, pre-push]
@@ -28,6 +29,7 @@ repos:
         pass_filenames: false
         args: [src/, tests/]
 
+
       # Structural-health gate: strict ruff structural rules on CHANGED LINES
       # ONLY, sharing scripts/structural_gate.sh with the CI `structure` job so
       # the command cannot drift between the two. The script derives its
@@ -46,6 +48,7 @@ repos:
         # the CI structure job's `HAS_PY` docs-only skip.
         types: [python]
         stages: [pre-push]
+
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
@@ -111,6 +114,9 @@ repos:
           '
         pass_filenames: false
         files: ^(docs/|\.vale\.ini$)
+        # Align trigger scope with the `vale` lint hook below — no point
+        # checking sync state on commits that only touch the excluded
+        # working-specs subtree.
         exclude: ^docs/superpowers/
 
   - repo: https://github.com/vale-cli/vale

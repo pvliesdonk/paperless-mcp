@@ -33,7 +33,6 @@ async def test_get_share_link_populates_share_url() -> None:
         mcp,
         ToolContext(
             client=client,
-            read_only=True,
             default_page_size=25,
             public_url="https://docs.example.com",
         ),
@@ -72,7 +71,6 @@ async def test_list_share_links_populates_share_url() -> None:
         mcp,
         ToolContext(
             client=client,
-            read_only=True,
             default_page_size=25,
             public_url="https://docs.example.com",
         ),
@@ -93,7 +91,6 @@ async def test_get_share_url_is_none_when_public_url_empty() -> None:
         mcp,
         ToolContext(
             client=client,
-            read_only=True,
             default_page_size=25,
             public_url="",
         ),
@@ -132,7 +129,6 @@ async def test_list_share_url_is_none_when_public_url_empty() -> None:
         mcp,
         ToolContext(
             client=client,
-            read_only=True,
             default_page_size=25,
             public_url="",
         ),

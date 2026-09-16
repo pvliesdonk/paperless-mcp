@@ -32,9 +32,7 @@ def _templates(mcp: FastMCP) -> set[str]:
 
 def test_registers_templated_uris() -> None:
     mcp = FastMCP("test")
-    ctx = ToolContext(
-        client=_mock_client(), read_only=False, default_page_size=25, public_url=""
-    )
+    ctx = ToolContext(client=_mock_client(), default_page_size=25, public_url="")
     documents_mod.register(mcp, ctx)
     templates = _templates(mcp)
     expected = {

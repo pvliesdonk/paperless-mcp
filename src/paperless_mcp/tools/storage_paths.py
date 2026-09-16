@@ -18,12 +18,11 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
 
     Args:
         mcp: The FastMCP server instance.
-        ctx: Tool context with client and read-only flag.
+        ctx: Tool context with the Paperless client and pagination defaults.
     """
     client = ctx.client
-    read_only = ctx.read_only
 
-    @register_tool(mcp, "list_storage_paths", read_only_mode=read_only)
+    @register_tool(mcp, "list_storage_paths")
     async def list_storage_paths(
         page: Annotated[int, Field(ge=1)] = 1,
         page_size: Annotated[int, Field(ge=1, le=100)] = ctx.default_page_size,
@@ -34,7 +33,7 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
             page=page, page_size=page_size, ordering=ordering
         )
 
-    @register_tool(mcp, "get_storage_path", read_only_mode=read_only)
+    @register_tool(mcp, "get_storage_path")
     async def get_storage_path(storage_path_id: int) -> StoragePath:
         """Fetch a storage path by ID."""
         return await client.storage_paths.get(storage_path_id)

@@ -46,8 +46,6 @@ def _isolate_docket_settings(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(fastmcp.settings.docket, "name", fastmcp.settings.docket.name)
     monkeypatch.delenv("FASTMCP_DOCKET_URL", raising=False)
     monkeypatch.delenv("FASTMCP_DOCKET_NAME", raising=False)
-    monkeypatch.setenv("PAPERLESS_MCP_PAPERLESS_URL", "http://paperless.test")
-    monkeypatch.setenv("PAPERLESS_MCP_API_TOKEN", "test-token")
 
 
 def test_make_server_configures_the_task_backend() -> None:

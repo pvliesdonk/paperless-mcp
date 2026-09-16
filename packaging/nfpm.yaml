@@ -15,7 +15,7 @@ section: utils
 priority: optional
 maintainer: "pvliesdonk <pvliesdonk@users.noreply.github.com>"
 description: |
-  Paperless-NGX document management over MCP: search, tag, upload, and read documents; manage tags, correspondents, document types, and custom fields.
+  Paperless-NGX over MCP: search, read, upload and tag documents; manage correspondents and types.
 homepage: "https://pvliesdonk.github.io/paperless-mcp/"
 license: "Proprietary"  # starter: TODO update when you pick a license (see LICENSE)
 

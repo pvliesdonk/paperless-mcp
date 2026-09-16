@@ -26,9 +26,7 @@ def mock_client() -> Any:
 
 def test_list_tasks_registered_with_pagination(mock_client: Any) -> None:
     mcp = FastMCP("test")
-    ctx = ToolContext(
-        client=mock_client, read_only=True, default_page_size=25, public_url=""
-    )
+    ctx = ToolContext(client=mock_client, default_page_size=25, public_url="")
     tasks_mod.register(mcp, ctx)
     tools = {t.name: t for t in asyncio.run(mcp.list_tools())}
     assert "list_tasks" in tools
@@ -41,9 +39,7 @@ def test_list_tasks_registered_with_pagination(mock_client: Any) -> None:
 @pytest.mark.asyncio
 async def test_list_tasks_default_forwards_filter(mock_client: Any) -> None:
     mcp = FastMCP("test")
-    ctx = ToolContext(
-        client=mock_client, read_only=True, default_page_size=25, public_url=""
-    )
+    ctx = ToolContext(client=mock_client, default_page_size=25, public_url="")
     tasks_mod.register(mcp, ctx)
     mock_client.tasks.list.return_value = Paginated[Task].model_validate(
         {"count": 0, "results": []}
