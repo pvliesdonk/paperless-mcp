@@ -43,18 +43,31 @@ class SystemClient:
         """Fetch the Paperless-NGX version running on the connected instance.
 
         Reads ``settings.version`` from ``/api/ui_settings/``, which Paperless
-        fills from its own ``__full_version_str__``.  That endpoint needs only
-        an authenticated user, unlike ``/api/status/``'s ``pngx_version``,
-        which is admin-gated.
+        fills from its own ``__full_version_str__``.
+
+        The endpoint is not unconditionally reachable: its permission classes
+        are ``IsAuthenticated`` plus ``PaperlessObjectPermissions``, whose
+        ``perms_map`` maps ``GET`` to ``<app_label>.view_<model_name>``, so the
+        token's user needs ``documents.view_uisettings``.  A superuser has it;
+        a narrowly-scoped service account may not, and then Paperless answers
+        ``403``, which this client raises as
+        :class:`~paperless_mcp.client.AuthError`.  Callers that treat the
+        version as optional enrichment degrade rather than fail — see
+        :func:`paperless_mcp.domain.upstream_version_provider`.
+        ``/api/status/``'s ``pngx_version`` is stricter still: it is gated on
+        the system-status permission and answers ``403`` without it.
+        [verified: paperless-ngx ``src/documents/permissions.py``
+        ``PaperlessObjectPermissions.perms_map`` and ``src/documents/views.py``
+        ``SystemStatusView`` at ae9529551d17]
 
         The call is a plain ``GET`` with no body.  Paperless's handler reads
         the calling user's stored UI settings when the row exists and returns
         the envelope; writing them is the ``POST`` on the same path, which this
         client never issues.  [verified: paperless-ngx
-        ``src/documents/views.py`` lines 4087-4162 and
+        ``src/documents/views.py`` ``UiSettingsView.get`` and
         ``UiSettingsViewSerializer`` in ``src/documents/serialisers.py``, whose
         ``settings`` field is ``required=False`` so an empty request body
-        validates.]
+        validates — both at ae9529551d17.]
 
         Returns:
             The installed version string, e.g. ``"2.20.14"``.

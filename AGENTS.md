@@ -263,7 +263,15 @@ from `settings.version` of `/api/ui_settings/`. It is deliberately *not*
 `/api/remote_version/`: that endpoint returns the newest release tag Paperless
 fetched from GitHub and never the version it is itself running, so reading it as
 an identity answer reports a newer version than the instance has exactly when an
-update is pending. [verified: paperless-ngx `src/documents/views.py`,
-`RemoteVersionView` lines 4185-4221 and `UiSettingsView` lines 4082-4162 on
-`main`] Whether an update exists stays the `get_remote_version` tool's job.
+update is pending. Whether an update exists stays the `get_remote_version`
+tool's job.
+
+`/api/ui_settings/` costs one permission the old endpoint did not: its
+`PaperlessObjectPermissions` maps `GET` to `<app_label>.view_<model_name>`, so
+the token's user needs `documents.view_uisettings` and a narrower service
+account gets `403`. That degrades to `{"version": null}` rather than failing
+the call, which is the contract the block already had. Evidence for all of this
+(with upstream line numbers and the commit it was read at) is in
+pvliesdonk/paperless-mcp#121 and #123, not repeated here, because line numbers
+in this file rot.
 <!-- DOMAIN-END -->

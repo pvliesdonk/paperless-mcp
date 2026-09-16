@@ -29,8 +29,7 @@ class RemoteVersion(BaseModel):
     version of the instance answering the call.  Paperless parses its running
     version only to compute ``update_available`` and never returns it.
     [verified: paperless-ngx ``src/documents/views.py``, ``RemoteVersionView``
-    lines 4185-4221 on ``main``]  For the running version see
-    :class:`UiSettingsResponse`.
+    at ae9529551d17]  For the running version see :class:`UiSettingsResponse`.
     """
 
     model_config = ConfigDict(extra="allow")
@@ -58,7 +57,7 @@ class UiSettingsResponse(BaseModel):
     """``/api/ui_settings/``: the envelope around :class:`UiSettings`.
 
     [verified: paperless-ngx ``src/documents/views.py``, ``UiSettingsView``
-    lines 4082-4162 on ``main``, where ``ui_settings["version"]`` is set from
+    at ae9529551d17, where ``ui_settings["version"]`` is set from
     ``version.__full_version_str__`` and returned under ``settings``.]
     """
 
