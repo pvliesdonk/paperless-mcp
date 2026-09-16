@@ -54,6 +54,8 @@ from paperless_mcp.client import (
 from paperless_mcp.config import _ENV_PREFIX, ProjectConfig
 
 if TYPE_CHECKING:
+    from collections.abc import Awaitable, Callable
+
     from paperless_mcp.tools._context import ToolContext
 
 logger = logging.getLogger(__name__)
@@ -71,6 +73,7 @@ __all__ = [
     "build_tool_context",
     "pending_tool_context",
     "tool_context_for",
+    "upstream_version_provider",
 ]
 
 _pending: tuple[object, ToolContext] | None = None
@@ -187,6 +190,60 @@ def pending_tool_context() -> ToolContext | None:
         The staged context, or ``None`` when nothing is staged.
     """
     return _pending[1] if _pending is not None else None
+
+
+def upstream_version_provider(
+    mcp: object,
+) -> Callable[[], Awaitable[dict[str, object] | None]]:
+    """Build the zero-arg provider ``register_server_info_tool`` calls.
+
+    Captures the :class:`ToolContext` staged for *mcp* — the same one the tool
+    registrars and :class:`Service` share — so asking ``get_server_info`` for
+    the Paperless version reuses the open HTTP client instead of opening a
+    second one.
+
+    The version reported is the one *installed on the connected instance*
+    (``SystemClient.installed_version``), not the newest release published
+    upstream.  The distinction is the whole point of the block: the question
+    it answers is "which Paperless am I talking to", and Paperless's
+    ``/api/remote_version/`` answers a different one — see
+    :class:`~paperless_mcp.models.system.RemoteVersion`.  Whether an update
+    exists stays the ``get_remote_version`` tool's job; reporting both from
+    one field is what made the first version of this provider wrong.
+
+    Called from ``make_server``'s ``DOMAIN-WIRING`` block, which runs *after*
+    ``register_server_info_tool``; the ``upstream_version=`` keyword there is a
+    lambda, so the name this returns is looked up when the tool is called, by
+    which time the block has bound it.
+
+    Args:
+        mcp: The server whose staged context the provider should use.
+
+    Returns:
+        An async zero-arg callable returning ``{"version": <installed>}``, or
+        ``None`` when Paperless cannot answer.  One HTTP request per call.
+    """
+    context = tool_context_for(mcp)
+
+    async def _paperless_version() -> dict[str, object] | None:
+        """Report the installed Paperless-NGX version, or ``None``.
+
+        Returns:
+            ``{"version": <the version running on the connected instance>}``,
+            or ``None`` — never raises.  The version is optional enrichment of
+            a tool whose primary job is reporting *this* server's build, so an
+            unreachable Paperless must not fail the call.
+        """
+        try:
+            installed = await context.client.system.installed_version()
+        except (PaperlessAPIError, ValueError):
+            # ValueError covers a malformed body: both json.JSONDecodeError and
+            # pydantic's ValidationError derive from it.
+            logger.debug("upstream_version_unavailable label=paperless", exc_info=True)
+            return None
+        return {"version": installed}
+
+    return _paperless_version
 
 
 class Service:

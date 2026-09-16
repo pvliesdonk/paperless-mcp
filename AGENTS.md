@@ -248,4 +248,22 @@ scan. There is no second settings class and no `vars:` list in
 `config-presentation.domain.yml`. Rationale, and the two places the template's
 contract does not quite fit (a required field cannot be expressed; the config
 cannot reach `register_tools`), are in `docs/design/config.md`.
+
+**`get_server_info` reports Paperless too.** The `DOMAIN-UPSTREAM` sentinel in
+`server.py` wires `upstream_version=lambda: _paperless_version()` with
+`upstream_label="paperless"`. `_paperless_version` is bound one block later, in
+`DOMAIN-WIRING`, because `DOMAIN-UPSTREAM` sits inside a call's keyword list and
+no statement can run there; the lambda defers the name lookup to call time. The
+provider reuses the `ToolContext` the registrars staged rather than opening a
+second Paperless client, and returns `None` (logged at `DEBUG`) rather than
+raising when Paperless is unreachable.
+
+The version it reports is the one **installed on the connected instance**, read
+from `settings.version` of `/api/ui_settings/`. It is deliberately *not*
+`/api/remote_version/`: that endpoint returns the newest release tag Paperless
+fetched from GitHub and never the version it is itself running, so reading it as
+an identity answer reports a newer version than the instance has exactly when an
+update is pending. [verified: paperless-ngx `src/documents/views.py`,
+`RemoteVersionView` lines 4185-4221 and `UiSettingsView` lines 4082-4162 on
+`main`] Whether an update exists stays the `get_remote_version` tool's job.
 <!-- DOMAIN-END -->

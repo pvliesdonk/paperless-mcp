@@ -167,9 +167,12 @@ def make_server(
         # DI marker — it only resolves to a live context when used as a
         # parameter default in a tool/resource handler, so it cannot be called
         # directly from a zero-arg provider.
-        # Uncomment the kwargs below as additional arguments to this call:
-        # upstream_version=lambda: _upstream_client.remote_version(),
-        # upstream_label="paperless",
+        # ``_paperless_version`` is bound in the DOMAIN-WIRING block below,
+        # which runs after this call. The lambda defers the lookup to call
+        # time, by which point the name exists — the same late binding the
+        # commented template example relies on.
+        upstream_version=lambda: _paperless_version(),
+        upstream_label="paperless",
         # DOMAIN-UPSTREAM-END
     )
 
@@ -194,6 +197,17 @@ def make_server(
     # transforms, mode toggles, alternative middleware, additional registrations);
     # kept across copier update. Leave empty for projects that don't customise
     # make_server() beyond the standard scaffold.
+    #
+    # -- get_server_info's Paperless version block ----------------------------
+    #
+    # Bound here rather than above because this is the first place a statement
+    # may run: the DOMAIN-UPSTREAM sentinel sits inside a call's keyword list.
+    # The provider captures the ToolContext register_tools already staged, so
+    # it reuses the open Paperless client and opens no second one, and it
+    # returns None rather than raising when Paperless cannot answer.
+    from paperless_mcp.domain import upstream_version_provider
+
+    _paperless_version = upstream_version_provider(mcp)
     #
     # -- Transfer subsystem (capability-link upload + download) ----------------
     #
