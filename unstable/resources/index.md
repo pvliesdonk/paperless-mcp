@@ -4,18 +4,18 @@ The MCP resources this server registers are listed below. Collection resources r
 
 ## Collection resources
 
-| URI                          | Description                                                                                                      |
-| ---------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `config://paperless`         | Server configuration snapshot: the Paperless API URL, the public UI URL and the default page size for list tools |
-| `stats://paperless`          | Paperless-NGX document statistics                                                                                |
-| `remote-version://paperless` | The Paperless-NGX version the server is talking to                                                               |
-| `tags://paperless`           | All tags                                                                                                         |
-| `correspondents://paperless` | All correspondents                                                                                               |
-| `document-types://paperless` | All document types                                                                                               |
-| `custom-fields://paperless`  | All custom fields                                                                                                |
-| `storage-paths://paperless`  | All storage paths                                                                                                |
-| `saved-views://paperless`    | All saved views                                                                                                  |
-| `tasks://paperless`          | All background tasks                                                                                             |
+| URI                          | Description                                                                                                                               |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `config://paperless`         | Server configuration snapshot: the Paperless API URL, the public UI URL and the default page size for list tools                          |
+| `stats://paperless`          | Paperless-NGX document statistics                                                                                                         |
+| `remote-version://paperless` | The newest Paperless-NGX release published upstream, and whether it is newer than the connected instance. Not the version installed on it |
+| `tags://paperless`           | All tags                                                                                                                                  |
+| `correspondents://paperless` | All correspondents                                                                                                                        |
+| `document-types://paperless` | All document types                                                                                                                        |
+| `custom-fields://paperless`  | All custom fields                                                                                                                         |
+| `storage-paths://paperless`  | All storage paths                                                                                                                         |
+| `saved-views://paperless`    | All saved views                                                                                                                           |
+| `tasks://paperless`          | All background tasks                                                                                                                      |
 
 ## Document resources
 

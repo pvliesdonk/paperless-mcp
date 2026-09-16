@@ -116,11 +116,11 @@ Both tools include a `share_url` field of the form `<PAPERLESS_MCP_PAPERLESS_PUB
 
 ## System tools
 
-| Tool                 | Description                                                                                    |
-| -------------------- | ---------------------------------------------------------------------------------------------- |
-| `get_statistics`     | Retrieve Paperless system statistics                                                           |
-| `get_remote_version` | Check the Paperless-NGX version and update status                                              |
-| `get_server_info`    | Report this server's own build and the version installed on the Paperless instance it talks to |
+| Tool                 | Description                                                                                                                                                                                                 |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `get_statistics`     | Retrieve Paperless system statistics                                                                                                                                                                        |
+| `get_remote_version` | Check whether a newer Paperless-NGX release exists upstream: the newest release published on GitHub, and whether it is newer than the connected instance. Not the installed version (see `get_server_info`) |
+| `get_server_info`    | Report this server's own build and the version installed on the Paperless instance it talks to                                                                                                              |
 
 `get_server_info` answers "is the deployed build the one I expect, and against which Paperless?" in one call. It returns `server_name`, `server_version`, `core_version` (the `fastmcp-pvl-core` version), and a `paperless` block carrying the version **installed on the instance this server is connected to**:
 
