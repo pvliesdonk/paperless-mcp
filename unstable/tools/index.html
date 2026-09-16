@@ -1782,8 +1782,51 @@
 <td><code>get_remote_version</code></td>
 <td>Check the Paperless-NGX version and update status</td>
 </tr>
+<tr>
+<td><code>get_server_info</code></td>
+<td>Report this server's own build and the version installed on the Paperless instance it talks to</td>
+</tr>
 </tbody>
 </table>
+<p><code>get_server_info</code> answers "is the deployed build the one I expect, and against
+which Paperless?" in one call. It returns <code>server_name</code>, <code>server_version</code>,
+<code>core_version</code> (the <code>fastmcp-pvl-core</code> version), and a <code>paperless</code> block
+carrying the version <strong>installed on the instance this server is connected to</strong>:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"server_name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"paperless-mcp"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"server_version"</span><span class="p">:</span><span class="w"> </span><span class="s2">"1.0.2"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"core_version"</span><span class="p">:</span><span class="w"> </span><span class="s2">"7.2.0"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"paperless"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"version"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2.14.7"</span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>An instance running 2.14.7 reports <code>2.14.7</code> here whether or not a newer release
+exists. For the newer release, call <code>get_remote_version</code>. The same instance can
+report different numbers from the two tools:</p>
+<table>
+<thead>
+<tr>
+<th>Question</th>
+<th>Tool</th>
+<th>Answer for the instance above</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Which Paperless am I connected to?</td>
+<td><code>get_server_info</code></td>
+<td><code>2.14.7</code></td>
+</tr>
+<tr>
+<td>Is there a newer Paperless to upgrade to?</td>
+<td><code>get_remote_version</code></td>
+<td><code>2.20.14</code>, <code>update_available: true</code></td>
+</tr>
+</tbody>
+</table>
+<p>When Paperless cannot answer (it is down, the URL is wrong, or the token is
+rejected), the <code>paperless</code> block is <code>{"version": null}</code> and the rest of the
+response is unaffected. The version is extra information about a call whose
+job is reporting this server's build, so it never fails that call.</p>
 <!-- DOMAIN-TOOLS-LIST-END -->
 
 
