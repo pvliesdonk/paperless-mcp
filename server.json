@@ -68,11 +68,11 @@
         },
         {
           "name": "PAPERLESS_MCP_PAPERLESS_URL",
-          "description": "Base URL of the Paperless-NGX REST API, without a trailing slash."
+          "description": "Base URL of the Paperless-NGX REST API, without a trailing slash. The server refuses to start without it."
         },
         {
           "name": "PAPERLESS_MCP_API_TOKEN",
-          "description": "Paperless service-account token used for outbound API requests.",
+          "description": "Paperless service-account token used for outbound API requests. The server refuses to start without it.",
           "isSecret": true
         },
         {
@@ -264,11 +264,11 @@
         },
         {
           "name": "PAPERLESS_MCP_PAPERLESS_URL",
-          "description": "Base URL of the Paperless-NGX REST API, without a trailing slash."
+          "description": "Base URL of the Paperless-NGX REST API, without a trailing slash. The server refuses to start without it."
         },
         {
           "name": "PAPERLESS_MCP_API_TOKEN",
-          "description": "Paperless service-account token used for outbound API requests.",
+          "description": "Paperless service-account token used for outbound API requests. The server refuses to start without it.",
           "isSecret": true
         },
         {

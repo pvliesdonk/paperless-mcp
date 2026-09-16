@@ -240,5 +240,12 @@ If a conflict marker appears in a copier-update bot PR, the conflict itself ofte
 
 ## Key Design Decisions
 <!-- DOMAIN-START -->
-<!-- Document your service's design decisions here. Kept across copier update. -->
+
+**One config object.** The six `PAPERLESS_MCP_*` Paperless variables are
+`ProjectConfig` fields between the `CONFIG-FIELDS` sentinels in
+`src/paperless_mcp/config.py`, discovered by the config-surface generator's AST
+scan. There is no second settings class and no `vars:` list in
+`config-presentation.domain.yml`. Rationale, and the two places the template's
+contract does not quite fit (a required field cannot be expressed; the config
+cannot reach `register_tools`), are in `docs/design/config.md`.
 <!-- DOMAIN-END -->

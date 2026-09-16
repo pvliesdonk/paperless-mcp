@@ -12,52 +12,12 @@
 # A var's `default:` key controls whether it renders required, the same way
 # a dataclass field does: omit `default:` entirely to mark the var required,
 # or give it `default: null` (or a real default) to mark it optional.
-vars:
-  - name: "{PREFIX}_PAPERLESS_URL"
-    provenance: domain
-    type_name: str
-    help: "Base URL of the Paperless-NGX REST API, without a trailing slash."
-    tags: [paperless, readme]
-    wizard: {group: Paperless}
-
-  - name: "{PREFIX}_API_TOKEN"
-    provenance: domain
-    type_name: SecretStr
-    help: "Paperless service-account token used for outbound API requests."
-    tags: [paperless, readme]
-    wizard: {group: Paperless, secret: true}
-
-  - name: "{PREFIX}_HTTP_TIMEOUT_SECONDS"
-    provenance: domain
-    type_name: float
-    default: 30.0
-    help: "Per-request HTTP timeout in seconds."
-    tags: [paperless]
-    wizard: {group: Paperless}
-
-  - name: "{PREFIX}_HTTP_RETRIES"
-    provenance: domain
-    type_name: int
-    default: 2
-    help: "Retries for idempotent requests after network errors or 5xx responses."
-    tags: [paperless]
-    wizard: {group: Paperless}
-
-  - name: "{PREFIX}_DEFAULT_PAGE_SIZE"
-    provenance: domain
-    type_name: int
-    default: 25
-    help: "Default page size for list tools, from 1 through 100."
-    tags: [paperless]
-    wizard: {group: Paperless}
-
-  - name: "{PREFIX}_PAPERLESS_PUBLIC_URL"
-    provenance: domain
-    type_name: str
-    default: null
-    help: "Public Paperless UI URL for user-visible links; defaults to PAPERLESS_URL."
-    tags: [paperless, readme]
-    wizard: {group: Paperless}
+# The six Paperless variables are NOT declared here: they are ordinary
+# `ProjectConfig` fields between the CONFIG-FIELDS sentinels in
+# `src/paperless_mcp/config.py`, and the generator's AST scan discovers them
+# from their `metadata={"help", "tags", "wizard"}` there.  This list is for a
+# var the scan cannot see, and there is none.
+vars: []
 
 # The generator fails when from_env passes a suffix-shaped string literal
 # (ALL_CAPS_WITH_UNDERSCORES) to anything other than env()/env_int()/

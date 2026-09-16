@@ -201,7 +201,12 @@ the protocol is unauthenticated. See
 
 <!-- DOMAIN-CONFIG-VARS-START -->
 `PAPERLESS_MCP_PAPERLESS_URL` and `PAPERLESS_MCP_API_TOKEN` are the two
-variables the server cannot start without. `PAPERLESS_MCP_PAPERLESS_PUBLIC_URL`
+variables the server cannot start without: leave either unset and startup
+stops with a message naming it. The table below still shows them under
+`Required: No`, because that column reports whether the underlying field
+declares a default rather than whether the server runs without a value; read
+the description column for these two.
+`PAPERLESS_MCP_PAPERLESS_PUBLIC_URL`
 lets you name a different base URL for user-visible links than the internal API
 URL the server calls; unset, it defaults to `PAPERLESS_MCP_PAPERLESS_URL`, and
 trailing slashes are stripped from both.
@@ -221,8 +226,8 @@ PAPERLESS_MCP_DEFAULT_PAGE_SIZE=50
 
 | Variable | Default | Required | Description |
 |---|---|---|---|
-| `PAPERLESS_MCP_PAPERLESS_URL` | (none) | **Yes** | Base URL of the Paperless-NGX REST API, without a trailing slash. |
-| `PAPERLESS_MCP_API_TOKEN` | (none) | **Yes** | Paperless service-account token used for outbound API requests. |
+| `PAPERLESS_MCP_PAPERLESS_URL` | (none) | No | Base URL of the Paperless-NGX REST API, without a trailing slash. The server refuses to start without it. |
+| `PAPERLESS_MCP_API_TOKEN` | (none) | No | Paperless service-account token used for outbound API requests. The server refuses to start without it. |
 | `PAPERLESS_MCP_HTTP_TIMEOUT_SECONDS` | `30.0` | No | Per-request HTTP timeout in seconds. |
 | `PAPERLESS_MCP_HTTP_RETRIES` | `2` | No | Retries for idempotent requests after network errors or 5xx responses. |
 | `PAPERLESS_MCP_DEFAULT_PAGE_SIZE` | `25` | No | Default page size for list tools, from 1 through 100. |

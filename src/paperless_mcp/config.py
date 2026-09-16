@@ -61,16 +61,96 @@ class ProjectConfig:
     server_name: str = field(default_factory=_default_server_name)
 
     # CONFIG-FIELDS-START — add domain fields below; kept across copier update
-    # (uncommenting the Path-typed examples below also requires adding
-    #  ``from pathlib import Path`` to the imports at the top of this file;
-    #  ``field`` is already imported from ``dataclasses`` above.)
-    # (example — domain env-var discovery reads a field's ``metadata={"help":
-    #  ..., "tags": ...}`` to populate the generated .env.example,
-    #  packaging/env.example, and config wizard, so give every real field both.)
-    # vault_path: Path = field(
-    #     default=Path("/data/vault"),
-    #     metadata={"help": "Filesystem root of the vault.", "tags": ("storage",)},
-    # )
+    #
+    # One flat field per Paperless env var, named exactly after the var's
+    # suffix, so the config-surface generator pairs each field's metadata with
+    # the matching literal ``env(...)`` read in ``from_env``.  ``paperless_url``
+    # and ``api_token`` are required in practice — ``build_tool_context``
+    # refuses to build a Paperless client without them — but they still carry a
+    # default here, because the template's own config-contract tests construct
+    # ``ProjectConfig()`` with no arguments and a field without a default makes
+    # that a ``TypeError``.  Their help text carries the requirement instead
+    # (pvliesdonk/fastmcp-server-template#621).
+    paperless_url: str = field(
+        default="",
+        metadata={
+            "help": (
+                "Base URL of the Paperless-NGX REST API, without a trailing "
+                "slash. The server refuses to start without it."
+            ),
+            "tags": ("paperless", "readme"),
+            "wizard": {"group": "Paperless"},
+        },
+    )
+    # ``repr=False``: this used to be a ``pydantic.SecretStr``, whose ``repr``
+    # showed ``**********``.  A plain dataclass field would print the token in
+    # every ``repr(config)``, so the exclusion is what keeps the old guarantee.
+    api_token: str = field(
+        default="",
+        repr=False,
+        metadata={
+            "help": (
+                "Paperless service-account token used for outbound API "
+                "requests. The server refuses to start without it."
+            ),
+            "tags": ("paperless", "readme"),
+            "wizard": {"group": "Paperless", "secret": True},
+        },
+    )
+    http_timeout_seconds: float = field(
+        default=30.0,
+        metadata={
+            "help": "Per-request HTTP timeout in seconds.",
+            "tags": ("paperless",),
+            "wizard": {"group": "Paperless"},
+        },
+    )
+    http_retries: int = field(
+        default=2,
+        metadata={
+            "help": (
+                "Retries for idempotent requests after network errors or 5xx responses."
+            ),
+            "tags": ("paperless",),
+            "wizard": {"group": "Paperless"},
+        },
+    )
+    default_page_size: int = field(
+        default=25,
+        metadata={
+            "help": "Default page size for list tools, from 1 through 100.",
+            "tags": ("paperless",),
+            "wizard": {"group": "Paperless"},
+        },
+    )
+    # Annotated optional, but never ``None`` after ``__post_init__``, which
+    # falls it back to ``paperless_url``.  The annotation is what the generator
+    # reads to document the var as optional with no default of its own, so it
+    # stays as declared; read the value through ``public_url`` below.
+    paperless_public_url: str | None = field(
+        default=None,
+        metadata={
+            "help": (
+                "Public Paperless UI URL for user-visible links; defaults to "
+                "PAPERLESS_URL."
+            ),
+            "tags": ("paperless", "readme"),
+            "wizard": {"group": "Paperless"},
+        },
+    )
+
+    @property
+    def public_url(self) -> str:
+        """Public-facing Paperless URL, falling back to :attr:`paperless_url`.
+
+        ``__post_init__`` already resolves the fallback, so this only restates
+        the guarantee as a plain ``str`` and spares callers a narrowing guard.
+
+        Returns:
+            The public Paperless UI base URL, without a trailing slash.
+        """
+        return self.paperless_public_url or self.paperless_url
+
     # CONFIG-FIELDS-END
 
     def __post_init__(self) -> None:
@@ -90,19 +170,31 @@ class ProjectConfig:
         ``object.__setattr__(self, "name", value)``.
         """
         # CONFIG-VALIDATE-START — validate domain fields below; kept across copier update
-        # (example: an exclusive lower bound, which env_float cannot express
-        #  and which also holds for ProjectConfig(http_timeout=0))
-        # if self.http_timeout <= 0:
-        #     raise ValueError(
-        #         f"{_ENV_PREFIX}_HTTP_TIMEOUT must be > 0, got {self.http_timeout}"
-        #     )
-        #
-        # (example: a cross-field invariant, which no per-field bound can
-        #  express at all)
-        # if self.cache_dir is not None and not self.cache_enabled:
-        #     raise ValueError(
-        #         f"{_ENV_PREFIX}_CACHE_DIR is set but {_ENV_PREFIX}_CACHE_ENABLED is false"
-        #     )
+        # Normalise first, then check.  The dataclass is frozen, so both halves
+        # go through ``object.__setattr__``.  This runs on ``from_env`` and on a
+        # direct ``ProjectConfig(...)`` alike, which is why the bounds live here
+        # rather than on the ``env_*`` readers.
+        object.__setattr__(self, "paperless_url", self.paperless_url.rstrip("/"))
+        object.__setattr__(
+            self,
+            "paperless_public_url",
+            (self.paperless_public_url or "").rstrip("/") or self.paperless_url,
+        )
+        if not 0 < self.http_timeout_seconds <= 600:
+            raise ValueError(
+                f"{_ENV_PREFIX}_HTTP_TIMEOUT_SECONDS must be > 0 and <= 600, "
+                f"got {self.http_timeout_seconds}"
+            )
+        if not 0 <= self.http_retries <= 10:
+            raise ValueError(
+                f"{_ENV_PREFIX}_HTTP_RETRIES must be >= 0 and <= 10, "
+                f"got {self.http_retries}"
+            )
+        if not 1 <= self.default_page_size <= 100:
+            raise ValueError(
+                f"{_ENV_PREFIX}_DEFAULT_PAGE_SIZE must be >= 1 and <= 100, "
+                f"got {self.default_page_size}"
+            )
         # CONFIG-VALIDATE-END
 
     @classmethod
@@ -111,7 +203,18 @@ class ProjectConfig:
         return cls(
             server=ServerConfig.from_env(_ENV_PREFIX),
             # CONFIG-FROM-ENV-START — populate domain fields below; kept across copier update
-            # (example)
-            # vault_path=Path(env(_ENV_PREFIX, "VAULT_PATH", "/data/vault")),
+            # Every read is a literal ``env(prefix, "SUFFIX")`` call so the
+            # generator's AST scan can see it.  ``env_int`` / ``env_float`` are
+            # not imported by the template's own import block, and adding them
+            # would be an edit outside every sentinel, so the numeric reads are
+            # parsed inline; their bounds are enforced in ``__post_init__``.
+            paperless_url=env(_ENV_PREFIX, "PAPERLESS_URL") or "",
+            api_token=env(_ENV_PREFIX, "API_TOKEN") or "",
+            http_timeout_seconds=float(
+                env(_ENV_PREFIX, "HTTP_TIMEOUT_SECONDS") or 30.0
+            ),
+            http_retries=int(env(_ENV_PREFIX, "HTTP_RETRIES") or 2),
+            default_page_size=int(env(_ENV_PREFIX, "DEFAULT_PAGE_SIZE") or 25),
+            paperless_public_url=env(_ENV_PREFIX, "PAPERLESS_PUBLIC_URL"),
             # CONFIG-FROM-ENV-END
         )

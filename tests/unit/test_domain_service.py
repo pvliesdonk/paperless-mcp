@@ -6,6 +6,7 @@ import pytest
 from fastmcp import FastMCP
 
 from paperless_mcp import domain
+from paperless_mcp.config import ProjectConfig
 from paperless_mcp.resources import register_resources
 from paperless_mcp.tools import register_tools
 
@@ -68,3 +69,26 @@ async def test_stop_is_safe_when_nothing_was_staged() -> None:
     await orphan.stop()
 
     await adopter.stop()
+
+
+@pytest.mark.asyncio
+async def test_tool_context_for_builds_from_an_explicit_config() -> None:
+    """A config handed in wins over the environment the autouse fixture presets."""
+    mcp = FastMCP("explicit-config")
+    config = ProjectConfig(
+        paperless_url="http://explicit.test",
+        # Test literal fed to a mocked transport, never a credential.
+        api_token="t",
+        default_page_size=7,
+    )
+    context = domain.tool_context_for(mcp, config)
+    try:
+        assert context.default_page_size == 7
+        assert context.public_url == "http://explicit.test"
+        assert domain.tool_context_for(mcp) is context, (
+            "a second ask must return the staged context, not rebuild from env"
+        )
+    finally:
+        service = domain.Service()
+        await service.start()
+        await service.stop()
