@@ -13,6 +13,16 @@ them runs first.  The order is decided in template-owned ``server.py``, which
 a ``copier update`` re-renders, so it is not an invariant this package can
 rely on.
 
+:func:`build_tool_context` takes a :class:`~paperless_mcp.config.ProjectConfig`
+and reads no environment of its own; :func:`tool_context_for` falls back to
+``ProjectConfig.from_env()`` when no config is handed to it.  It has to: the
+template's ``make_server`` calls ``register_tools(mcp)`` with no config, and
+its ``DOMAIN-WIRING`` block — the one place this project may add a call — runs
+*after* registration, while ``default_page_size`` is a tool parameter default
+baked into the schema *during* registration.  So a config passed to
+``make_server(config=...)`` still does not reach the Paperless client; that is
+unchanged from v1.0.2 and tracked at pvliesdonk/fastmcp-server-template#622.
+
 The slot holds one entry.  Staging a second server's context over an
 unadopted first closes the first one's client on the way out, so a process
 that builds servers it never enters — a test suite, mostly — does not
@@ -41,6 +51,7 @@ from paperless_mcp.client import (
     UpstreamError,
     ValidationError,
 )
+from paperless_mcp.config import _ENV_PREFIX, ProjectConfig
 
 if TYPE_CHECKING:
     from paperless_mcp.tools._context import ToolContext
@@ -57,6 +68,7 @@ __all__ = [
     "Service",
     "UpstreamError",
     "ValidationError",
+    "build_tool_context",
     "pending_tool_context",
     "tool_context_for",
 ]
@@ -64,7 +76,57 @@ __all__ = [
 _pending: tuple[object, ToolContext] | None = None
 
 
-def tool_context_for(mcp: object) -> ToolContext:
+def build_tool_context(config: ProjectConfig) -> ToolContext:
+    """Build a :class:`ToolContext` — and its Paperless client — from *config*.
+
+    Reads no environment: everything it needs is already on *config*.  The
+    caller decides where that config came from, which is what makes the
+    context constructible in a test without touching ``os.environ``.
+
+    Args:
+        config: The resolved project config.
+
+    Returns:
+        A context holding a fresh :class:`PaperlessClient`.  The caller owns
+        closing it (:meth:`Service.stop` does, for the staged one).
+
+    Raises:
+        ValueError: If the Paperless URL or the API token is unset.  This is
+            the server's fail-fast startup contract: registration is the first
+            thing ``make_server`` does that needs a client, so an operator who
+            forgot either variable is told which one by name.
+    """
+    from paperless_mcp.tools._context import ToolContext
+
+    missing = [
+        name
+        for name, value in (
+            (f"{_ENV_PREFIX}_PAPERLESS_URL", config.paperless_url),
+            (f"{_ENV_PREFIX}_API_TOKEN", config.api_token),
+        )
+        if not value
+    ]
+    if missing:
+        raise ValueError(
+            f"{', '.join(missing)}: required but not set. Set "
+            f"{_ENV_PREFIX}_PAPERLESS_URL to your Paperless-NGX API base URL "
+            f"and {_ENV_PREFIX}_API_TOKEN to a service-account token."
+        )
+
+    client = PaperlessClient(
+        base_url=config.paperless_url,
+        api_token=config.api_token,
+        timeout_seconds=config.http_timeout_seconds,
+        max_retries=config.http_retries,
+    )
+    return ToolContext(
+        client=client,
+        default_page_size=config.default_page_size,
+        public_url=config.public_url,
+    )
+
+
+def tool_context_for(mcp: object, config: ProjectConfig | None = None) -> ToolContext:
     """Return the shared :class:`ToolContext` for *mcp*, building it once.
 
     The first registrar to ask builds the Paperless client and stages the
@@ -75,13 +137,15 @@ def tool_context_for(mcp: object) -> ToolContext:
     Args:
         mcp: The server being registered on, used only as an identity so a
             second server does not adopt the first one's client.
+        config: The config to build from.  ``None`` reads the environment via
+            ``ProjectConfig.from_env()`` — the only thing available to a
+            registrar the template calls with no config.  Ignored when a
+            context is already staged for *mcp*: the first registrar's config
+            wins, so the two registrars cannot disagree about page size.
 
     Returns:
         The context for *mcp*, freshly built or the already-staged one.
     """
-    from paperless_mcp._domain_config import load_domain_config
-    from paperless_mcp.tools._context import ToolContext
-
     global _pending
     if _pending is not None:
         if _pending[0] is mcp:
@@ -89,18 +153,7 @@ def tool_context_for(mcp: object) -> ToolContext:
         _discard(_pending[1])
         _pending = None
 
-    cfg = load_domain_config()
-    client = PaperlessClient(
-        base_url=cfg.paperless_url,
-        api_token=cfg.api_token.get_secret_value(),
-        timeout_seconds=cfg.http_timeout_seconds,
-        max_retries=cfg.http_retries,
-    )
-    context = ToolContext(
-        client=client,
-        default_page_size=cfg.default_page_size,
-        public_url=cfg.public_url,
-    )
+    context = build_tool_context(config or ProjectConfig.from_env())
     _pending = (mcp, context)
     return context
 

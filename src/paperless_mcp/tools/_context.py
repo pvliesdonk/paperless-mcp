@@ -15,7 +15,7 @@ class ToolContext:
         client: Authenticated Paperless REST client.
         default_page_size: Default pagination window for list tools.
         public_url: Public Paperless UI base URL.  Used to construct
-            user-visible links (set from ``DomainConfig.paperless_public_url``).
+            user-visible links (set from ``ProjectConfig.public_url``).
     """
 
     client: PaperlessClient
