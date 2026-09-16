@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from fastmcp import Client
+from fastmcp import Client, FastMCP
 
 from paperless_mcp.server import make_server
 
@@ -50,9 +50,14 @@ def config_contract_env() -> dict[str, str]:
 
 
 @pytest.fixture
-async def client() -> AsyncIterator[Client[Any]]:
+def server() -> FastMCP:
+    """Construct a fresh server before any async client loop starts."""
+    return make_server()
+
+
+@pytest.fixture
+async def client(server: FastMCP) -> AsyncIterator[Client[Any]]:
     """Return an in-memory FastMCP client connected to a fresh server."""
-    server = make_server()
     async with Client(server) as c:
         yield c
 

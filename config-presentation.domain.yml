@@ -17,14 +17,14 @@ vars:
     provenance: domain
     type_name: str
     help: "Base URL of the Paperless-NGX REST API, without a trailing slash."
-    tags: [paperless]
+    tags: [paperless, readme]
     wizard: {group: Paperless}
 
   - name: "{PREFIX}_API_TOKEN"
     provenance: domain
     type_name: SecretStr
     help: "Paperless service-account token used for outbound API requests."
-    tags: [paperless]
+    tags: [paperless, readme]
     wizard: {group: Paperless, secret: true}
 
   - name: "{PREFIX}_HTTP_TIMEOUT_SECONDS"
@@ -56,7 +56,7 @@ vars:
     type_name: str
     default: null
     help: "Public Paperless UI URL for user-visible links; defaults to PAPERLESS_URL."
-    tags: [paperless]
+    tags: [paperless, readme]
     wizard: {group: Paperless}
 
 # The generator fails when from_env passes a suffix-shaped string literal

@@ -12,7 +12,7 @@ def test_every_icon_entry_decodes() -> None:
         assert len(icons) >= 1, f"{tool_name} has no icons"
         for icon in icons:
             assert icon.src.startswith("data:image/svg+xml;base64,"), tool_name
-            assert icon.mimeType == "image/svg+xml"
+            assert icon.mime_type == "image/svg+xml"
 
 
 def test_registries_are_in_lockstep() -> None:

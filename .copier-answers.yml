@@ -1,10 +1,11 @@
 # Changes here will be overwritten by `copier update`.
-_commit: v5.6.3
+_commit: v8.2.0
 _src_path: gh:pvliesdonk/fastmcp-server-template
 author_email: peter@liesdonk.nl
 author_name: Peter van Liesdonk
 docker_registry: ghcr.io/pvliesdonk
-domain_description: 'Paperless-NGX over MCP: search, read, upload and tag documents; manage correspondents and types.'
+domain_description: 'Paperless-NGX over MCP: search, read, upload and tag documents;
+    manage correspondents and types.'
 enable_authorization: false
 enable_automatic_claude_review: false
 enable_structural_gate: true

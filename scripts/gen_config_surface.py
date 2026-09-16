@@ -908,7 +908,19 @@ _WIZARD_SHOW_IF: dict[str, dict[str, list[str]]] = {
 # an unknown `when`, and only `control: emit` was ever checked), which let a
 # typo silently promote a var to a primary, always-visible wizard question
 # instead of failing loudly.
-_KNOWN_WIZARD_HINT_KEYS = frozenset({"group", "when", "secret", "control"})
+_KNOWN_WIZARD_HINT_KEYS = frozenset(
+    {"group", "when", "secret", "control", "dockerVolume", "dockerPath"}
+)
+# The two container-path hints, mutually exclusive, each an absolute path.
+# `dockerVolume`: the answer is a HOST path, bind-mounted at this container
+# path, and the var is set to the container path — so the wizard's `docker
+# run` carries a matching `-v`. `dockerPath`: a fixed path on the state
+# volume, substituted for the answer only when the var is otherwise present;
+# never adds a mount. Both are consumed by the browser wizard's
+# `dockerVolumes()` / `dockerEnvMap()` (docs/javascripts/config-wizard/
+# generators.js), which have implemented them since #170 while no hint
+# vocabulary could set either — the gap #261 closed.
+_DOCKER_PATH_HINT_KEYS = ("dockerVolume", "dockerPath")
 # `emit`: a `wizard_routing` option already emits this var (no question of
 # its own). `none`: documented in the env artifacts, no wizard control at
 # all — the parallel of `emit` for a var nothing routes for (e.g. a
@@ -968,6 +980,41 @@ def _validate_wizard_hint(var: Var) -> None:
             f"{control!r} — known values are "
             f"{sorted(_KNOWN_WIZARD_CONTROL_VALUES)!r}."
         )
+    _validate_docker_path_hints(var)
+
+
+def _validate_docker_path_hints(var: Var) -> None:
+    """Enforce the two container-path rules the wizard schema already states.
+
+    `wizard-spec-schema.json` rejects both-at-once (`not: {required:
+    [dockerVolume, dockerPath]}`) and a non-absolute value (`pattern: ^/`),
+    so a bad hint would be caught eventually — but only once the generated
+    spec is validated, with a jsonschema message pointing at a question index
+    rather than at the var whose hint produced it. Failing here names the var
+    and the rule, in the file the author was editing.
+
+    Declared means the KEY IS PRESENT, not that its value is truthy. Selecting
+    on truthiness would let `dockerVolume: ""` slip through as if the hint were
+    absent — evading the absolute-path check, evading mutual exclusion when
+    paired with a real `dockerPath`, and then being dropped by `_var_question`
+    so the schema never sees it either. The author asked for a container path
+    and would get silence in all three places.
+    """
+    declared = [k for k in _DOCKER_PATH_HINT_KEYS if k in var.wizard]
+    if len(declared) > 1:
+        raise SystemExit(
+            f"ERROR: {var.name} sets both wizard 'dockerVolume' and "
+            "'dockerPath' — they are mutually exclusive: dockerVolume "
+            "bind-mounts the answer at a container path, dockerPath "
+            "substitutes a fixed state-volume path and never mounts."
+        )
+    for key in declared:
+        value = str(var.wizard[key])
+        if not value.startswith("/"):
+            raise SystemExit(
+                f"ERROR: {var.name} wizard {key!r} must be an absolute "
+                f"container path, got {value!r}."
+            )
 
 
 def _normalize_type_name(type_name: str) -> str:
@@ -1040,7 +1087,10 @@ def _routing_question(raw: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def _var_question(
-    var: Var, labels: Mapping[str, str], help_overrides: Mapping[str, str]
+    var: Var,
+    labels: Mapping[str, str],
+    help_overrides: Mapping[str, str],
+    sub: Callable[[str], str],
 ) -> dict[str, Any] | None:
     """Render one `Var`'s wizard hint as a question, or ``None`` to emit nothing.
 
@@ -1082,6 +1132,20 @@ def _var_question(
     show_if = _wizard_show_if(var.wizard.get("when"), source=var.name)
     if show_if is not None:
         question["showIf"] = show_if
+    # Container-path hints, emitted last and in a fixed order. `var` is always
+    # set above, which is what the schema's two `if dockerVolume/dockerPath
+    # then required: [var]` rules ask for — a question carrying either key
+    # without a var would emit a dead bind mount or a silent no-op.
+    # Key presence, matching `_validate_docker_path_hints` — which has already
+    # rejected an empty value by the time this runs, so the two cannot select
+    # different sets.
+    for key in _DOCKER_PATH_HINT_KEYS:
+        if key in var.wizard:
+            # `{PROJECT_NAME}` here, exactly as in the `examples:` map, so a
+            # container path reads `/etc/my-service/acl.toml` rather than the
+            # literal token. Nothing else in the spec is substituted, so this
+            # is the one place `render_wizard_spec` needs the substituter.
+            question[key] = sub(str(var.wizard[key]))
     return question
 
 
@@ -1194,6 +1258,7 @@ def render_wizard_spec(
     env_prefix = str(answers.get("env_prefix", ""))
     labels: Mapping[str, str] = pres.get("wizard_labels") or {}
     help_overrides: Mapping[str, str] = pres.get("wizard_help") or {}
+    sub = _name_substituter(answers)
 
     domain_pres = domain_pres or {}
     domain_routing_source = "config-presentation.domain.yml wizard_routing"
@@ -1215,7 +1280,7 @@ def render_wizard_spec(
         )
         questions.append(question)
     for var in vars_:
-        var_question = _var_question(var, labels, help_overrides)
+        var_question = _var_question(var, labels, help_overrides, sub)
         if var_question is not None:
             _register_question_id(var_question["id"], seen_ids, var.name)
             questions.append(var_question)
@@ -1962,6 +2027,83 @@ def _mcpb_field_id(name: str, spec: Mapping[str, Any], rel_path: str) -> str:
     return field_id
 
 
+def _reject_unknown_field_vars(
+    fields: Mapping[str, Any],
+    var_by_name: Mapping[str, Var],
+    rel_path: str,
+) -> None:
+    """Reject a `fields:` map naming vars the run did not collect.
+
+    Fatal by design: a screen that silently dropped the vars it could not
+    resolve would ship an install UI missing every domain field, which is
+    worse than failing. Only the *diagnosis* is conditional.
+
+    Two very different conditions produce the same empty lookup, and naming
+    the wrong one costs real time (#562, and #525 before it, where the
+    investigation went to the install screen and this `files:` map first
+    because that is what the `ERROR` line named):
+
+    - Some domain vars were collected, but these particular names are not
+      among them — a genuine typo, or a var behind an answer gate that is
+      off.
+    - *No* domain var was collected at all, because
+      `_import_project_config` could not import the project's ``config``
+      module. That path is deliberately non-fatal — domain discovery is
+      best-effort enrichment that must never turn an unrelated project's
+      problem into a hard failure of this generator — so it warns and
+      returns `None`, and this guard runs later against the empty set it
+      produced. The warning scrolls past; the abort is what a CI log
+      surfaces and what an exit code sends a reader to.
+
+    Every domain var carries ``provenance == "domain"``, so a run in which
+    domain vars were collected and one in which none were differ in whether
+    *any* is present. That shifts the *emphasis* of the message. It is
+    explicitly not a proof of which condition holds, and neither branch
+    rules the other out, because the signal is imprecise in both directions:
+
+    - A project that legitimately declares no domain fields — every freshly
+      scaffolded one — also collects none, so the empty case must not tell a
+      plain typo of a template-owned name that it is "not a typo".
+    - ``provenance == "domain"`` does not mean *auto-discovery* worked. A var
+      hand-declared under ``vars:`` in `config-presentation.domain.yml` gets
+      that provenance too (`collect_vars` defaults it), entirely
+      independently of whether the config import succeeded. So a project
+      with one manual escape-hatch var and a broken import lands in the
+      non-empty branch while auto-discovery silently contributed nothing —
+      which is why that branch names the import as well, just last.
+
+    Distinguishing the two properly would mean carrying the discovery
+    outcome from `_discover_domain_vars` through `collect_vars` to here.
+    Deliberately not done: every branch already names every real cause, and
+    the alternative is run-scoped mutable state threaded through the
+    generator's widest-used function for a difference in ordering.
+    """
+    unknown = sorted(name for name in fields if name not in var_by_name)
+    if not unknown:
+        return
+    if any(v.provenance == "domain" for v in var_by_name.values()):
+        raise SystemExit(
+            f"ERROR: files[{rel_path!r}] names config vars that do not exist: "
+            f"{unknown!r}. Most likely a typo, or a var whose gate is off. If "
+            "these are domain fields you expect the config scan to have "
+            "found, check for an earlier 'WARNING: importing ... failed' "
+            "line: a failed config import contributes no auto-discovered "
+            "var, and this run's domain vars may all be hand-declared in "
+            "config-presentation.domain.yml."
+        )
+    raise SystemExit(
+        f"ERROR: files[{rel_path!r}] names config vars that do not exist: "
+        f"{unknown!r}. This run collected no domain config vars at all. If "
+        "these are domain vars, there was nothing to match them against: "
+        "look for an earlier 'WARNING: importing ... failed' line — "
+        "importing the project's config module is best-effort and does not "
+        "abort this generator, so a failure there surfaces here instead — "
+        "and re-run where the project imports (its own venv, or with its "
+        "dependencies available). Otherwise this is a typo, or a var whose "
+        "gate is off."
+    )
+
+
 def _mcpb_screen_from_fields(
     fields: Mapping[str, Any],
     var_by_name: Mapping[str, Var],
@@ -2043,12 +2185,7 @@ def render_mcpb_user_config_file(
             "instead if that is really intended."
         )
     var_by_name = {v.name: v for v in vars_}
-    unknown = sorted(name for name in fields if name not in var_by_name)
-    if unknown:
-        raise SystemExit(
-            f"ERROR: files[{rel_path!r}] names config vars that do not exist "
-            f"(check for a typo, or a var whose gate is off): {unknown!r}."
-        )
+    _reject_unknown_field_vars(fields, var_by_name, rel_path)
 
     user_config, env = _mcpb_screen_from_fields(
         fields, var_by_name, rel_path, ctx.required_names
@@ -2107,12 +2244,7 @@ def _screen_fields_or_die(
             "files entry instead if an empty screen is really intended."
         )
     var_by_name = {v.name: v for v in vars_}
-    unknown = sorted(name for name in fields if name not in var_by_name)
-    if unknown:
-        raise SystemExit(
-            f"ERROR: files[{rel_path!r}] names config vars that do not exist "
-            f"(check for a typo, or a var whose gate is off): {unknown!r}."
-        )
+    _reject_unknown_field_vars(fields, var_by_name, rel_path)
     return _mcpb_screen_from_fields(fields, var_by_name, rel_path, required_names)
 
 
@@ -2238,6 +2370,14 @@ _EG_CLAUSE_RE = re.compile(r",\s*e\.g\.,?\s+(.+?)(\.(?=\s|$)|;)", re.IGNORECASE)
 # is handled first so it can take a capitalised replacement.
 _EG_SENTENCE_INITIAL_RE = re.compile(r"(?:^|(?<=\.\s))E\.g\.,?\s+(\w)", re.IGNORECASE)
 _EG_RESIDUAL_RE = re.compile(r"\be\.g\.,?\s+", re.IGNORECASE)
+# pvl-core 5.0 (#285) spells the abbreviation out as `for example` to satisfy
+# Google.Latin — which trips `ai-tells.FormalTransitions` instead, in every
+# position.  Fold it back onto the `e.g.` pipeline above so both spellings
+# get the same mid-clause parenthetical / sentence-initial treatment.
+_FOR_EXAMPLE_RE = re.compile(
+    r"(?:(?<=,)\s*for example[,:]?\s+|(?:^|(?<=\.\s))for example[,:]?\s+)",
+    re.IGNORECASE,
+)
 _IE_RE = re.compile(r"\bi\.e\.,?\s+", re.IGNORECASE)
 
 
@@ -2289,6 +2429,12 @@ def _clean_help_for_markdown_table(
       `ai-tells.FormalTransitions`. Measured, not assumed — an earlier
       version of this function emitted `For example, ` and would have hard-
       failed every downstream the first time core shipped that shape.
+    - **`for example`** (pvl-core >=5.0 spells `e.g.` out) in the two
+      transitional shapes — after a comma, or sentence-initial, optionally
+      followed by `,` or `:` — is folded back onto the `e.g.` rules first so
+      it lands in the same shapes; a non-transitional use ("example
+      deployments") is left alone.  Left as is, the transition trips
+      `ai-tells.FormalTransitions` wherever it appears.
     - **`i.e. `** becomes `that is, `, with no `ai-tells` conflict.
 
     A vocabulary map handles words Vale's spell-check rejects; see
@@ -2304,6 +2450,13 @@ def _clean_help_for_markdown_table(
     text = " ".join(text.split())
     text = _EM_DASH_CONJUNCTION_RE.sub(_dedash_for_markdown_table, text)
     text = _RESIDUAL_EM_DASH_RE.sub("; ", text)
+    # Keep the leading comma (a lookbehind, so not consumed) for the clause
+    # rule; the sentence-initial shape (match at 0 or after ". ") needs no
+    # leading space.  `m.start() > 0` guards the index, not an off-by-one.
+    text = _FOR_EXAMPLE_RE.sub(
+        lambda m: " e.g. " if m.start() > 0 and text[m.start() - 1] == "," else "e.g. ",
+        text,
+    )
     text = _EG_CLAUSE_RE.sub(lambda m: f" ({m.group(1)}){m.group(2)}", text)
     text = _EG_SENTENCE_INITIAL_RE.sub(lambda m: m.group(1).upper(), text)
     text = _EG_RESIDUAL_RE.sub("such as ", text)
@@ -2460,15 +2613,24 @@ def splice_region(text: str, region_id: str, body: str, *, source: str) -> str:
     e.g. ``"docs/deployment/oidc.md"``) — used only to name the offending
     file in an error message, never to read or write anything here.
 
+    Both markers may sit behind a comment prefix — `  # <!-- ... -->` in a
+    YAML or TOML file, where a bare HTML comment would not parse. Each
+    marker line is preserved whole, prefix and indentation included; only
+    the lines between them are replaced. *body* is inserted verbatim, so a
+    caller splicing into a non-Markdown file owns its syntax and
+    indentation — every artifact this template ships today renders a
+    Markdown table (`_render_region_body`) into Markdown or JSON.
+
     Raises `SystemExit` naming both *source* and *region_id* when: the
     START marker is missing, the END marker is missing, either marker
-    appears more than once, or the END marker appears before the START
-    marker — each of those would otherwise either silently no-op the splice
-    or corrupt the file rather than fail loudly. Naming *source* matters
-    concretely: the same region ids (``OIDC-REQUIRED`` / ``OIDC-OPTIONAL``)
-    are declared in more than one file, so a region-id-only message can't
-    tell an operator which of those files to fix — a marker broken in
-    either one used to raise byte-identical text.
+    appears more than once, the END marker appears before the START
+    marker, or both markers share a line — each of those would otherwise
+    either silently no-op the splice or corrupt the file rather than fail
+    loudly. Naming *source* matters concretely: the same region ids
+    (``OIDC-REQUIRED`` / ``OIDC-OPTIONAL``) are declared in more than one
+    file, so a region-id-only message can't tell an operator which of those
+    files to fix — a marker broken in either one used to raise
+    byte-identical text.
     """
     start_marker, end_marker = _generated_region_markers(region_id)
     start_matches = [m.start() for m in re.finditer(re.escape(start_marker), text)]
@@ -2500,15 +2662,63 @@ def splice_region(text: str, region_id: str, body: str, *, source: str) -> str:
 
     newline_pos = text.find("\n", start_pos)
     start_line_end = newline_pos + 1 if newline_pos != -1 else len(text)
+    if end_pos < start_line_end:
+        raise SystemExit(
+            f"ERROR: {source}: region {region_id!r} has both markers on one "
+            "line — the START and END markers must sit on separate lines, "
+            "with the generated body between them."
+        )
     before = text[:start_line_end]
-    after = text[end_pos:]
+    # Take the tail from the START of the END marker's line, not from the
+    # marker itself.  Slicing at the marker drops whatever precedes it on
+    # that line, which is fine for the HTML-comment markers this template
+    # ships (all at column 0, where the two are the same index) but silently
+    # corrupts a marker written behind a comment prefix — `  # <!-- ... -->`
+    # in YAML or TOML, where a bare HTML comment does not parse.  The START
+    # side already survives such a prefix, since `before` keeps its whole
+    # line; this makes the END side symmetric.
+    end_line_start = text.rfind("\n", 0, end_pos) + 1
+    after = text[end_line_start:]
     return f"{before}{body}\n{after}" if body else f"{before}{after}"
+
+
+def _region_provenances(
+    region: Mapping[str, Any], source: str
+) -> frozenset[str] | None:
+    """The region's validated `provenance:` filter, or ``None`` for no filter.
+
+    Rejects a non-list value rather than coercing (``list("domain")``
+    silently explodes a scalar into per-character entries — the same trap
+    `_wizard_guard` and `_validate_packaging_map` already guard against) and
+    any token outside `_PROVENANCE_ORDER`: a misspelled provenance
+    (``[domian]``) matches nothing, and a filter that silently selects zero
+    vars is byte-for-byte indistinguishable from a deliberately empty
+    region.
+    """
+    declared = region.get("provenance")
+    if declared is None:
+        return None
+    if not isinstance(declared, list):
+        raise SystemExit(
+            f"ERROR: {source} has a non-list 'provenance' value {declared!r} "
+            "— expected a list, e.g. [domain]."
+        )
+    unknown = [item for item in declared if item not in _PROVENANCE_ORDER]
+    if unknown:
+        raise SystemExit(
+            f"ERROR: {source} names unknown provenance(s) {unknown!r} — "
+            f"known provenances are {sorted(_PROVENANCE_ORDER)!r}."
+        )
+    return frozenset(declared)
 
 
 def _select_region_vars(
     vars_: Sequence[Var],
     region: Mapping[str, Any],
     required_names: Collection[str] | None = None,
+    *,
+    claimed: Collection[str] | None = None,
+    source: str = "region",
 ) -> list[Var]:
     """Select the vars_ one spliced region's table should render.
 
@@ -2526,13 +2736,140 @@ def _select_region_vars(
     split cleanly into a "required" and an "optional" region for the same
     file, each claiming a disjoint half of the same tag-matched set whose
     union is the unfiltered set.
+
+    The optional `provenance:` region key (a list of `_PROVENANCE_ORDER`
+    tokens, validated loudly — see `_region_provenances`) further narrows
+    to vars of those provenances. This is what lets README.md's two curated
+    regions share the `readme` tag without double-listing a var: the CORE
+    region takes the template-enumerable provenances, the DOMAIN region
+    takes `[domain]`.
+
+    *claimed* (keyword-only) is a set of var names an earlier region of the
+    same `claim_once: true` file already claimed — those are skipped here,
+    the same first-declared-section-wins rule `render_env_file` applies to
+    its sections. ``None`` (the default) means no claim tracking at all.
     """
     region_tags = set(region.get("tags", ()))
-    matched = [v for v in vars_ if region_tags & set(v.tags)]
+    provenances = _region_provenances(region, source)
+    matched = [
+        v
+        for v in vars_
+        if (claimed is None or v.name not in claimed)
+        and region_tags & set(v.tags)
+        and (provenances is None or v.provenance in provenances)
+    ]
     required = region.get("required")
     if required is None:
         return matched
     return [v for v in matched if _is_required(v, required_names) == bool(required)]
+
+
+def _render_region_body(
+    region_vars: Sequence[Var],
+    region: Mapping[str, Any],
+    ctx: PresentationContext,
+    *,
+    source: str,
+) -> str:
+    """Render one spliced region's body: a table, grouped sub-tables, or a note.
+
+    Three shapes, in priority order:
+
+    - Zero selected vars *and* the region declares an `empty_note:` — the
+      note text is spliced verbatim instead of a header-only table. A bare
+      header with no data rows is technically correct but reads as a
+      rendering bug on a landing page; the note is the declarative place to
+      say *why* the region is empty and what fills it (e.g. "tag a field
+      `readme` to feature it here"). Without the key, the header-only table
+      renders exactly as it always did.
+    - A `group_by: group` region renders one sub-table per wizard `group`
+      hint — the same segmentation the config wizard already presents — each
+      under a heading (level set by `group_heading_level:`, default 3, i.e.
+      `###`). Vars with no group render first, as a plain table above any
+      heading, so they cannot visually attach to whichever group happens to
+      precede them; groups follow in first-appearance order, which is
+      declaration order and therefore deterministic (template-ci renders
+      twice and diffs). This is what keeps a downstream with dozens of
+      domain vars readable: the flat table it replaces is the reason this
+      lever exists.
+    - Otherwise: one flat table, unchanged.
+    """
+    if not region_vars:
+        note = region.get("empty_note")
+        if note is not None:
+            return str(note).rstrip("\n")
+
+    def _table(selected: Sequence[Var]) -> str:
+        return render_md_table(
+            selected,
+            region["columns"],
+            required_names=ctx.required_names,
+            vocabulary=ctx.vocabulary,
+            documented_defaults=ctx.documented_defaults,
+        )
+
+    group_by = region.get("group_by")
+    if group_by is None:
+        return _table(region_vars)
+    if group_by != "group":
+        raise SystemExit(
+            f"ERROR: {source} has unknown 'group_by' value {group_by!r} — "
+            "the only supported value is 'group' (the wizard group hint)."
+        )
+
+    raw_level = region.get("group_heading_level", 3)
+    # `isinstance(raw_level, bool)` first: bool subclasses int, and YAML
+    # `true` silently multiplying into a one-`#` heading is exactly the
+    # quiet misrender the loud-SystemExit discipline here exists to stop.
+    if (
+        isinstance(raw_level, bool)
+        or not isinstance(raw_level, int)
+        or not 2 <= raw_level <= 6
+    ):
+        raise SystemExit(
+            f"ERROR: {source} has invalid 'group_heading_level' {raw_level!r} "
+            "— expected an integer between 2 and 6."
+        )
+    heading = "#" * raw_level
+    ungrouped = [v for v in region_vars if not v.wizard.get("group")]
+    groups: dict[str, list[Var]] = {}
+    for var in region_vars:
+        group = var.wizard.get("group")
+        if group:
+            groups.setdefault(str(group), []).append(var)
+
+    parts: list[str] = []
+    if ungrouped:
+        parts.append(_table(ungrouped))
+    parts.extend(
+        f"{heading} {group_name}\n\n{_table(group_vars)}"
+        for group_name, group_vars in groups.items()
+    )
+    return "\n\n".join(parts) if parts else _table(region_vars)
+
+
+def _assert_regions_cover_every_var(
+    rel_path: str, vars_: Sequence[Var], claimed: Collection[str]
+) -> None:
+    """`SystemExit` when a `complete: true` splice file misses a collected var.
+
+    The counterpart of `_assert_every_var_has_an_env_destination` for a
+    reference document: a file that promises to be the complete surface must
+    fail loudly when a new var (a core bump, a new domain field, a new
+    template var) matches none of its regions, rather than silently shipping
+    a "complete" reference that isn't. The message names every missing var
+    and its tags, so the fix — adding the tag to a region, or a region for
+    the tag — is one edit away.
+    """
+    missing = [v for v in vars_ if v.name not in claimed]
+    if not missing:
+        return
+    offenders = ", ".join(f"{v.name!r} (tags={list(v.tags)!r})" for v in missing)
+    raise SystemExit(
+        f"ERROR: {rel_path} declares `complete: true` but its regions match "
+        f"none of: {offenders}. Add one of each var's tags to a region (or "
+        "a new region covering it) so the reference stays complete."
+    )
 
 
 def render_splice_file(
@@ -2549,14 +2886,32 @@ def render_splice_file(
     disk — a missing file is a `SystemExit` naming *rel_path*, since this
     generator only rewrites the marked region inside an existing file and
     never creates the file itself. Each declared region's vars are chosen
-    by `_select_region_vars` (tag intersection, then an optional `required`
-    filter, both driven by *ctx*'s `required_vars:` list) and rendered via
-    `render_md_table` using the region's declared `columns` (forwarding the
-    same list too, so a region that declares a `required` table column
-    agrees with its own filter). Regions are spliced one after another,
-    each pass operating on the previous pass's output, so multiple regions
-    in one file compose correctly regardless of their relative marker
-    positions.
+    by `_select_region_vars` (tag intersection, then the optional
+    `provenance` and `required` filters, the latter driven by *ctx*'s
+    `required_vars:` list) and rendered via `_render_region_body` (a flat
+    table, `group_by: group` sub-tables, or an `empty_note`). Regions are
+    spliced one after another, each pass operating on the previous pass's
+    output, so multiple regions in one file compose correctly regardless of
+    their relative marker positions.
+
+    Three file-level behaviours layer on top, all off by default:
+
+    - A region with a `when_answer:` whose answer is falsy is skipped
+      entirely — splice *and* selection — mirroring an env-file section's
+      gate. This matters because the region's marker pair typically lives
+      inside the same Jinja conditional in the source template, so the
+      markers do not exist in the gated-off render and splicing would die
+      on the missing-marker guard.
+    - `claim_once: true` makes regions claim vars first-declared-wins, the
+      rule `render_env_file`'s sections already follow — so a var whose
+      tags span two regions (e.g. TASKS_URL, tagged both `persistence` and
+      `tasks`) appears exactly once, under whichever region is declared
+      first. Region order is the `regions:` list's declaration order, not
+      marker position in the file.
+    - `complete: true` asserts, after every region has selected, that no
+      collected var was left unclaimed — see
+      `_assert_regions_cover_every_var`. This is the anti-drift guard for a
+      file that documents the *whole* surface.
     """
     target = project_root / rel_path
     if not target.exists():
@@ -2566,16 +2921,25 @@ def render_splice_file(
             "region inside it, never the surrounding file."
         )
     text = target.read_text(encoding="utf-8")
+    claim_once = bool(file_spec.get("claim_once", False))
+    claimed: set[str] = set()
     for region in file_spec.get("regions", ()):
-        region_vars = _select_region_vars(vars_, region, ctx.required_names)
-        table = render_md_table(
-            region_vars,
-            region["columns"],
-            required_names=ctx.required_names,
-            vocabulary=ctx.vocabulary,
-            documented_defaults=ctx.documented_defaults,
+        when_answer = region.get("when_answer")
+        if when_answer is not None and not ctx.answers.get(when_answer):
+            continue
+        source = f"{rel_path} region {region.get('id')!r}"
+        region_vars = _select_region_vars(
+            vars_,
+            region,
+            ctx.required_names,
+            claimed=claimed if claim_once else None,
+            source=source,
         )
-        text = splice_region(text, region["id"], table, source=rel_path)
+        claimed.update(v.name for v in region_vars)
+        body = _render_region_body(region_vars, region, ctx, source=source)
+        text = splice_region(text, region["id"], body, source=rel_path)
+    if file_spec.get("complete"):
+        _assert_regions_cover_every_var(rel_path, vars_, claimed)
     return text
 
 
@@ -2695,17 +3059,16 @@ _ARTIFACT_RENDERERS: dict[str, Callable[..., str]] = {
 }
 
 
-def _render_one_artifact(
-    project_root: Path,
-    rel_path: str,
-    file_spec: Mapping[str, Any],
-    vars_: Sequence[Var],
-    ctx: PresentationContext,
-) -> str:
-    """Dispatch one `files:` entry to its kind's renderer.
+def _resolve_renderer(
+    rel_path: str, file_spec: Mapping[str, Any]
+) -> Callable[..., str]:
+    """The renderer for one `files:` entry's ``kind``.
 
     An unrecognised ``kind`` fails loudly instead of either silently
-    producing nothing or raising a bare `KeyError`.
+    producing nothing or raising a bare `KeyError`. Split out of the render
+    call so `write_artifacts` can validate every declared kind *before* any
+    other whole-run guard fires — a genuinely malformed `files:` entry gets
+    this, its most specific error, first.
     """
     kind = file_spec.get("kind")
     renderer = _ARTIFACT_RENDERERS.get(kind) if isinstance(kind, str) else None
@@ -2715,6 +3078,18 @@ def _render_one_artifact(
             f"unknown kind {kind!r} — expected one of "
             f"{sorted(_KNOWN_FILE_KINDS)!r}."
         )
+    return renderer
+
+
+def _render_one_artifact(
+    project_root: Path,
+    rel_path: str,
+    file_spec: Mapping[str, Any],
+    vars_: Sequence[Var],
+    ctx: PresentationContext,
+) -> str:
+    """Dispatch one `files:` entry to its kind's renderer."""
+    renderer = _resolve_renderer(rel_path, file_spec)
     return renderer(project_root, rel_path, file_spec, vars_, ctx)
 
 
@@ -2837,16 +3212,24 @@ def write_artifacts(
         files=merged_files,
     )
 
+    # Guard ordering is deliberate, most-specific error first. Every file
+    # kind is validated up front, so a genuinely malformed `files:` entry
+    # gets its own error before any whole-run check. Then the
+    # env-destination guard: a var that would land in no env artifact is a
+    # config-presentation bug, and this guard's message (which names the
+    # known section tags) is the actionable one — it must fire before any
+    # renderer runs, or docs/configuration.md's own `complete: true` guard
+    # reports the same root cause with a less specific message. Both run
+    # before anything is written to disk, so partial output never masks
+    # either.
+    for rel_path, file_spec in merged_files.items():
+        _resolve_renderer(rel_path, file_spec)
+    _assert_every_var_has_an_env_destination(presentation, vars_, answers)
+
     artifacts: list[tuple[str, str]] = [
         (rel_path, _render_one_artifact(project_root, rel_path, file_spec, vars_, ctx))
         for rel_path, file_spec in merged_files.items()
     ]
-
-    # Checked after every file kind is known-good (so a genuinely malformed
-    # `files:` entry above still gets its own, more specific error) but
-    # before anything is written to disk — a var that would land nowhere is
-    # a config-presentation bug, not something partial output should mask.
-    _assert_every_var_has_an_env_destination(presentation, vars_, answers)
 
     changed: list[str] = []
     for rel_path, text in artifacts:
