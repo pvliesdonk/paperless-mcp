@@ -772,10 +772,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#how-it-works" class="md-nav__link">
+  <a href="#how-remote-mode-works" class="md-nav__link">
     <span class="md-ellipsis">
       
-        How it works
+        How remote mode works
       
     </span>
   </a>
@@ -783,10 +783,32 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#required-variables" class="md-nav__link">
+  <a href="#how-oidc-proxy-mode-works" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Required variables
+        How oidc-proxy mode works
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#remote-mode-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Remote mode variables
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#oidcproxy-required-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OIDCProxy required variables
       
     </span>
   </a>
@@ -1298,6 +1320,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../deployment/template-updates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Template Updates
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../deployment/repository-protection/" class="md-nav__link">
         
   
@@ -1464,10 +1514,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#how-it-works" class="md-nav__link">
+  <a href="#how-remote-mode-works" class="md-nav__link">
     <span class="md-ellipsis">
       
-        How it works
+        How remote mode works
       
     </span>
   </a>
@@ -1475,10 +1525,32 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#required-variables" class="md-nav__link">
+  <a href="#how-oidc-proxy-mode-works" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Required variables
+        How oidc-proxy mode works
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#remote-mode-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Remote mode variables
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#oidcproxy-required-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OIDCProxy required variables
       
     </span>
   </a>
@@ -1683,7 +1755,7 @@
 <p>Authentication only works with HTTP transport (<code>--transport http</code> or <code>sse</code>). It has no effect with <code>--transport stdio</code>.</p>
 </div>
 <h2 id="auth-modes">Auth modes<a class="headerlink" href="#auth-modes" title="Permanent link">&para;</a></h2>
-<p>The server supports four authentication modes:</p>
+<p>The server supports five authentication modes:</p>
 <table>
 <thead>
 <tr>
@@ -1696,7 +1768,7 @@
 <tr>
 <td><strong>Multi-auth</strong></td>
 <td>Mixed clients, such as Claude web (OIDC) + Claude Code (bearer token) on the same server</td>
-<td>Set both <code>PAPERLESS_MCP_BEARER_TOKEN</code> and all four OIDC variables</td>
+<td>Set both <code>PAPERLESS_MCP_BEARER_TOKEN</code> and the OIDC variables</td>
 </tr>
 <tr>
 <td><strong>Bearer token</strong></td>
@@ -1704,9 +1776,14 @@
 <td>Set <code>PAPERLESS_MCP_BEARER_TOKEN</code> only</td>
 </tr>
 <tr>
-<td><strong>OIDC</strong></td>
-<td>Production with user identity, SSO, multi-user access</td>
-<td>Set all four OIDC variables only</td>
+<td><strong>OIDC (remote)</strong></td>
+<td>Production with user identity, SSO, multi-user access; local JWKS validation, no confidential client to register</td>
+<td>Set <code>PAPERLESS_MCP_BASE_URL</code> + <code>PAPERLESS_MCP_OIDC_CONFIG_URL</code> only</td>
+</tr>
+<tr>
+<td><strong>OIDC (oidc-proxy)</strong></td>
+<td>The same, where the server should run the OAuth flow itself and manage sessions</td>
+<td>Set all four OIDC variables (<code>BASE_URL</code>, <code>OIDC_CONFIG_URL</code>, <code>OIDC_CLIENT_ID</code>, <code>OIDC_CLIENT_SECRET</code>)</td>
 </tr>
 <tr>
 <td><strong>No auth</strong></td>
@@ -1758,8 +1835,14 @@
 <p>Each token resolves to a distinct subject string for downstream attribution. Subject strings are opaque: the <code>&lt;kind&gt;:&lt;id&gt;</code> convention (<code>user:</code>, <code>service:</code>, <code>token:</code>) is documentation only. When <code>BEARER_TOKENS_FILE</code> is set it overrides <code>BEARER_TOKEN</code> (a <code>WARNING</code> is logged if both are present). A missing or malformed file aborts startup with <code>ConfigurationError</code> rather than silently denying every request.</p>
 <hr />
 <h2 id="oidc">OIDC<a class="headerlink" href="#oidc" title="Permanent link">&para;</a></h2>
-<p>Full OAuth 2.1 authentication using an external identity provider. Supports user login flows, SSO, and multi-user access control.</p>
-<h3 id="how-it-works">How it works<a class="headerlink" href="#how-it-works" title="Permanent link">&para;</a></h3>
+<p>Full OAuth 2.1 authentication using an external identity provider. Supports user login flows, SSO, and multi-user access control. Which of the two OIDC modes runs follows from which variables are set; <code>PAPERLESS_MCP_AUTH_MODE</code> states the choice instead of leaving it to be inferred.</p>
+<h3 id="how-remote-mode-works">How remote mode works<a class="headerlink" href="#how-remote-mode-works" title="Permanent link">&para;</a></h3>
+<p>The client authenticates with the identity provider and presents the resulting token, which the server validates locally against the provider's JWKS:</p>
+<div class="highlight"><pre><span></span><code>Client → OIDC Provider (log in, get JWT)
+Client → paperless-mcp (present JWT, validated via JWKS)
+</code></pre></div>
+<p>No redirect passes through the server and no code exchange happens, so the provider needs no client registered for this server.</p>
+<h3 id="how-oidc-proxy-mode-works">How oidc-proxy mode works<a class="headerlink" href="#how-oidc-proxy-mode-works" title="Permanent link">&para;</a></h3>
 <p>The server proxies OIDC itself, with no external auth sidecar to deploy:</p>
 <div class="highlight"><pre><span></span><code>Client → paperless-mcp → OIDC Provider
 </code></pre></div>
@@ -1770,7 +1853,9 @@
 <li>Server exchanges the code for tokens</li>
 <li>Subsequent requests include the JWT</li>
 </ol>
-<h3 id="required-variables">Required variables<a class="headerlink" href="#required-variables" title="Permanent link">&para;</a></h3>
+<h3 id="remote-mode-variables">Remote mode variables<a class="headerlink" href="#remote-mode-variables" title="Permanent link">&para;</a></h3>
+<p><code>PAPERLESS_MCP_BASE_URL</code> and <code>PAPERLESS_MCP_OIDC_CONFIG_URL</code>, plus any of the optional variables below. Omitting the two client credentials is what selects this mode.</p>
+<h3 id="oidcproxy-required-variables">OIDCProxy required variables<a class="headerlink" href="#oidcproxy-required-variables" title="Permanent link">&para;</a></h3>
 <!-- GENERATED-ENV-TABLE-OIDC-REQUIRED-START — generated by scripts/gen_config_surface.py; do not edit -->
 <table>
 <thead>
@@ -1829,7 +1914,7 @@
 <tr>
 <td><code>PAPERLESS_MCP_OIDC_JWT_SIGNING_KEY</code></td>
 <td><code>derived</code></td>
-<td>Signing key for issued JSON Web Tokens; used in oidc-proxy mode only. When unset, the key is derived deterministically from <code>oidc_client_secret</code>, so tokens survive a restart. Rotating that secret invalidates every issued token. Set this explicitly to decouple token validity from secret rotation. Generate with <code>openssl rand -hex 32</code>.</td>
+<td>Signing key for issued tokens; used in oidc-proxy mode only. When unset, the key is derived deterministically from <code>oidc_client_secret</code>, so tokens survive a restart. Rotating that secret then invalidates every issued token. Set this explicitly to decouple token validity from secret rotation. Generate with <code>openssl rand -hex 32</code>.</td>
 </tr>
 <tr>
 <td><code>PAPERLESS_MCP_OIDC_VERIFY_ACCESS_TOKEN</code></td>

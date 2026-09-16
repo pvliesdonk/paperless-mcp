@@ -950,10 +950,32 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#required-variables" class="md-nav__link">
+  <a href="#auth-modes" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Required Variables
+        Auth Modes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#remote-mode-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Remote Mode Variables
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#oidcproxy-required-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OIDCProxy Required Variables
       
     </span>
   </a>
@@ -1040,6 +1062,34 @@
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#remote-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Remote mode
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#oidcproxy-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OIDCProxy mode
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1198,6 +1248,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../template-updates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Template Updates
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../repository-protection/" class="md-nav__link">
         
   
@@ -1280,10 +1358,32 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#required-variables" class="md-nav__link">
+  <a href="#auth-modes" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Required Variables
+        Auth Modes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#remote-mode-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Remote Mode Variables
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#oidcproxy-required-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OIDCProxy Required Variables
       
     </span>
   </a>
@@ -1370,6 +1470,34 @@
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#remote-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Remote mode
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#oidcproxy-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OIDCProxy mode
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1477,12 +1605,56 @@
 
 
 <h1 id="oidc-authentication">OIDC Authentication<a class="headerlink" href="#oidc-authentication" title="Permanent link">&para;</a></h1>
-<p>Optional token-based authentication for HTTP deployments. OIDC activates automatically when all four required environment variables are set. For an overview of all authentication modes (bearer token, OIDC, no auth), see the <a href="../../guides/authentication/">Authentication guide</a>.</p>
+<p>Optional token-based authentication for HTTP deployments. OIDC activates automatically based on which environment variables are set. For an overview of all authentication modes (bearer token, OIDC, no auth), see the <a href="../../guides/authentication/">Authentication guide</a>.</p>
 <div class="admonition warning">
 <p class="admonition-title">Transport requirement</p>
 <p>OIDC requires <code>--transport http</code> (or <code>sse</code>). It has no effect with <code>--transport stdio</code>.</p>
 </div>
-<h2 id="required-variables">Required Variables<a class="headerlink" href="#required-variables" title="Permanent link">&para;</a></h2>
+<h2 id="auth-modes">Auth Modes<a class="headerlink" href="#auth-modes" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Mode</th>
+<th>Required Variables</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>remote</strong></td>
+<td><code>BASE_URL</code>, <code>OIDC_CONFIG_URL</code></td>
+<td>Local JWKS validation. No client credentials needed.</td>
+</tr>
+<tr>
+<td><strong>oidc-proxy</strong></td>
+<td><code>BASE_URL</code>, <code>OIDC_CONFIG_URL</code>, <code>OIDC_CLIENT_ID</code>, <code>OIDC_CLIENT_SECRET</code></td>
+<td>Full OAuth proxy with session management.</td>
+</tr>
+</tbody>
+</table>
+<p>Set <code>PAPERLESS_MCP_AUTH_MODE</code> to state the mode, or let the server auto-detect it from which variables are set.</p>
+<h2 id="remote-mode-variables">Remote Mode Variables<a class="headerlink" href="#remote-mode-variables" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>PAPERLESS_MCP_BASE_URL</code></td>
+<td>Public base URL of the server</td>
+</tr>
+<tr>
+<td><code>PAPERLESS_MCP_OIDC_CONFIG_URL</code></td>
+<td>OIDC discovery endpoint</td>
+</tr>
+</tbody>
+</table>
+<p>Optional: <code>OIDC_AUDIENCE</code>, <code>OIDC_REQUIRED_SCOPES</code> (same as OIDCProxy mode).</p>
+<p>No <code>CLIENT_ID</code> or <code>CLIENT_SECRET</code> needed. Tokens are validated locally via JWKS.</p>
+<h2 id="oidcproxy-required-variables">OIDCProxy Required Variables<a class="headerlink" href="#oidcproxy-required-variables" title="Permanent link">&para;</a></h2>
 <!-- GENERATED-ENV-TABLE-OIDC-REQUIRED-START — generated by scripts/gen_config_surface.py; do not edit -->
 <table>
 <thead>
@@ -1541,7 +1713,7 @@
 <tr>
 <td><code>PAPERLESS_MCP_OIDC_JWT_SIGNING_KEY</code></td>
 <td><code>derived</code></td>
-<td>Signing key for issued JSON Web Tokens; used in oidc-proxy mode only. When unset, the key is derived deterministically from <code>oidc_client_secret</code>, so tokens survive a restart. Rotating that secret invalidates every issued token. Set this explicitly to decouple token validity from secret rotation. Generate with <code>openssl rand -hex 32</code>.</td>
+<td>Signing key for issued tokens; used in oidc-proxy mode only. When unset, the key is derived deterministically from <code>oidc_client_secret</code>, so tokens survive a restart. Rotating that secret then invalidates every issued token. Set this explicitly to decouple token validity from secret rotation. Generate with <code>openssl rand -hex 32</code>.</td>
 </tr>
 <tr>
 <td><code>PAPERLESS_MCP_OIDC_VERIFY_ACCESS_TOKEN</code></td>
@@ -1553,12 +1725,13 @@
 <!-- GENERATED-ENV-TABLE-OIDC-OPTIONAL-END -->
 
 <h2 id="jwt-signing-key">JWT Signing Key<a class="headerlink" href="#jwt-signing-key" title="Permanent link">&para;</a></h2>
-<p>When <code>PAPERLESS_MCP_OIDC_JWT_SIGNING_KEY</code> is unset, FastMCP derives the signing key from the OIDC client secret using deterministic key derivation, so the key stays the same across restarts and tokens keep validating.</p>
+<p>The signing key applies to oidc-proxy mode; remote mode does not use it. When <code>PAPERLESS_MCP_OIDC_JWT_SIGNING_KEY</code> is unset, FastMCP derives the signing key from the OIDC client secret using deterministic key derivation, so the key stays the same across restarts and tokens keep validating.</p>
 <p>The real reason to set an explicit key is secret rotation: because the default key is derived from the client secret, rotating that secret changes the derived key and invalidates every token issued under the old one. Setting an explicit signing key decouples token validity from client-secret rotation:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Generate once, store in your .env file</span>
 openssl<span class="w"> </span>rand<span class="w"> </span>-hex<span class="w"> </span><span class="m">32</span>
 </code></pre></div>
 <h2 id="setup-with-authelia">Setup with Authelia<a class="headerlink" href="#setup-with-authelia" title="Permanent link">&para;</a></h2>
+<p>This section configures oidc-proxy mode. Remote mode needs no client registration, since the client authenticates with the provider itself.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>Authelia does not support Dynamic Client Registration (RFC 7591). Clients must be registered manually in <code>configuration.yml</code>.</p>
@@ -1591,6 +1764,18 @@ openssl<span class="w"> </span>rand<span class="w"> </span>-hex<span class="w"> 
 <div class="highlight"><pre><span></span><code>paperless-mcp<span class="w"> </span>serve<span class="w"> </span>--transport<span class="w"> </span>http<span class="w"> </span>--port<span class="w"> </span><span class="m">8000</span>
 </code></pre></div>
 <h2 id="architecture">Architecture<a class="headerlink" href="#architecture" title="Permanent link">&para;</a></h2>
+<h3 id="remote-mode">Remote mode<a class="headerlink" href="#remote-mode" title="Permanent link">&para;</a></h3>
+<p>The server validates tokens locally using JWKS, with no upstream token calls after startup:</p>
+<div class="highlight"><pre><span></span><code>Client → IdP (authenticate + get JWT)
+Client → paperless-mcp (present JWT → validate via JWKS)
+</code></pre></div>
+<ol>
+<li>Client authenticates directly with the OIDC provider</li>
+<li>Client presents the JWT access token to the MCP server</li>
+<li>Server validates the token locally using the provider's JWKS keys</li>
+<li>No upstream calls. Token refresh is between client and IdP.</li>
+</ol>
+<h3 id="oidcproxy-mode">OIDCProxy mode<a class="headerlink" href="#oidcproxy-mode" title="Permanent link">&para;</a></h3>
 <p>The server uses FastMCP's built-in <code>OIDCProxy</code> auth provider (not the external <code>mcp-auth-proxy</code> sidecar). The authentication flow:</p>
 <div class="highlight"><pre><span></span><code>Client → paperless-mcp (with OIDCProxy) → OIDC Provider (Authelia/Keycloak)
 </code></pre></div>
@@ -1602,15 +1787,29 @@ openssl<span class="w"> </span>rand<span class="w"> </span>-hex<span class="w"> 
 <li>Subsequent requests include the JWT token</li>
 </ol>
 <h2 id="docker-compose-with-oidc">Docker Compose with OIDC<a class="headerlink" href="#docker-compose-with-oidc" title="Permanent link">&para;</a></h2>
+<p>This is the shipped <code>compose.yml</code> with a reverse proxy added. The service joins an external <code>traefik</code> network and carries router labels. It publishes no host port, because the proxy reaches it over that network instead. See <a href="../docker/">Docker</a> for the base file and the same overlay without OIDC.</p>
 <div class="highlight"><pre><span></span><code><span class="nt">services</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">paperless-mcp</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ghcr.io/pvliesdonk/paperless-mcp:latest</span>
-<span class="w">    </span><span class="nt">env_file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">.env</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+<span class="w">    </span><span class="nt">env_file</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">.env</span>
+<span class="w">        </span><span class="nt">required</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
 <span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">service-data:/data/service</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">state-data:/data/state</span>
 <span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
 <span class="w">      </span><span class="nt">FASTMCP_HOME</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/data/state/fastmcp</span>
-<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+<span class="w">    </span><span class="nt">healthcheck</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">test</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">CMD</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">python</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">-c</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"import</span><span class="nv"> </span><span class="s">urllib.request;</span><span class="nv"> </span><span class="s">urllib.request.urlopen('http://127.0.0.1:8000/health',</span><span class="nv"> </span><span class="s">timeout=2).close()"</span>
+<span class="w">      </span><span class="nt">interval</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">30s</span>
+<span class="w">      </span><span class="nt">timeout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5s</span>
+<span class="w">      </span><span class="nt">retries</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
+<span class="w">      </span><span class="nt">start_period</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10s</span>
 <span class="w">    </span><span class="nt">labels</span><span class="p">:</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"traefik.enable=true"</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"traefik.http.routers.paperless-mcp.rule=Host(`mcp.example.com`)"</span>
@@ -1620,6 +1819,7 @@ openssl<span class="w"> </span>rand<span class="w"> </span>-hex<span class="w"> 
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">traefik</span>
 
 <span class="nt">volumes</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">service-data</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">state-data</span><span class="p">:</span>
 
 <span class="nt">networks</span><span class="p">:</span>
@@ -1729,7 +1929,7 @@ openssl<span class="w"> </span>rand<span class="w"> </span>-hex<span class="w"> 
 <p>Two routers rather than one is deliberate. A single router carrying the strip rule would apply it to the discovery request as well. Nothing here relies on how a given proxy treats a strip prefix that fails to match: separate routers state the untouched route outright, in any proxy that has the concept.</p>
 <h3 id="sharing-a-hostname">Sharing a hostname<a class="headerlink" href="#sharing-a-hostname" title="Permanent link">&para;</a></h3>
 <p>The failure that follows from point 2 above is worth spelling out, because its symptom points somewhere else entirely.</p>
-<p>The discovery URL sits outside the prefix, so on a hostname shared with other services, prefix-based routing cannot claim it. Without a router that matches it explicitly, the request falls through to whatever else holds the host: an OAuth gateway, an SSO portal, or another MCP server at the root. That service answers with <strong>its</strong> metadata, the client builds an authorization URL from another service's endpoints, and the visible symptom is an authorization URL 404ing at a path nobody configured. It reads as a client bug or an auth bug; it is a routing rule one path too narrow.</p>
+<p>The discovery URL sits outside the prefix, so on a hostname shared with other services, prefix-based routing cannot claim it. Without a router that matches it explicitly, the request falls through to whatever else holds the host, such as an SSO portal or another MCP server mounted at the root. That service answers with <strong>its</strong> metadata, the client builds an authorization URL from another service's endpoints, and the visible symptom is an authorization URL 404ing at a path nobody configured. It reads as a client bug or an auth bug; it is a routing rule one path too narrow.</p>
 <p>The <code>mcp-wellknown</code> router above is the fix. In Traefik it also wins by default: routers sort by rule length, so a rule naming the full well-known path outranks a bare <code>Host(...)</code> catch-all. Where the competing service sets an explicit <code>priority</code>, set a higher one here, because Traefik ignores its rule-length default for any router that carries one.</p>
 <div class="admonition warning">
 <p class="admonition-title">One document still collides: <code>oauth-authorization-server</code></p>

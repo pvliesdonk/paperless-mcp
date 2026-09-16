@@ -1,12 +1,32 @@
 # OIDC Authentication
 
-Optional token-based authentication for HTTP deployments. OIDC activates automatically when all four required environment variables are set. For an overview of all authentication modes (bearer token, OIDC, no auth), see the [Authentication guide](https://pvliesdonk.github.io/paperless-mcp/unstable/guides/authentication/index.md).
+Optional token-based authentication for HTTP deployments. OIDC activates automatically based on which environment variables are set. For an overview of all authentication modes (bearer token, OIDC, no auth), see the [Authentication guide](https://pvliesdonk.github.io/paperless-mcp/unstable/guides/authentication/index.md).
 
 Transport requirement
 
 OIDC requires `--transport http` (or `sse`). It has no effect with `--transport stdio`.
 
-## Required Variables
+## Auth Modes
+
+| Mode           | Required Variables                                                    | Description                                          |
+| -------------- | --------------------------------------------------------------------- | ---------------------------------------------------- |
+| **remote**     | `BASE_URL`, `OIDC_CONFIG_URL`                                         | Local JWKS validation. No client credentials needed. |
+| **oidc-proxy** | `BASE_URL`, `OIDC_CONFIG_URL`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET` | Full OAuth proxy with session management.            |
+
+Set `PAPERLESS_MCP_AUTH_MODE` to state the mode, or let the server auto-detect it from which variables are set.
+
+## Remote Mode Variables
+
+| Variable                        | Description                   |
+| ------------------------------- | ----------------------------- |
+| `PAPERLESS_MCP_BASE_URL`        | Public base URL of the server |
+| `PAPERLESS_MCP_OIDC_CONFIG_URL` | OIDC discovery endpoint       |
+
+Optional: `OIDC_AUDIENCE`, `OIDC_REQUIRED_SCOPES` (same as OIDCProxy mode).
+
+No `CLIENT_ID` or `CLIENT_SECRET` needed. Tokens are validated locally via JWKS.
+
+## OIDCProxy Required Variables
 
 | Variable                           | Description                                                                                                                                                        |
 | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -22,12 +42,12 @@ OIDC requires `--transport http` (or `sse`). It has no effect with `--transport 
 | `PAPERLESS_MCP_OIDC_AUDIENCE`            | (none)                  | Expected `aud` claim; tokens issued for another audience are rejected.                                                                                                                                                                                                                                                                                                        |
 | `PAPERLESS_MCP_OIDC_REQUIRED_SCOPES`     | `openid`                | Scopes a caller must present, space- or comma-separated. Defaults to `openid` in oidc-proxy mode.                                                                                                                                                                                                                                                                             |
 | `PAPERLESS_MCP_OIDC_ADVERTISED_SCOPES`   | `openid offline_access` | Scopes advertised to MCP clients in protected-resource metadata, space- or comma-separated. Overrides the default `openid offline_access`; `oidc_required_scopes` is always added on top. Set this when the registered client is not permitted `offline_access`, or to have clients request extra claim scopes (such as `groups`) without also requiring them in every token. |
-| `PAPERLESS_MCP_OIDC_JWT_SIGNING_KEY`     | `derived`               | Signing key for issued JSON Web Tokens; used in oidc-proxy mode only. When unset, the key is derived deterministically from `oidc_client_secret`, so tokens survive a restart. Rotating that secret invalidates every issued token. Set this explicitly to decouple token validity from secret rotation. Generate with `openssl rand -hex 32`.                                |
+| `PAPERLESS_MCP_OIDC_JWT_SIGNING_KEY`     | `derived`               | Signing key for issued tokens; used in oidc-proxy mode only. When unset, the key is derived deterministically from `oidc_client_secret`, so tokens survive a restart. Rotating that secret then invalidates every issued token. Set this explicitly to decouple token validity from secret rotation. Generate with `openssl rand -hex 32`.                                    |
 | `PAPERLESS_MCP_OIDC_VERIFY_ACCESS_TOKEN` | `false`                 | Validate the access token instead of the id token.                                                                                                                                                                                                                                                                                                                            |
 
 ## JWT Signing Key
 
-When `PAPERLESS_MCP_OIDC_JWT_SIGNING_KEY` is unset, FastMCP derives the signing key from the OIDC client secret using deterministic key derivation, so the key stays the same across restarts and tokens keep validating.
+The signing key applies to oidc-proxy mode; remote mode does not use it. When `PAPERLESS_MCP_OIDC_JWT_SIGNING_KEY` is unset, FastMCP derives the signing key from the OIDC client secret using deterministic key derivation, so the key stays the same across restarts and tokens keep validating.
 
 The real reason to set an explicit key is secret rotation: because the default key is derived from the client secret, rotating that secret changes the derived key and invalidates every token issued under the old one. Setting an explicit signing key decouples token validity from client-secret rotation:
 
@@ -37,6 +57,8 @@ openssl rand -hex 32
 ```
 
 ## Setup with Authelia
+
+This section configures oidc-proxy mode. Remote mode needs no client registration, since the client authenticates with the provider itself.
 
 Note
 
@@ -80,6 +102,22 @@ paperless-mcp serve --transport http --port 8000
 
 ## Architecture
 
+### Remote mode
+
+The server validates tokens locally using JWKS, with no upstream token calls after startup:
+
+```
+Client → IdP (authenticate + get JWT)
+Client → paperless-mcp (present JWT → validate via JWKS)
+```
+
+1. Client authenticates directly with the OIDC provider
+1. Client presents the JWT access token to the MCP server
+1. Server validates the token locally using the provider's JWKS keys
+1. No upstream calls. Token refresh is between client and IdP.
+
+### OIDCProxy mode
+
 The server uses FastMCP's built-in `OIDCProxy` auth provider (not the external `mcp-auth-proxy` sidecar). The authentication flow:
 
 ```
@@ -94,16 +132,31 @@ Client → paperless-mcp (with OIDCProxy) → OIDC Provider (Authelia/Keycloak)
 
 ## Docker Compose with OIDC
 
+This is the shipped `compose.yml` with a reverse proxy added. The service joins an external `traefik` network and carries router labels. It publishes no host port, because the proxy reaches it over that network instead. See [Docker](https://pvliesdonk.github.io/paperless-mcp/unstable/deployment/docker/index.md) for the base file and the same overlay without OIDC.
+
 ```
 services:
   paperless-mcp:
     image: ghcr.io/pvliesdonk/paperless-mcp:latest
-    env_file: .env
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false
     volumes:
+      - service-data:/data/service
       - state-data:/data/state
     environment:
       FASTMCP_HOME: /data/state/fastmcp
-    restart: unless-stopped
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2).close()"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.paperless-mcp.rule=Host(`mcp.example.com`)"
@@ -113,6 +166,7 @@ services:
       - traefik
 
 volumes:
+  service-data:
   state-data:
 
 networks:
@@ -207,7 +261,7 @@ Two routers rather than one is deliberate. A single router carrying the strip ru
 
 The failure that follows from point 2 above is worth spelling out, because its symptom points somewhere else entirely.
 
-The discovery URL sits outside the prefix, so on a hostname shared with other services, prefix-based routing cannot claim it. Without a router that matches it explicitly, the request falls through to whatever else holds the host: an OAuth gateway, an SSO portal, or another MCP server at the root. That service answers with **its** metadata, the client builds an authorization URL from another service's endpoints, and the visible symptom is an authorization URL 404ing at a path nobody configured. It reads as a client bug or an auth bug; it is a routing rule one path too narrow.
+The discovery URL sits outside the prefix, so on a hostname shared with other services, prefix-based routing cannot claim it. Without a router that matches it explicitly, the request falls through to whatever else holds the host, such as an SSO portal or another MCP server mounted at the root. That service answers with **its** metadata, the client builds an authorization URL from another service's endpoints, and the visible symptom is an authorization URL 404ing at a path nobody configured. It reads as a client bug or an auth bug; it is a routing rule one path too narrow.
 
 The `mcp-wellknown` router above is the fix. In Traefik it also wins by default: routers sort by rule length, so a rule naming the full well-known path outranks a bare `Host(...)` catch-all. Where the competing service sets an explicit `priority`, set a higher one here, because Traefik ignores its rule-length default for any router that carries one.
 

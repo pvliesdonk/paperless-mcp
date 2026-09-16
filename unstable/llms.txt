@@ -26,9 +26,9 @@
 - [OIDC Authentication](https://pvliesdonk.github.io/paperless-mcp/unstable/deployment/oidc/index.md)
 - [Release Process](https://pvliesdonk.github.io/paperless-mcp/unstable/deployment/release-process/index.md)
 - [Repository Protection](https://pvliesdonk.github.io/paperless-mcp/unstable/deployment/repository-protection/index.md)
+- [Template Updates](https://pvliesdonk.github.io/paperless-mcp/unstable/deployment/template-updates/index.md)
 
 ## Release Notes
 
-- [Release Notes](https://pvliesdonk.github.io/paperless-mcp/unstable/releases/index.md)
 - [1.0](https://pvliesdonk.github.io/paperless-mcp/unstable/releases/1.0/index.md)
 

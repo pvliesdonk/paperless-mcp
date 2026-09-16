@@ -14,7 +14,7 @@ Both additions are new distribution/setup surfaces; as of this release [the inst
 
 ## Operator tool visibility controls
 
-The same runtime upgrade adds `PAPERLESS_MCP_TOOLS_ALLOW` and `PAPERLESS_MCP_TOOLS_DENY`, letting an operator expose only a chosen set of tools or hide specific ones from a given instance, useful for running a read-heavy or narrowly scoped deployment without a custom build. See [Configuration](https://pvliesdonk.github.io/paperless-mcp/unstable/configuration/#tool-visibility) for both variables.
+The same runtime upgrade adds `PAPERLESS_MCP_TOOLS_ALLOW` and `PAPERLESS_MCP_TOOLS_DENY`, letting an operator expose only a chosen set of tools or hide specific ones from a given instance, useful for running a read-heavy or narrowly scoped deployment without a custom build. See [Configuration](https://pvliesdonk.github.io/paperless-mcp/unstable/configuration/#server) for both variables.
 
 ## Retiring `create_download_link`
 

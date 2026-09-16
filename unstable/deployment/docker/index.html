@@ -933,6 +933,100 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#docker-compose" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Docker Compose
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Docker Compose">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#where-configuration-goes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where configuration goes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ports" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ports
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#domain-content-and-copier-update" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Domain content and copier update
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#behind-a-reverse-proxy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Behind a reverse proxy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#building-the-image-yourself" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Building the image yourself
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#health" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Health
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#logs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Logs
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#image-tags" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1087,6 +1181,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../template-updates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Template Updates
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../repository-protection/" class="md-nav__link">
         
   
@@ -1180,6 +1302,100 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#docker-compose" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Docker Compose
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Docker Compose">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#where-configuration-goes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where configuration goes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ports" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ports
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#domain-content-and-copier-update" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Domain content and copier update
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#behind-a-reverse-proxy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Behind a reverse proxy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#building-the-image-yourself" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Building the image yourself
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#health" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Health
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#logs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Logs
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#image-tags" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1256,9 +1472,122 @@
 
 <h1 id="docker-deployment">Docker Deployment<a class="headerlink" href="#docker-deployment" title="Permanent link">&para;</a></h1>
 <h2 id="quick-start">Quick start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code>docker<span class="w"> </span>compose<span class="w"> </span>up<span class="w"> </span>-d
+<div class="highlight"><pre><span></span><code>cp<span class="w"> </span>.env.example<span class="w"> </span>.env
+docker<span class="w"> </span>compose<span class="w"> </span>up<span class="w"> </span>-d
 </code></pre></div>
-<p>The server listens on port 8000 with HTTP transport by default.</p>
+<p>The server listens on port 8000 with HTTP transport, published on the host as <code>8000:8000</code>. No reverse proxy, TLS terminator, or external network is assumed.</p>
+<p>Copying <code>.env.example</code> first is the step to keep. Every variable in it arrives commented out, so the server starts on its defaults and the copy changes no behaviour by itself. It is the file you edit next, and <code>compose.yml</code> names it.</p>
+<p>Apply a later edit with <code>docker compose up -d</code>, which recreates the container with the new values. <code>docker compose restart</code> does not pick them up: an env file is read when a container is created, so a restarted container keeps the values it was created with and the edit is ignored without any message.</p>
+<h2 id="docker-compose">Docker Compose<a class="headerlink" href="#docker-compose" title="Permanent link">&para;</a></h2>
+<p><code>compose.yml</code> is a working deployment, not an illustration. It is re-rendered on every <code>copier update</code>, so fixes and new defaults reach it; edit it inside the sentinel blocks described below and your changes survive.</p>
+<h3 id="where-configuration-goes">Where configuration goes<a class="headerlink" href="#where-configuration-goes" title="Permanent link">&para;</a></h3>
+<p>The split matters, because two files can set the same variable:</p>
+<ul>
+<li><strong><code>.env</code> holds the server's configuration.</strong> <code>compose.yml</code> reads it with <code>env_file:</code>. <code>.env.example</code> is generated from the server's own config surface and lists every variable with its default and a one-line description, so it is both the checklist and the place to edit. <a href="../../configuration/">Configuration</a> carries the full reference.</li>
+<li><strong><code>compose.yml</code>'s <code>environment:</code> block holds only what the file itself determines.</strong> Currently that is <code>FASTMCP_HOME</code>, which points at the state volume the file mounts. Values here override <code>.env</code>, so a knob set in both places takes the value from <code>compose.yml</code>, which is rarely what an operator editing <code>.env</code> expects.</li>
+</ul>
+<p>The <code>env_file:</code> entry is marked <code>required: false</code>, so a checkout with no <code>.env</code> still starts on defaults. That form needs Compose 2.24.0 or newer; on an older engine, either upgrade or replace the entry with plain <code>env_file: .env</code> and make sure the file exists.</p>
+<h3 id="ports">Ports<a class="headerlink" href="#ports" title="Permanent link">&para;</a></h3>
+<p>The image pins its own listener: <code>CMD</code> passes <code>--host 0.0.0.0 --port 8000</code>, so <code>PAPERLESS_MCP_HOST</code> and <code>PAPERLESS_MCP_PORT</code> in a <code>.env</code> do not move it. To serve on a different host port, change the left-hand side of the mapping (<code>"9000:8000"</code>) rather than the server's port.</p>
+<h3 id="domain-content-and-copier-update">Domain content and <code>copier update</code><a class="headerlink" href="#domain-content-and-copier-update" title="Permanent link">&para;</a></h3>
+<p>Four sentinel blocks mark the parts of <code>compose.yml</code> a project owns. Content inside them survives a template update; content outside them does not, and will conflict.</p>
+<table>
+<thead>
+<tr>
+<th>Block</th>
+<th>For</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>DOMAIN-COMPOSE-VOLUMES</code></td>
+<td>Extra mounts on the service</td>
+</tr>
+<tr>
+<td><code>DOMAIN-COMPOSE-ENVIRONMENT</code></td>
+<td>Extra environment this file determines</td>
+</tr>
+<tr>
+<td><code>DOMAIN-COMPOSE-SERVICES</code></td>
+<td>Sidecars, such as a task backend or a cache</td>
+</tr>
+<tr>
+<td><code>DOMAIN-COMPOSE-VOLUME-NAMES</code></td>
+<td>Top-level declarations for any named volume added above</td>
+</tr>
+</tbody>
+</table>
+<p>A named volume needs an entry in two of those: the mount in <code>DOMAIN-COMPOSE-VOLUMES</code>, and its declaration in <code>DOMAIN-COMPOSE-VOLUME-NAMES</code>. A bind mount needs only the first.</p>
+<h3 id="behind-a-reverse-proxy">Behind a reverse proxy<a class="headerlink" href="#behind-a-reverse-proxy" title="Permanent link">&para;</a></h3>
+<p>Proxy configuration is deployment-specific, so <code>compose.yml</code> ships none. Add it in a second file rather than by editing <code>compose.yml</code>, which is template-owned and re-rendered: save this as <code>compose.override.yml</code>, which Compose loads automatically alongside <code>compose.yml</code>.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">services</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">paperless-mcp</span><span class="p">:</span>
+<span class="w">    </span><span class="c1"># `!reset` drops the published port: the proxy reaches the container over</span>
+<span class="w">    </span><span class="c1"># the shared network, so nothing needs to be on the host. Plain merging</span>
+<span class="w">    </span><span class="c1"># appends to sequences, so without this the port stays published.</span>
+<span class="w">    </span><span class="nt">ports</span><span class="p">:</span><span class="w"> </span><span class="kt">!reset</span><span class="w"> </span><span class="p p-Indicator">[]</span>
+<span class="w">    </span><span class="nt">networks</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">traefik</span>
+<span class="w">    </span><span class="nt">labels</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"traefik.enable=true"</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"traefik.http.routers.paperless-mcp.rule=Host(`mcp.example.com`)"</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"traefik.http.routers.paperless-mcp.tls.certresolver=letsencrypt"</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"traefik.http.services.paperless-mcp.loadbalancer.server.port=8000"</span>
+
+<span class="nt">networks</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">traefik</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">external</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</code></pre></div>
+<p><code>!reset</code> needs Compose 2.24.4 or newer. On an older engine, drop that line and remove the port mapping from <code>compose.yml</code> directly, accepting that the edit conflicts on the next template update.</p>
+<p>Check the result before starting anything, since a merge that silently kept the port mapping looks identical until the port clashes:</p>
+<div class="highlight"><pre><span></span><code>docker<span class="w"> </span>compose<span class="w"> </span>config
+</code></pre></div>
+<p>Substitute your own hostname for <code>mcp.example.com</code>. Set <code>PAPERLESS_MCP_BASE_URL</code> to the public URL as well: the server needs it to advertise its own address, and it is required once OIDC is enabled. Do not reach for <code>PAPERLESS_MCP_HOST</code> here. That variable is the interface the server binds to, which is not the name the proxy routes.</p>
+<p>The network must already exist and be the one the proxy watches. For the same overlay with OIDC, see <a href="../oidc/">OIDC</a>.</p>
+<h3 id="building-the-image-yourself">Building the image yourself<a class="headerlink" href="#building-the-image-yourself" title="Permanent link">&para;</a></h3>
+<p><code>compose.yml</code> pulls a published image rather than building one, so <code>docker compose up -d</code> never rebuilds from a stale checkout. To run your own build, build and tag it first:</p>
+<div class="highlight"><pre><span></span><code>docker<span class="w"> </span>build<span class="w"> </span>-t<span class="w"> </span>ghcr.io/pvliesdonk/paperless-mcp:dev<span class="w"> </span>.
+</code></pre></div>
+<p>then point the <code>image:</code> line at that tag.</p>
+<h3 id="health">Health<a class="headerlink" href="#health" title="Permanent link">&para;</a></h3>
+<p>The server serves two unauthenticated routes for an orchestrator to probe. They sit outside the MCP mount and outside auth, so they answer normally while the MCP endpoint still answers <code>401</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Route</th>
+<th>Question</th>
+<th>Answer</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/health</code></td>
+<td>Is the process serving?</td>
+<td>Static <code>200</code> for as long as it does. A failure means restart it.</td>
+</tr>
+<tr>
+<td><code>/health/ready</code></td>
+<td>Can it do its job?</td>
+<td>Runs every readiness check and answers <code>503</code> if any fails. A failure means take it out of rotation.</td>
+</tr>
+</tbody>
+</table>
+<p><code>compose.yml</code> probes <code>/health</code>, so <code>docker compose ps</code> reports <code>healthy</code> once the server answers and <code>docker compose up --wait</code> returns. The image carries the same probe as its <code>HEALTHCHECK</code>, so a bare <code>docker run</code> reports health too. Compose only reports the verdict: it gates <code>depends_on: condition: service_healthy</code> on it but restarts nothing. An orchestrator that does act on liveness, such as Swarm or a Kubernetes <code>livenessProbe</code>, restarts the container, so the probe is deliberately not <code>/health/ready</code>. A restart does not fix an unreachable backing store, and a readiness verdict here would hold up every dependent service for one. Point a load balancer or a Kubernetes <code>readinessProbe</code> at <code>/health/ready</code> instead.</p>
+<p>Readiness ships with one check, <code>kv_store</code>, which writes a short-lived key so a state volume that has silently vanished is detected. A project adds its own checks, such as whether an upstream API key is still valid, in the <code>health_checks</code> dict beside the <code>DOMAIN-WIRING</code> block in <code>src/paperless_mcp/server.py</code>.</p>
+<p>The paths follow the mount. The server strips a conventional trailing <code>mcp</code> segment from <code>PAPERLESS_MCP_HTTP_PATH</code>, so the default <code>/mcp</code> publishes <code>/health</code> and a mount at <code>/paperless-mcp/mcp</code> publishes <code>/paperless-mcp/health</code>. The shipped probe assumes the default, so a <code>.env</code> that changes the mount path must move the probe with it.</p>
+<p>Check the readiness verdict through the published port; <code>curl</code> prints the body on a <code>503</code> as well, which is where the failing check is named:</p>
+<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>-s<span class="w"> </span>http://localhost:8000/health/ready
+</code></pre></div>
+<p><code>PAPERLESS_MCP_HEALTH_DETAIL</code> decides how much the bodies say, because anyone who can reach the port can read them. <code>status</code> returns the status alone. The default, <code>standard</code>, adds the server name and version on <code>/health</code> and a verdict per check on <code>/health/ready</code>. <code>full</code> adds the exception type and a redacted reason for each check that raised, and belongs only where the port is reachable from a trusted network.</p>
+<h3 id="logs">Logs<a class="headerlink" href="#logs" title="Permanent link">&para;</a></h3>
+<p>The image sets <code>FASTMCP_ENABLE_RICH_LOGGING=false</code>, so <code>docker logs</code> gets one line per record: a JSON object for every MCP request the logging middleware sees, <code>LEVEL: message</code> from the rest of FastMCP. Both grep cleanly and both survive a log collector. The server's own loggers print one line either way.</p>
+<p>The reason is that a container has no terminal. Rich falls back to 80 columns, its time, level and source columns claim most of them, and a structured record then wraps across three space-padded lines that no reader and no parser puts back together. Rich's time column goes with the setting, and Docker timestamps every line it captures anyway, so <code>docker logs -t</code> prints them.</p>
+<p>This is an image default like any other, so <code>.env</code> or the compose <code>environment:</code> block overrides it. Turning Rich back on for a human reading <code>docker logs</code> needs <code>COLUMNS</code> set as well, since that is what Rich reads in place of asking a terminal it does not have. In <code>.env</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="na">FASTMCP_ENABLE_RICH_LOGGING</span><span class="o">=</span><span class="s">true</span>
+<span class="na">COLUMNS</span><span class="o">=</span><span class="s">200</span>
+</code></pre></div>
+<p>Records then render one line each, in color, padded out to the full width. The packaged Debian and RPM installs make the same trade for <code>journalctl</code>: the systemd unit sets <code>FASTMCP_ENABLE_RICH_LOGGING=false</code>, and <code>/etc/paperless-mcp/env</code> overrides it.</p>
+<p><code>FASTMCP_LOG_LEVEL</code> sets how much is logged; see <a href="../../configuration/#logging">Configuration</a>.</p>
 <h2 id="image-tags">Image tags<a class="headerlink" href="#image-tags" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -1322,9 +1651,24 @@
 <td>Log level (<code>DEBUG</code> / <code>INFO</code> / <code>WARNING</code> / <code>ERROR</code>)</td>
 </tr>
 <tr>
+<td><code>FASTMCP_ENABLE_RICH_LOGGING</code></td>
+<td><code>false</code> in the image</td>
+<td>Rich output; off means one plain or JSON line per record (see <a href="#logs">Logs</a>)</td>
+</tr>
+<tr>
+<td><code>PAPERLESS_MCP_INSTANCE_DESCRIPTION</code></td>
+<td>n/a</td>
+<td>Routing context that distinguishes this deployment</td>
+</tr>
+<tr>
+<td><code>PAPERLESS_MCP_INSTRUCTIONS_EXTRA</code></td>
+<td>n/a</td>
+<td>Deployment-specific behavioral policy added to the generated MCP instructions</td>
+</tr>
+<tr>
 <td><code>PAPERLESS_MCP_INSTRUCTIONS</code></td>
 <td>(computed at startup)</td>
-<td>System instructions for LLM context</td>
+<td>Legacy full replacement of the generated instructions (deprecated)</td>
 </tr>
 <tr>
 <td><code>PAPERLESS_MCP_DEBUG_PORT</code></td>
