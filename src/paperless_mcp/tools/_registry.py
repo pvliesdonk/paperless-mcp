@@ -92,7 +92,7 @@ def load_svg_data_uri(path: Path) -> str:
 
 def build_icon(path: Path) -> Icon:
     """Build an :class:`Icon` pointing at the given SVG file."""
-    return Icon(src=load_svg_data_uri(path), mimeType="image/svg+xml")
+    return Icon(src=load_svg_data_uri(path), mime_type="image/svg+xml")
 
 
 def register_tool(

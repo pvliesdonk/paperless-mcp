@@ -5,6 +5,10 @@
 const FASTMCP_HOME = "/data/state/fastmcp";
 // The named state volume, mounted in every Docker/Compose artifact.
 const STATE_VOLUME = "state-data:/data/state";
+// The image declares VOLUME for both paths (Dockerfile), and the shipped
+// compose.yml mounts both. Emitting only the state volume would leave
+// /data/service on an anonymous volume that a `down -v` silently discards.
+const SERVICE_VOLUME = "service-data:/data/service";
 
 const secretPlaceholder = (key, envPrefix) => {
   const prefix = `${envPrefix}_`;
@@ -99,34 +103,63 @@ export function isVisible(q, answers) {
   return Object.entries(q.showIf).every(([k, allowed]) => allowed.includes(answers[k]));
 }
 
-// Bind mounts for visible dockerVolume questions: [[hostPath, containerPath]].
-// An empty answer yields a `/path/to/<id>` placeholder so the artifact still
-// reads as "replace me".
+// A dockerVolume question contributes only when the user actually supplied a
+// host path. Blank means "I am not using this", and the two halves must agree:
+// emitting the mount without the env override leaves a bind mount nothing
+// references, and emitting the override without a real host path points the
+// server at a file that does not exist. Both halves therefore key off the same
+// answer.
+//
+// This replaced a `/path/to/<id>` placeholder that a blank answer used to
+// produce as a "replace me" marker. That reads fine for a path the server
+// requires, and breaks a path it merely accepts: leaving the optional bearer
+// tokens file blank produced `-e ..._BEARER_TOKENS_FILE=/etc/<project>/
+// tokens.toml` beside `BEARER_TOKEN`, and core prefers a tokens file whenever
+// both are set — so the default bearer output named a file that was never
+// mounted and refused to start. The spec has no required-ness signal to
+// distinguish the two cases, so the safe rule is the one that cannot generate
+// a broken command.
+const dockerHostPath = (q, answers) => (q.dockerVolume ? answers[q.id] : "");
+
+// Bind mounts for visible, answered dockerVolume questions:
+// [[hostPath, containerPath]].
 export function dockerVolumes(spec, answers) {
   const vols = [];
   for (const q of spec.questions) {
-    if (!q.dockerVolume || !isVisible(q, answers)) continue;
-    const host = answers[q.id] || `/path/to/${q.id}`;
-    vols.push([host, q.dockerVolume]);
+    if (!isVisible(q, answers)) continue;
+    const host = dockerHostPath(q, answers);
+    if (host) vols.push([host, q.dockerVolume]);
   }
   return vols;
 }
 
 // Rewrite the env map for Docker/Compose output. A dockerVolume question's var
-// is always fixed to its container path (the bind mount makes that path real).
-// A dockerPath question's var is fixed only when already present (the user
-// opted into the value); dockerPath never adds a mount. FASTMCP_HOME is injected.
+// is fixed to its container path once the user supplies a host path, because
+// the bind mount above then makes that path real. A dockerPath question's var
+// is fixed only when already present (the user opted into the value);
+// dockerPath never adds a mount. FASTMCP_HOME is injected.
 function dockerEnvMap(spec, answers, map) {
   const out = { ...map };
   for (const q of spec.questions) {
     if (!isVisible(q, answers) || !q.var) continue;
-    if (q.dockerVolume) {
+    if (dockerHostPath(q, answers)) {
       out[q.var] = q.dockerVolume;
     } else if (q.dockerPath && q.var in out) {
       out[q.var] = q.dockerPath;
     }
   }
   out.FASTMCP_HOME = FASTMCP_HOME;
+  // The image pins its own listener -- Dockerfile's CMD passes
+  // `--host 0.0.0.0 --port 8000` -- so neither var reaches uvicorn in a
+  // container, while the `-p` / `ports:` mapping and the compose healthcheck
+  // both name 8000. Emitting them would promise a knob the container ignores:
+  // before the CMD pinned the port, `-e <PREFIX>_PORT=9000` beside
+  // `-p 8000:8000` actively broke the run. Publish a different HOST port
+  // instead. Mirrors the same exclusion in config-presentation.yml's
+  // `packaging:` map.
+  const prefix = spec.meta.envPrefix;
+  delete out[`${prefix}_HOST`];
+  delete out[`${prefix}_PORT`];
   return out;
 }
 
@@ -156,6 +189,7 @@ export function generateDockerRun(spec, answers, map) {
   const lines = [
     `docker run -d --name ${spec.meta.projectName}`,
     "  -p 8000:8000",
+    `  -v ${SERVICE_VOLUME}`,
     `  -v ${STATE_VOLUME}`,
   ];
   for (const [host, container] of dockerVolumes(spec, answers)) {
@@ -166,9 +200,13 @@ export function generateDockerRun(spec, answers, map) {
   return lines.join(" \\\n");
 }
 
+// Frame kept in step with the shipped compose.yml.jinja: same volumes, same
+// restart policy, same liveness probe. Configuration differs deliberately —
+// the wizard emits a standalone file built from the answers, with no `.env`
+// behind it, so its values are inline rather than read via `env_file:`.
 export function generateCompose(spec, answers, map) {
   const env = dockerEnvMap(spec, answers, map);
-  const volLines = [`      - ${STATE_VOLUME}`];
+  const volLines = [`      - ${SERVICE_VOLUME}`, `      - ${STATE_VOLUME}`];
   for (const [host, container] of dockerVolumes(spec, answers)) {
     volLines.push(`      - ${yamlScalar(`${host}:${container}`)}`);
   }
@@ -177,13 +215,25 @@ export function generateCompose(spec, answers, map) {
     "services:",
     `  ${spec.meta.projectName}:`,
     `    image: ${spec.meta.dockerImage}`,
+    "    restart: unless-stopped",
     "    ports:",
     '      - "8000:8000"',
     "    volumes:",
     ...volLines,
     "    environment:",
     envLines,
+    "    healthcheck:",
+    "      test:",
+    "        - CMD",
+    "        - python",
+    "        - -c",
+    `        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2).close()"`,
+    "      interval: 30s",
+    "      timeout: 5s",
+    "      retries: 3",
+    "      start_period: 10s",
     "volumes:",
+    "  service-data:",
     "  state-data:",
   ].join("\n");
 }
@@ -201,6 +251,11 @@ export function generateSystemd(meta, map) {
     `# Create this user first: sudo useradd --system --no-create-home ${name}`,
     `User=${name}`,
     `ExecStart=/opt/${name}/venv/bin/${name} serve --transport http`,
+    // Same trade the packaged unit makes: journald is not a terminal, so Rich
+    // wraps every structured log record across three lines. Emitted before
+    // `envLines` because systemd lets a later Environment= win, so an operator
+    // who answered this question still gets their answer.
+    "Environment=FASTMCP_ENABLE_RICH_LOGGING=false",
     envLines,
     "Restart=on-failure",
     "",

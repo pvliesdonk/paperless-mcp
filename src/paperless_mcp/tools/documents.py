@@ -137,7 +137,7 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
         return ImageContent(
             type="image",
             data=base64.b64encode(data).decode("ascii"),
-            mimeType=content_type or "image/png",
+            mime_type=content_type or "image/png",
         )
 
     @register_tool(mcp, "get_document_metadata")

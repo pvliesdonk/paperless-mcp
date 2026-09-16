@@ -3,20 +3,64 @@ name = "pvliesdonk-paperless-mcp"
 version = "1.0.2"
 description = "Paperless-NGX over MCP: search, read, upload and tag documents; manage correspondents and types."
 readme = "README.md"
+# PROJECT-LICENSE-START — the license you picked; replace the value below and
+# it is kept across copier update.  The template ships a proprietary starter
+# because it cannot know your choice, and it does not re-render over yours.
+# See LICENSE for the other places the same choice has to be stated.
 license = "LicenseRef-Proprietary"  # starter: TODO update when you pick a license (see LICENSE)
+# PROJECT-LICENSE-END
 requires-python = ">=3.11"
-authors = [{ name = "pvliesdonk" }]
-keywords = []
+authors = [{ name = "Peter van Liesdonk", email = "peter@liesdonk.nl" }]
+# The template knows the terms that are true of every server it generates and
+# the project's own names; it cannot know the domain terms, which go in the
+# seam.  An empty list was not a decision, just nobody's job (#583).
+keywords = [
+    "mcp",
+    "model-context-protocol",
+    "fastmcp",
+    "paperless-mcp",
+    "pvliesdonk-paperless-mcp",
+    # PROJECT-KEYWORDS-START — add this project's domain terms below (what it
+    # is *about*: "vault", "ocr", "patents"); kept across copier update.
+    # PROJECT-KEYWORDS-END
+]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    # PROJECT-LICENSE-CLASSIFIER-START — kept across copier update; the trove
+    # name is not the SPDX id (Apache-2.0 is "Apache Software License"), which
+    # is one reason this is a separate edit rather than a derived one.
     "License :: Other/Proprietary License",  # starter: TODO update when you pick a license (see LICENSE)
+    # PROJECT-LICENSE-CLASSIFIER-END
 ]
 dependencies = [
-    # >=4.11.3 for ServerConfig.oidc_advertised_scopes, which
+    # >=7.1.0 for register_health_routes: the unauthenticated /health and
+    # /health/ready routes make_server wires under HTTP, which compose.yml
+    # now probes instead of opening a socket.
+    #
+    # 7.0.0 was the previous floor, for the FastMCP 4 adoption:
+    # configure_task_backend takes the
+    # server as its first argument and registers the SEP-2663 tasks extension
+    # on it (the fastmcp.settings.docket global it previously mutated is gone),
+    # and pvl-core itself moves to fastmcp[tasks]>=4,<5 (pvl-core#307).
+    # server.py's call site moves after FastMCP construction with this floor.
+    #
+    # 6.0.0 was the floor before that, for semantic InstructionRole values, shaped
+    # deployment identity, effective FastMCP tool visibility during instruction
+    # finalization, and the split operator contract:
+    # {PREFIX}_INSTANCE_DESCRIPTION supplies routing context while
+    # {PREFIX}_INSTRUCTIONS_EXTRA supplies policy (#553).
+    #
+    # 5.0.0 came earlier, for the InstructionsBuilder
+    # (instructions_for / finalize_instructions). It removed
+    # build_instructions, retained {PREFIX}_INSTRUCTIONS as a deprecated full
+    # replacement, and added {PREFIX}_INSTRUCTIONS_EXTRA as the additive path;
+    # add_transfer_workflow contributes capability-link prose for path-2 tools.
+    #
+    # 4.11.3 was the floor before that, for ServerConfig.oidc_advertised_scopes, which
     # config-presentation.yml names: the config-surface generator rejects a
     # presentation entry for a var core does not declare, so generation fails
     # outright wherever an older core is resolved.  The field is the operator
@@ -44,7 +88,7 @@ dependencies = [
     # this whole constraint rather than the floor alone (#335), but a floor
     # naming a release nobody can install is still a trap for anyone pinning
     # to it.
-    "fastmcp-pvl-core>=4.11.3,<5",
+    "fastmcp-pvl-core>=7.1.0,<8",
     "typer>=0.12",
 
     # PROJECT-DEPS-START — add domain dependencies below; kept across copier update
@@ -81,6 +125,9 @@ dev = [
     # hostile, and liable to resolve a different fastmcp-pvl-core than this
     # project pins (#262). Declared here so the requirement is stated.
     "pyyaml>=6",
+    # PyYAML ships no inline types, so `import yaml` in tests/test_compose.py
+    # is an untyped import that fails `mypy src/ tests/` without these stubs.
+    "types-PyYAML>=6",
 ]
 
 docs = [
@@ -118,6 +165,23 @@ Changelog = "https://github.com/pvliesdonk/paperless-mcp/blob/main/CHANGELOG.md"
 # with a publisher that accepts whatever the new minor emits.
 requires = ["hatchling>=1.32,<1.33"]
 build-backend = "hatchling.build"
+
+[tool.uv]
+# PROJECT-UV-START — project-owned uv settings; kept across copier update.  The
+# template ships none, but it does ship the rules for what goes here.
+#
+# This is where a temporary dependency bound belongs.  `constraint-dependencies`
+# and `override-dependencies` are invisible to Renovate, so its update-lockfile
+# fallback cannot rewrite a deliberate cap the way it can one expressed in
+# `[project]` (#508) — and `scripts/check_pins.py` fails CI unless every entry
+# carries `# until: <issue URL>`, and again once that issue closes, so a pin
+# here cannot quietly outlive its reason.  Keep one bound per package: the same
+# script rejects a package bounded both here and in `[project]`.
+#
+#   constraint-dependencies = [
+#     "numpy<2.5",  # until: https://github.com/<org>/<repo>/issues/123
+#   ]
+# PROJECT-UV-END
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/paperless_mcp"]
@@ -161,6 +225,14 @@ ignore = ["E501"]
 # safe here and would otherwise trip every adopter's structural diff-gate
 # the first time an update touches the template-owned parts of the script.
 "scripts/stamp_manifests.py" = ["S603", "S607"]
+# The release-notes promoter stages only its computed repository-relative paths
+# from an explicit repository root. Its `git add -A --` uses fixed argv with no
+# shell interpolation, so the same subprocess and partial-path exceptions apply.
+"scripts/promote_release_notes.py" = ["S603", "S607"]
+# Package bookkeeping invokes gh with fixed argv and JSON on stdin, never a shell.
+"scripts/package_milestones.py" = ["S603", "S607"]
+"scripts/check_pins.py" = ["S310"]  # urlopen on a validated api.github.com URL
+"scripts/report_seeded_changes.py" = ["S603", "S606", "S607"]
 
 # PROJECT-RUFF-IGNORES-START — replace, extend, or override the entries below
 # for your project's real source/test paths (split _server_apps.py into
@@ -172,6 +244,12 @@ ignore = ["E501"]
 # `# noqa: PLR0913` routine. It only bites when enable_structural_gate is on
 # (PLR0913 isn't in the base select); domain modules keep the check, and
 # C901/PLR0912/PLR0915 still catch a genuinely complex tool here.
+# Template-owned script whose `git show` call is a bare executable name, the
+# same shape the template ignores for every sibling script in scripts/ — but
+# it is missing from the shipped per-file-ignores, so the structural diff
+# gate fails on it the first time an update puts it in a PR diff. Remove this
+# entry once pvliesdonk/fastmcp-server-template#524 ships a fix.
+"scripts/migrate_agent_instructions.py" = ["S603", "S607"]
 "src/paperless_mcp/cli.py" = ["B008"]
 "src/paperless_mcp/server.py" = ["TC003"]
 "src/paperless_mcp/_server_deps.py" = ["B008", "TC002", "TC003"]
