@@ -1,4 +1,9 @@
-"""Pydantic models for Paperless-NGX system-level resources."""
+"""Pydantic models for Paperless-NGX system-level resources.
+
+The three Paperless endpoints that each report something called "the version",
+and what they actually mean, are recorded in
+``docs/design/reference/paperless-version-endpoints.md``.
+"""
 
 from __future__ import annotations
 

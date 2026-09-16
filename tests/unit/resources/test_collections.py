@@ -53,6 +53,25 @@ def test_all_collection_uris_registered() -> None:
     assert "saved-views://paperless" in uris
 
 
+def test_remote_version_resource_description_names_the_upstream_release() -> None:
+    """The resource answers "is there a newer release", not "which instance".
+
+    Its description is the only thing a model reads before choosing between this
+    URI and ``get_server_info``, and the URI itself reads like an identity
+    lookup.  See ``docs/design/reference/paperless-version-endpoints.md``.
+    """
+    mcp = FastMCP("test")
+    ctx = ToolContext(client=_mock_client(), default_page_size=25, public_url="")
+    collections_mod.register(mcp, ctx)
+    resources = {str(r.uri): r for r in asyncio.run(mcp.list_resources())}
+    # Collapse wrapping: the description is a reflowed docstring, so a phrase
+    # may straddle a newline and must still count as present.
+    raw = resources["remote-version://paperless"].description or ""
+    desc = " ".join(raw.lower().split())
+    assert "newest release" in desc, desc
+    assert "not the version installed" in desc, desc
+
+
 @pytest.mark.asyncio
 async def test_tags_resource_returns_json(monkeypatch: pytest.MonkeyPatch) -> None:
     """tags://paperless returns a non-empty JSON response."""

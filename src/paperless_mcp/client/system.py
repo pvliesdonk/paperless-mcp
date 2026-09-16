@@ -1,4 +1,10 @@
-"""System resource client for Paperless-NGX statistics and version info."""
+"""System resource client for Paperless-NGX statistics and version info.
+
+Which Paperless endpoint answers which version question, and what each costs in
+permissions, is recorded in
+``docs/design/reference/paperless-version-endpoints.md``.  Read it before
+changing which endpoint either version method reads.
+"""
 
 from __future__ import annotations
 

@@ -18,7 +18,7 @@ Paperless-NGX over MCP: search, read, upload and tag documents; manage correspon
 - **Document search & retrieval:** full-text and filtered list queries against Paperless-NGX, plus access to extracted OCR text, metadata, and thumbnails.
 - **Tag, correspondent, document-type, custom-field management:** full CRUD and bulk-edit for every classification dimension Paperless exposes.
 - **Document lifecycle** supports uploads, field changes, notes, audit history, and AI-suggested tags/correspondents/types.
-- **Operational introspection** covers saved views, storage paths, share links, background tasks (with `wait_for_task`), statistics, and remote Paperless-NGX version.
+- **Operational introspection** covers saved views, storage paths, share links, background tasks (with `wait_for_task`), statistics, and an upstream release check for Paperless-NGX.
 - **MCP tools:** 49 LLM-visible tools with `Lucide` icons; see `src/paperless_mcp/tools/`.
 - **MCP resources:** 18 URIs exposing documents and domain collections; see `src/paperless_mcp/resources/`.
 <!-- DOMAIN-END -->

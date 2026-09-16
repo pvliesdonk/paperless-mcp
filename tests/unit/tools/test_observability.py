@@ -65,3 +65,23 @@ def test_observability_tools_register(module: Any, expected: set[str]) -> None:
     )
     module.register(mcp, ctx)
     assert expected.issubset(_names(mcp))
+
+
+def test_get_remote_version_description_names_the_upstream_release() -> None:
+    """The description must not read as "which Paperless am I connected to".
+
+    ``/api/remote_version/`` reports the newest release published on GitHub and
+    never the version the answering instance runs, so a description such as
+    "Fetch Paperless version info" invites a model to read an update check as an
+    identity answer — wrong exactly when an update is pending.  See
+    ``docs/design/reference/paperless-version-endpoints.md``.
+    """
+    mcp = FastMCP("test")
+    ctx = ToolContext(client=_mock_client(), default_page_size=25, public_url="")
+    system_mod.register(mcp, ctx)
+    tools = {t.name: t for t in asyncio.run(mcp.list_tools())}
+    # Collapse wrapping: the description is a reflowed docstring, so a phrase
+    # may straddle a newline and must still count as present.
+    desc = " ".join((tools["get_remote_version"].description or "").lower().split())
+    assert "newest release" in desc, desc
+    assert "not the version installed" in desc, desc

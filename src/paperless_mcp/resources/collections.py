@@ -31,7 +31,13 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
 
     @mcp.resource(uri="remote-version://paperless", mime_type="application/json")
     async def remote_version_resource() -> str:
-        """Return the remote Paperless-NGX version as JSON."""
+        """Return the newest release of Paperless-NGX published upstream.
+
+        An update check, not an identity one: the newest release Paperless read
+        from GitHub and whether it is newer than the connected instance -- not
+        the version installed on that instance, which ``get_server_info``
+        reports.
+        """
         rv = await client.system.remote_version()
         return rv.model_dump_json()
 
