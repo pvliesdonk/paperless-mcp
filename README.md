@@ -19,8 +19,8 @@ Paperless-NGX over MCP: search, read, upload and tag documents; manage correspon
 - **Tag, correspondent, document-type, custom-field management:** full CRUD and bulk-edit for every classification dimension Paperless exposes.
 - **Document lifecycle** supports uploads, field changes, notes, audit history, and AI-suggested tags/correspondents/types.
 - **Operational introspection** covers saved views, storage paths, share links, background tasks (with `wait_for_task`), statistics, and remote Paperless-NGX version.
-- **MCP tools:** 50 LLM-visible tools with `Lucide` icons; see `src/paperless_mcp/tools/`.
-- **MCP resources:** 20 URIs exposing documents and domain collections; see `src/paperless_mcp/resources/`.
+- **MCP tools:** 49 LLM-visible tools with `Lucide` icons; see `src/paperless_mcp/tools/`.
+- **MCP resources:** 18 URIs exposing documents and domain collections; see `src/paperless_mcp/resources/`.
 <!-- DOMAIN-END -->
 
 ## What you can do with it
@@ -32,6 +32,8 @@ With this server mounted in an MCP client (Claude, etc.), you can:
 - **"Tag these three documents as 'reviewed' and move them to the Accounting correspondent."** Uses `bulk_edit_documents` in a single call.
 - **"Upload this PDF and wait until OCR finishes."** Composes `upload_document` + `wait_for_task` so the assistant only reports back once the document is indexed.
 - **"What changed on document 4213 in the last week?"** Reads `paperless://documents/4213/history` and summarises the audit trail.
+
+Every tool and resource is listed in the documentation site: [Tools](https://pvliesdonk.github.io/paperless-mcp/latest/tools/) and [Resources](https://pvliesdonk.github.io/paperless-mcp/latest/resources/). The Paperless variables the server reads are in [Configuration](https://pvliesdonk.github.io/paperless-mcp/latest/configuration/).
 <!-- DOMAIN-END -->
 
 <!-- ===== TEMPLATE-OWNED SECTIONS BELOW — DO NOT EDIT; CHANGES WILL BE OVERWRITTEN ON COPIER UPDATE ===== -->
@@ -117,154 +119,7 @@ The server registers a built-in `get_server_info` tool (via `fastmcp_pvl_core.re
 
 ## Configuration
 
-All settings come from environment variables with the `PAPERLESS_MCP_` prefix.
-
-### Required
-
-| Variable | Description |
-|---|---|
-| `PAPERLESS_MCP_PAPERLESS_URL` | Base URL of the Paperless-NGX REST API (no trailing slash). |
-| `PAPERLESS_MCP_API_TOKEN` | Paperless service-account token. |
-
-### Optional (with defaults)
-
-| Variable | Default | Description |
-|---|---|---|
-| `PAPERLESS_MCP_PAPERLESS_PUBLIC_URL` | *(same as `PAPERLESS_MCP_PAPERLESS_URL`)* | Public-facing Paperless UI URL used to construct user-visible links, including `web_url` and `share_url`. Defaults to the API URL when unset. |
-| `PAPERLESS_MCP_HTTP_TIMEOUT_SECONDS` | `30` | Per-request HTTP timeout (seconds). |
-| `PAPERLESS_MCP_HTTP_RETRIES` | `2` | Retries (not counting the initial attempt) on 5xx/network errors. |
-| `PAPERLESS_MCP_DEFAULT_PAGE_SIZE` | `25` | Default `page_size` for list tools. Clamped `[1, 100]`. |
-| `PAPERLESS_MCP_INSTRUCTIONS` | *(built-in)* | Operator-supplied description appended to MCP instructions. |
-
-See the [Transport & Auth](#transport--auth) section below for the inherited transport, auth, and logging variables.
-
-## Transport & Auth
-
-The following variables are inherited unchanged from [`fastmcp-server-template`](https://github.com/pvliesdonk/fastmcp-server-template):
-
-| Variable | Description |
-|---|---|
-| `PAPERLESS_MCP_TRANSPORT` | Server transport: `stdio` (default), `http`, or `sse`. |
-| `PAPERLESS_MCP_HOST` | Bind host for HTTP/SSE transport (default `127.0.0.1`). |
-| `PAPERLESS_MCP_PORT` | Bind port for HTTP/SSE transport (default `8000`). |
-| `PAPERLESS_MCP_HTTP_PATH` | URL path prefix for HTTP transport (default `/mcp`). |
-| `PAPERLESS_MCP_BASE_URL` | Public base URL for OIDC and public HTTP server metadata. |
-| `PAPERLESS_MCP_OIDC_*` | OIDC provider settings when OIDC auth is enabled. |
-| `PAPERLESS_MCP_BEARER_TOKEN` | Static bearer token for simple token auth. |
-| `PAPERLESS_MCP_LOG_LEVEL` | Log level: `DEBUG`, `INFO`, `WARNING`, `ERROR`. |
-| `PAPERLESS_MCP_LOG_FORMAT` | Log format: `rich` (default) or `json`. |
-
-## Tools
-
-### Documents
-
-| Tool | Description |
-|---|---|
-| `list_documents` | List documents with optional filtering; OCR `content` stripped by default (`include_content=True` for full text). `notes[].note` and `custom_fields[].value` are always stripped on listings. Use single-document endpoints to fetch them. |
-| `search_documents` | Full-text search across documents; OCR `content` stripped by default (`include_content=True` for full text). `notes[].note` and `custom_fields[].value` are always stripped on search hits. |
-| `get_document` | Retrieve a document by ID; OCR `content` stripped by default (`include_content=True` for full text) |
-| `get_document_content` | Get the extracted text content of a document |
-| `get_document_thumbnail` | Get the thumbnail image of a document |
-| `get_document_metadata` | Get metadata (original filename, checksums, etc.) |
-| `get_document_notes` | List notes attached to a document |
-| `get_document_history` | Get the audit history of a document |
-| `get_document_suggestions` | Get AI-generated tag/correspondent/type suggestions |
-| `update_document` | Update document fields (title, tags, correspondent, etc.); response OCR `content` stripped by default (`include_content=True` to retain) |
-| `delete_document` | Delete a document |
-| `upload_document` | Upload a new document for processing |
-| `bulk_edit_documents` | Apply a bulk operation to multiple documents |
-| `add_document_note` | Add a note to a document |
-| `delete_document_note` | Delete a note from a document |
-
-`get_document`, `list_documents`, `search_documents`, and `update_document` include a `web_url` field pointing to the document in the Paperless UI, such as `https://paperless.example.com/documents/42/`. Set `PAPERLESS_MCP_PAPERLESS_PUBLIC_URL` if the public URL differs from the API URL; otherwise the API URL is used.
-
-Paginated tools return `next`/`previous` as bare `page=N` markers (never full URLs). Callers pass `page=N` explicitly when walking pages. `None` means no further page.
-
-### Tags
-
-| Tool | Description |
-|---|---|
-| `list_tags` | List all tags |
-| `get_tag` | Get a tag by ID |
-| `create_tag` | Create a new tag |
-| `update_tag` | Update a tag |
-| `delete_tag` | Delete a tag |
-| `bulk_edit_tags` | Bulk edit tags |
-
-### Correspondents
-
-| Tool | Description |
-|---|---|
-| `list_correspondents` | List all correspondents |
-| `get_correspondent` | Get a correspondent by ID |
-| `create_correspondent` | Create a new correspondent |
-| `update_correspondent` | Update a correspondent |
-| `delete_correspondent` | Delete a correspondent |
-| `bulk_edit_correspondents` | Bulk edit correspondents |
-
-### Document Types
-
-| Tool | Description |
-|---|---|
-| `list_document_types` | List all document types |
-| `get_document_type` | Get a document type by ID |
-| `create_document_type` | Create a new document type |
-| `update_document_type` | Update a document type |
-| `delete_document_type` | Delete a document type |
-| `bulk_edit_document_types` | Bulk edit document types |
-
-### Custom Fields
-
-| Tool | Description |
-|---|---|
-| `list_custom_fields` | List all custom fields |
-| `get_custom_field` | Get a custom field by ID |
-| `create_custom_field` | Create a new custom field |
-| `update_custom_field` | Update a custom field |
-| `delete_custom_field` | Delete a custom field |
-
-### Observability
-
-| Tool | Description |
-|---|---|
-| `list_storage_paths` | List storage paths |
-| `get_storage_path` | Get a storage path by ID |
-| `list_saved_views` | List saved views |
-| `get_saved_view` | Get a saved view by ID |
-| `list_share_links` | List share links (includes `share_url`; uses `PAPERLESS_MCP_PAPERLESS_PUBLIC_URL` if set, otherwise `PAPERLESS_MCP_PAPERLESS_URL`) |
-| `get_share_link` | Get a share link by ID (includes `share_url`; uses `PAPERLESS_MCP_PAPERLESS_PUBLIC_URL` if set, otherwise `PAPERLESS_MCP_PAPERLESS_URL`) |
-| `list_tasks` | List background tasks. Paginates (`page`, `page_size` up to 100). By default returns only unacknowledged tasks. Pass `include_acknowledged=True` to include acknowledged tasks, or `acknowledged=True` to return only acknowledged ones. |
-| `get_task` | Get a task by ID |
-| `wait_for_task` | Wait until a task completes |
-| `get_statistics` | Get server statistics |
-| `get_remote_version` | Get the Paperless-NGX version |
-
-## Resources
-
-| URI | Description |
-|---|---|
-| `config://paperless` | Server configuration snapshot |
-| `stats://paperless` | Document statistics |
-| `remote-version://paperless` | Paperless-NGX version |
-| `tags://paperless` | All tags |
-| `correspondents://paperless` | All correspondents |
-| `document-types://paperless` | All document types |
-| `custom-fields://paperless` | All custom fields |
-| `storage-paths://paperless` | All storage paths |
-| `saved-views://paperless` | All saved views |
-| `tasks://paperless` | All background tasks |
-| `paperless://documents/{document_id}` | Document by ID |
-| `paperless://documents/{document_id}/content` | Extracted text content |
-| `paperless://documents/{document_id}/metadata` | File metadata |
-| `paperless://documents/{document_id}/notes` | Document notes |
-| `paperless://documents/{document_id}/history` | Audit history |
-| `paperless://documents/{document_id}/thumbnail` | Thumbnail image |
-| `paperless://documents/{document_id}/preview` | PDF preview |
-| `paperless://documents/{document_id}/download` | Original file download |
-
-### Shared template variables
-
-Inherited from `fastmcp-pvl-core` across all services built on the template:
+Core environment variables shared across all `fastmcp-pvl-core`-based services:
 
 <!-- GENERATED-ENV-TABLE-CORE-START — generated by scripts/gen_config_surface.py; do not edit -->
 | Variable | Default | Description |
@@ -290,6 +145,7 @@ After `copier copy` and `gh repo create --push`:
 4. Install pre-commit hooks: `uv run pre-commit install`.
 5. Run the gate locally: `uv run pytest -x -q && uv run ruff check --fix . && uv run ruff format . && uv run mypy src/ tests/`.
 6. Push the first commit. CI should be green.
+
 ## GitHub secrets
 
 CI workflows reference three repository secrets. Configure them via **Settings → Secrets and variables → Actions** or with `gh secret set`:

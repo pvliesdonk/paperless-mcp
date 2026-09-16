@@ -1,7 +1,7 @@
 # Configuration
 
 Paperless MCP is configured via environment variables with the
-`PAPERLESS_MCP_` prefix.
+``PAPERLESS_MCP_`` prefix.
 
 ## Common variables
 
@@ -32,7 +32,7 @@ comma-separated list of explicit tool names:
 Hidden tools disappear from `tools/list` and are rejected on `tools/call`;
 resources and prompts are unaffected. Setting both variables, or setting one
 to a value with no names in it, is a startup error. A name matching no
-registered tool is ignored, but an allow list that matches nothing logs a
+registered tool is ignored, but an allowlist that matches nothing logs a
 startup `WARNING` since the instance then exposes zero tools. See
 `fastmcp-pvl-core`'s README for the full semantics.
 
@@ -58,29 +58,13 @@ backend through `PAPERLESS_MCP_TASKS_URL` rather than
 about the disagreement.
 
 <!-- DOMAIN-CONFIG-VARS-START -->
-## Required variables
+`PAPERLESS_MCP_PAPERLESS_URL` and `PAPERLESS_MCP_API_TOKEN` are the two
+variables the server cannot start without. `PAPERLESS_MCP_PAPERLESS_PUBLIC_URL`
+lets you name a different base URL for user-visible links than the internal API
+URL the server calls; unset, it defaults to `PAPERLESS_MCP_PAPERLESS_URL`, and
+trailing slashes are stripped from both.
 
-| Variable | Description |
-|---|---|
-| `PAPERLESS_MCP_PAPERLESS_URL` | Base URL of the Paperless-NGX instance (no trailing slash). Example: `http://paperless:8000` |
-| `PAPERLESS_MCP_API_TOKEN` | Paperless service-account API token |
-
-## Optional variables
-
-| Variable | Default | Description |
-|---|---|---|
-| `PAPERLESS_MCP_PAPERLESS_PUBLIC_URL` | *(same as `PAPERLESS_MCP_PAPERLESS_URL`)* | Public-facing Paperless UI URL. See [Public URL](#public-url) below. |
-| `PAPERLESS_MCP_HTTP_TIMEOUT_SECONDS` | `30.0` | Per-request timeout (connect + read + write) |
-| `PAPERLESS_MCP_HTTP_RETRIES` | `2` | Retry count for idempotent requests on network errors or 5xx |
-| `PAPERLESS_MCP_DEFAULT_PAGE_SIZE` | `25` | Default page size for list tools (clamped 1-100) |
-
-## Public URL
-
-`PAPERLESS_MCP_PAPERLESS_PUBLIC_URL` lets you specify a different base URL for
-user-visible links than the internal API URL used by the server. When unset, it
-defaults to `PAPERLESS_MCP_PAPERLESS_URL`; trailing slashes are stripped.
-
-## Example `.env`
+A minimal `.env`:
 
 ```bash
 PAPERLESS_MCP_PAPERLESS_URL=http://paperless.local:8000
