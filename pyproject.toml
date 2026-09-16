@@ -1,6 +1,6 @@
 [project]
 name = "pvliesdonk-paperless-mcp"
-version = "1.0.2"
+version = "2.0.0-rc.0"
 description = "Paperless-NGX over MCP: search, read, upload and tag documents; manage correspondents and types."
 readme = "README.md"
 # PROJECT-LICENSE-START — the license you picked; replace the value below and
