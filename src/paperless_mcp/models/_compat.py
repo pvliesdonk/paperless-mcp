@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import logging
+from datetime import UTC, datetime
 from typing import Annotated, Any
 
-from pydantic import BeforeValidator
+from pydantic import AfterValidator, BeforeValidator
 
 logger = logging.getLogger(__name__)
 
@@ -45,5 +46,35 @@ def _coerce_username(value: Any) -> Any:
     return value
 
 
+def _ensure_aware(value: datetime | None) -> datetime | None:
+    """Attach UTC to a naive datetime so it keeps an explicit offset.
+
+    Paperless-NGX can return a date-only value (e.g. a document ``created``
+    date set without a time) for a field typed ``datetime``.  Pydantic
+    parses that leniently into a naive ``datetime``, which then
+    round-trips without a timezone offset and fails strict RFC 3339
+    ``format: date-time`` validation downstream.  Attaching UTC keeps the
+    wall-clock value unchanged while making the offset explicit.
+    """
+    if value is not None and value.tzinfo is None:
+        return value.replace(tzinfo=UTC)
+    return value
+
+
+def _coerce_related_document(value: Any) -> Any:
+    """Stringify an integer ``related_document`` task reference.
+
+    Newer Paperless-NGX releases return this field as the document's
+    integer ID; the field's contract is a string ID, so coerce an int to
+    its string form.  Returns the input unchanged otherwise.
+    """
+    if isinstance(value, int):
+        return str(value)
+    return value
+
+
 UserId = Annotated[int | None, BeforeValidator(_coerce_user_id)]
 Username = Annotated[str | None, BeforeValidator(_coerce_username)]
+AwareDatetime = Annotated[datetime, AfterValidator(_ensure_aware)]
+OptionalAwareDatetime = Annotated[datetime | None, AfterValidator(_ensure_aware)]
+RelatedDocumentId = Annotated[str | None, BeforeValidator(_coerce_related_document)]
