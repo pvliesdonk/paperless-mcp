@@ -22,6 +22,45 @@ class Statistics(BaseModel):
 
 
 class RemoteVersion(BaseModel):
+    """``/api/remote_version/``: the newest release published on GitHub.
+
+    ``version`` is the latest release tag Paperless fetched from GitHub (its
+    own 15-minute cache, ``"0.0.0"`` when that fetch failed), **not** the
+    version of the instance answering the call.  Paperless parses its running
+    version only to compute ``update_available`` and never returns it.
+    [verified: paperless-ngx ``src/documents/views.py``, ``RemoteVersionView``
+    lines 4185-4221 on ``main``]  For the running version see
+    :class:`UiSettingsResponse`.
+    """
+
     model_config = ConfigDict(extra="allow")
     version: str
     update_available: bool = False
+
+
+class UiSettings(BaseModel):
+    """The ``settings`` member of ``/api/ui_settings/``.
+
+    Only ``version`` is declared: the rest of that object is the web UI's own
+    state and is not this server's business.  ``extra="allow"`` keeps it rather
+    than dropping it, so a caller that needs another key can reach it.
+
+    Attributes:
+        version: The Paperless-NGX version *installed on the instance*, which
+            Paperless fills from its own ``__full_version_str__``.
+    """
+
+    model_config = ConfigDict(extra="allow")
+    version: str
+
+
+class UiSettingsResponse(BaseModel):
+    """``/api/ui_settings/``: the envelope around :class:`UiSettings`.
+
+    [verified: paperless-ngx ``src/documents/views.py``, ``UiSettingsView``
+    lines 4082-4162 on ``main``, where ``ui_settings["version"]`` is set from
+    ``version.__full_version_str__`` and returned under ``settings``.]
+    """
+
+    model_config = ConfigDict(extra="allow")
+    settings: UiSettings

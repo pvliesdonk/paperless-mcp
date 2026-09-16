@@ -59,19 +59,29 @@ def _payload(result: Any) -> dict[str, Any]:
 async def test_get_server_info_tool_registered(
     client: Client[Any], paperless_base_url: str
 ) -> None:
-    """``get_server_info`` reports the wrapper info and the Paperless version.
+    """``get_server_info`` reports the wrapper info and the *installed* Paperless.
 
     This project wires an upstream provider inside the ``DOMAIN-UPSTREAM``
     sentinel in ``server.py``, so the block is keyed ``paperless`` rather
     than absent — the scaffold's default ``upstream`` key is still unused.
+
+    The mocked instance runs 2.14.7 while 2.20.14 is the newest release
+    published upstream, so the two answers differ. That divergence is the
+    point: ``/api/remote_version/`` reports the newest *release*, and reading
+    it as the connected instance's version is the defect this test locks out.
     """
     tools = {t.name for t in await client.list_tools()}
     assert "get_server_info" in tools
 
-    async with respx.mock(base_url=paperless_base_url) as mock:
-        mock.get("/api/remote_version/").mock(
+    # assert_all_called=False: the remote-version route is registered precisely
+    # so the test can assert nothing calls it.
+    async with respx.mock(base_url=paperless_base_url, assert_all_called=False) as mock:
+        mock.get("/api/ui_settings/").mock(
+            return_value=httpx.Response(200, json={"settings": {"version": "2.14.7"}})
+        )
+        remote = mock.get("/api/remote_version/").mock(
             return_value=httpx.Response(
-                200, json={"version": "v2.20.14", "update_available": False}
+                200, json={"version": "2.20.14", "update_available": True}
             )
         )
         result = await client.call_tool("get_server_info", {})
@@ -79,9 +89,25 @@ async def test_get_server_info_tool_registered(
     assert payload["server_name"] == "paperless-mcp"
     assert "server_version" in payload
     assert "core_version" in payload
-    assert payload["paperless"] == {"version": "v2.20.14", "update_available": False}
+    assert payload["paperless"] == {"version": "2.14.7"}
+    assert not remote.called, (
+        "get_server_info must not read /api/remote_version/ — that endpoint "
+        "answers 'is an update available', which is get_remote_version's job"
+    )
     # The default label stays unused: the block is keyed by upstream_label.
     assert "upstream" not in payload
+
+
+async def test_get_server_info_reports_one_request(
+    client: Client[Any], paperless_base_url: str
+) -> None:
+    """One HTTP request per call, to the endpoint that knows the installed version."""
+    async with respx.mock(base_url=paperless_base_url) as mock:
+        route = mock.get("/api/ui_settings/").mock(
+            return_value=httpx.Response(200, json={"settings": {"version": "2.14.7"}})
+        )
+        await client.call_tool("get_server_info", {})
+    assert len(route.calls) == 1
 
 
 async def test_get_server_info_survives_an_unreachable_paperless(
@@ -94,7 +120,7 @@ async def test_get_server_info_survives_an_unreachable_paperless(
     has to come back even when Paperless does not.
     """
     async with respx.mock(base_url=paperless_base_url) as mock:
-        mock.get("/api/remote_version/").mock(side_effect=httpx.ConnectError("down"))
+        mock.get("/api/ui_settings/").mock(side_effect=httpx.ConnectError("down"))
         result = await client.call_tool("get_server_info", {})
     payload = _payload(result)
     assert payload["server_version"]
@@ -115,8 +141,8 @@ async def test_get_server_info_reuses_the_registered_paperless_client(
     staged = domain.pending_tool_context()
     assert staged is not None
     async with respx.mock(base_url=paperless_base_url) as mock:
-        route = mock.get("/api/remote_version/").mock(
-            return_value=httpx.Response(200, json={"version": "v2.20.14"})
+        route = mock.get("/api/ui_settings/").mock(
+            return_value=httpx.Response(200, json={"settings": {"version": "2.14.7"}})
         )
         async with Client(server) as connected:
             await connected.call_tool("get_server_info", {})
@@ -156,8 +182,10 @@ def test_server_name_env_override_reaches_server_info(
         # Mocked: the upstream provider now runs on every call, and this test
         # is about the name, not the network.
         async with respx.mock(base_url="http://paperless.test") as mock:
-            mock.get("/api/remote_version/").mock(
-                return_value=httpx.Response(200, json={"version": "v2.20.14"})
+            mock.get("/api/ui_settings/").mock(
+                return_value=httpx.Response(
+                    200, json={"settings": {"version": "2.14.7"}}
+                )
             )
             async with Client(server) as smoke_client:
                 return await smoke_client.call_tool("get_server_info", {})
