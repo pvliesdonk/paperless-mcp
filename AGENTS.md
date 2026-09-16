@@ -248,4 +248,13 @@ scan. There is no second settings class and no `vars:` list in
 `config-presentation.domain.yml`. Rationale, and the two places the template's
 contract does not quite fit (a required field cannot be expressed; the config
 cannot reach `register_tools`), are in `docs/design/config.md`.
+
+**`get_server_info` reports Paperless too.** The `DOMAIN-UPSTREAM` sentinel in
+`server.py` wires `upstream_version=lambda: _paperless_version()` with
+`upstream_label="paperless"`. `_paperless_version` is bound one block later, in
+`DOMAIN-WIRING`, because `DOMAIN-UPSTREAM` sits inside a call's keyword list and
+no statement can run there; the lambda defers the name lookup to call time. The
+provider reuses the `ToolContext` the registrars staged rather than opening a
+second Paperless client, and returns `None` (logged at `DEBUG`) rather than
+raising when Paperless is unreachable.
 <!-- DOMAIN-END -->

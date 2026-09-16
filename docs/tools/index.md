@@ -125,4 +125,26 @@ Both tools include a `share_url` field of the form `<PAPERLESS_MCP_PAPERLESS_PUB
 |---|---|
 | `get_statistics` | Retrieve Paperless system statistics |
 | `get_remote_version` | Check the Paperless-NGX version and update status |
+| `get_server_info` | Report this server's own build and the Paperless version it talks to |
+
+`get_server_info` answers "is the deployed build the one I expect, and against
+which Paperless?" in one call. It returns `server_name`, `server_version`,
+`core_version` (the `fastmcp-pvl-core` version), and a `paperless` block:
+
+```json
+{
+  "server_name": "paperless-mcp",
+  "server_version": "1.0.2",
+  "core_version": "7.2.0",
+  "paperless": {"version": "v2.20.14", "update_available": false}
+}
+```
+
+When Paperless cannot answer (it is down, the URL is wrong, or the token is
+rejected), the `paperless` block is `{"version": null}` and the rest of the
+response is unaffected. The version is extra information about a call whose
+job is reporting this server's build, so it never fails that call.
+
+`get_remote_version` remains the tool to call for the Paperless version on its
+own; `get_server_info` reports the same value alongside this server's.
 <!-- DOMAIN-TOOLS-LIST-END -->

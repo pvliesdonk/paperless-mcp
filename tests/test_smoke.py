@@ -7,7 +7,9 @@ import json
 from pathlib import Path
 from typing import Any
 
+import httpx
 import pytest
+import respx
 from fastmcp import Client
 
 from paperless_mcp._server_apps import register_apps
@@ -44,30 +46,84 @@ def test_register_apps_logs_when_app_domain_set(
     assert any(r.args == ("example.com",) for r in caplog.records)
 
 
-async def test_get_server_info_tool_registered(client: Client[Any]) -> None:
-    """``get_server_info`` is wired by default and returns the wrapper info.
-
-    The default scaffold registers the helper without an upstream provider,
-    so the response carries ``server_name``, ``server_version``, and
-    ``core_version`` — no ``upstream`` block. Projects that wire an
-    upstream provider inside the ``DOMAIN-UPSTREAM`` sentinel in
-    ``server.py`` extend this contract.
-    """
-    tools = {t.name for t in await client.list_tools()}
-    assert "get_server_info" in tools
-
-    result = await client.call_tool("get_server_info", {})
+def _payload(result: Any) -> dict[str, Any]:
+    """Decode a tool result's single text block."""
     first = result.content[0]
     assert hasattr(first, "text"), (
         f"expected text tool content, got {type(first).__name__}"
     )
-    payload = json.loads(first.text)
+    decoded: dict[str, Any] = json.loads(first.text)
+    return decoded
+
+
+async def test_get_server_info_tool_registered(
+    client: Client[Any], paperless_base_url: str
+) -> None:
+    """``get_server_info`` reports the wrapper info and the Paperless version.
+
+    This project wires an upstream provider inside the ``DOMAIN-UPSTREAM``
+    sentinel in ``server.py``, so the block is keyed ``paperless`` rather
+    than absent — the scaffold's default ``upstream`` key is still unused.
+    """
+    tools = {t.name for t in await client.list_tools()}
+    assert "get_server_info" in tools
+
+    async with respx.mock(base_url=paperless_base_url) as mock:
+        mock.get("/api/remote_version/").mock(
+            return_value=httpx.Response(
+                200, json={"version": "v2.20.14", "update_available": False}
+            )
+        )
+        result = await client.call_tool("get_server_info", {})
+    payload = _payload(result)
     assert payload["server_name"] == "paperless-mcp"
     assert "server_version" in payload
     assert "core_version" in payload
-    # No upstream block in the default scaffold — locks in the contract that
-    # projects opt into by wiring the DOMAIN-UPSTREAM sentinel in server.py.
+    assert payload["paperless"] == {"version": "v2.20.14", "update_available": False}
+    # The default label stays unused: the block is keyed by upstream_label.
     assert "upstream" not in payload
+
+
+async def test_get_server_info_survives_an_unreachable_paperless(
+    client: Client[Any], paperless_base_url: str
+) -> None:
+    """An upstream failure must not fail the call that reports this build.
+
+    The version is optional enrichment; the question the tool exists to answer
+    ("is the latest fix deployed?") is about the wrapper, so the wrapper half
+    has to come back even when Paperless does not.
+    """
+    async with respx.mock(base_url=paperless_base_url) as mock:
+        mock.get("/api/remote_version/").mock(side_effect=httpx.ConnectError("down"))
+        result = await client.call_tool("get_server_info", {})
+    payload = _payload(result)
+    assert payload["server_version"]
+    assert payload["paperless"] == {"version": None}
+
+
+async def test_get_server_info_reuses_the_registered_paperless_client(
+    server: Any, paperless_base_url: str
+) -> None:
+    """The provider must not open a second HTTP client.
+
+    It captures the ToolContext ``register_tools`` staged, which is the one
+    ``Service`` closes on shutdown; a provider that built its own client would
+    leak it past the lifespan.
+    """
+    from paperless_mcp import domain
+
+    staged = domain.pending_tool_context()
+    assert staged is not None
+    async with respx.mock(base_url=paperless_base_url) as mock:
+        route = mock.get("/api/remote_version/").mock(
+            return_value=httpx.Response(200, json={"version": "v2.20.14"})
+        )
+        async with Client(server) as connected:
+            await connected.call_tool("get_server_info", {})
+    assert route.called
+    assert staged.client.http._client.is_closed, (
+        "the lifespan closed the staged client, so the provider used that one"
+    )
 
 
 def test_server_name_env_override(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -97,15 +153,17 @@ def test_server_name_env_override_reaches_server_info(
     server = make_server()
 
     async def _call_server_info() -> Any:
-        async with Client(server) as smoke_client:
-            return await smoke_client.call_tool("get_server_info", {})
+        # Mocked: the upstream provider now runs on every call, and this test
+        # is about the name, not the network.
+        async with respx.mock(base_url="http://paperless.test") as mock:
+            mock.get("/api/remote_version/").mock(
+                return_value=httpx.Response(200, json={"version": "v2.20.14"})
+            )
+            async with Client(server) as smoke_client:
+                return await smoke_client.call_tool("get_server_info", {})
 
     result = asyncio.run(_call_server_info())
-    first = result.content[0]
-    assert hasattr(first, "text"), (
-        f"expected text tool content, got {type(first).__name__}"
-    )
-    assert json.loads(first.text)["server_name"] == "renamed-instance"
+    assert _payload(result)["server_name"] == "renamed-instance"
 
 
 def test_instructions_env_override(

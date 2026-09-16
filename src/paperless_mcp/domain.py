@@ -54,6 +54,8 @@ from paperless_mcp.client import (
 from paperless_mcp.config import _ENV_PREFIX, ProjectConfig
 
 if TYPE_CHECKING:
+    from collections.abc import Awaitable, Callable
+
     from paperless_mcp.tools._context import ToolContext
 
 logger = logging.getLogger(__name__)
@@ -71,6 +73,7 @@ __all__ = [
     "build_tool_context",
     "pending_tool_context",
     "tool_context_for",
+    "upstream_version_provider",
 ]
 
 _pending: tuple[object, ToolContext] | None = None
@@ -187,6 +190,53 @@ def pending_tool_context() -> ToolContext | None:
         The staged context, or ``None`` when nothing is staged.
     """
     return _pending[1] if _pending is not None else None
+
+
+def upstream_version_provider(
+    mcp: object,
+) -> Callable[[], Awaitable[dict[str, object] | None]]:
+    """Build the zero-arg provider ``register_server_info_tool`` calls.
+
+    Captures the :class:`ToolContext` staged for *mcp* — the same one the tool
+    registrars and :class:`Service` share — so asking ``get_server_info`` for
+    the Paperless version reuses the open HTTP client instead of opening a
+    second one.
+
+    Called from ``make_server``'s ``DOMAIN-WIRING`` block, which runs *after*
+    ``register_server_info_tool``; the ``upstream_version=`` keyword there is a
+    lambda, so the name this returns is looked up when the tool is called, by
+    which time the block has bound it.
+
+    Args:
+        mcp: The server whose staged context the provider should use.
+
+    Returns:
+        An async zero-arg callable returning ``{"version", "update_available"}``,
+        or ``None`` when Paperless cannot answer.
+    """
+    context = tool_context_for(mcp)
+
+    async def _paperless_version() -> dict[str, object] | None:
+        """Report the Paperless-NGX version, or ``None`` if it cannot be read.
+
+        Returns:
+            The version block, or ``None`` — never raises.  The version is
+            optional enrichment of a tool whose primary job is reporting *this*
+            server's build, so an unreachable Paperless must not fail the call.
+        """
+        try:
+            remote = await context.client.system.remote_version()
+        except (PaperlessAPIError, ValueError):
+            # ValueError covers a malformed body: both json.JSONDecodeError and
+            # pydantic's ValidationError derive from it.
+            logger.debug("upstream_version_unavailable label=paperless", exc_info=True)
+            return None
+        return {
+            "version": remote.version,
+            "update_available": remote.update_available,
+        }
+
+    return _paperless_version
 
 
 class Service:
