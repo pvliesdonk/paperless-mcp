@@ -144,6 +144,14 @@ and the older backlog that predates this index.
   could only be closed immediately, and the trail of how often an epic was
   rethought is signal — a fabricated entry in it is not. Future epics get
   theirs at creation.
+- Epic [#100](https://github.com/pvliesdonk/paperless-mcp/issues/100) carries no
+  package. It was assigned to `010` while this index was first written and the
+  owner removed it the same day. `derived`: that is the skill's default and the
+  right call — the epic's own answer to "ships atomically" is *no*, so a package
+  on it would claim a commitment the epic explicitly disclaims, and sub-issues
+  inherit a parent's milestone at link time, which would have swept future
+  children into a cut nobody decided on. The children carry the package
+  individually instead.
 - The earlier `v1.0.0` milestone was left as it stands. `evidenced`: it is
   version-named and open, which the skill's stop rules name as a violation, but
   its content has shipped and closing it is a judgement about history rather
