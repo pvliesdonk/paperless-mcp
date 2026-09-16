@@ -232,7 +232,10 @@ def upstream_version_provider(
             ``{"version": <the version running on the connected instance>}``,
             or ``None`` — never raises.  The version is optional enrichment of
             a tool whose primary job is reporting *this* server's build, so an
-            unreachable Paperless must not fail the call.
+            unreachable Paperless must not fail the call.  ``None`` also covers
+            a token without ``documents.view_uisettings``, which Paperless
+            answers ``403`` to; see
+            :meth:`~paperless_mcp.client.system.SystemClient.installed_version`.
         """
         try:
             installed = await context.client.system.installed_version()

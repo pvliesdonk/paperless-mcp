@@ -7,6 +7,7 @@ import httpx
 import pytest
 import respx
 
+from paperless_mcp.client import AuthError
 from paperless_mcp.client._http import PaperlessHTTP
 from paperless_mcp.client.system import SystemClient
 
@@ -99,4 +100,25 @@ async def test_installed_version_rejects_a_body_without_the_version(
             return_value=httpx.Response(200, json={"settings": {}})
         )
         with pytest.raises(ValueError, match="version"):
+            await system.installed_version()
+
+
+@pytest.mark.asyncio
+async def test_installed_version_needs_the_ui_settings_view_permission(
+    http: PaperlessHTTP,
+) -> None:
+    """A token without `documents.view_uisettings` gets 403, raised as AuthError.
+
+    `/api/ui_settings/` is gated by `IsAuthenticated` *and*
+    `PaperlessObjectPermissions`, whose `perms_map` maps GET to
+    `<app_label>.view_<model_name>`. `/api/remote_version/` has no such gate, so
+    this is a real cost of reading the correct endpoint; the upstream-version
+    provider treats it as it treats any other failure and reports no version.
+    """
+    system = SystemClient(http)
+    async with respx.mock(base_url="http://paperless.test") as mock:
+        mock.get("/api/ui_settings/").mock(
+            return_value=httpx.Response(403, json={"detail": "Insufficient perms"})
+        )
+        with pytest.raises(AuthError):
             await system.installed_version()
