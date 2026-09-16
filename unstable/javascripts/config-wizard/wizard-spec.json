@@ -445,7 +445,7 @@
       "label": "Paperless Url",
       "type": "text",
       "var": "PAPERLESS_MCP_PAPERLESS_URL",
-      "help": "Base URL of the Paperless-NGX REST API, without a trailing slash.",
+      "help": "Base URL of the Paperless-NGX REST API, without a trailing slash. The server refuses to start without it.",
       "advancedGroup": "Paperless"
     },
     {
@@ -453,7 +453,7 @@
       "label": "Api Token",
       "type": "text",
       "var": "PAPERLESS_MCP_API_TOKEN",
-      "help": "Paperless service-account token used for outbound API requests.",
+      "help": "Paperless service-account token used for outbound API requests. The server refuses to start without it.",
       "advancedGroup": "Paperless"
     },
     {
