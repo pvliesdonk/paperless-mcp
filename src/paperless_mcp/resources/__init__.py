@@ -27,9 +27,10 @@ def register_resources(mcp: FastMCP, ctx: ToolContext | None = None) -> None:
     Args:
         mcp: The FastMCP server instance to register resources on.
         ctx: Optional pre-built :class:`~paperless_mcp.tools._context.ToolContext`.
-            When ``None``, the context staged by :func:`register_tools` is
-            reused, or a new one is built from env config.
+            When ``None``, the context :mod:`paperless_mcp.domain` shares
+            with :func:`~paperless_mcp.tools.register_tools` is used, built
+            from env config on whichever of the two runs first.
     """
     if ctx is None:
-        ctx = domain.pending_tool_context() or domain.build_tool_context()
+        ctx = domain.tool_context_for(mcp)
     _register_all(mcp, ctx)

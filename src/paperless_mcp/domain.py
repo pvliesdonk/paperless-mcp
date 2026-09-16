@@ -7,9 +7,16 @@ registration happens before the lifespan runs, so the shared
 registration time and staged in a module-level slot; :meth:`Service.start`
 adopts it so :meth:`Service.stop` can close the HTTP client.
 
-The staging slot is process-global, so two servers constructed before either
-lifespan starts would share one staged context.  Construct and enter servers
-pairwise (the way ``Client(make_server())`` does) and that cannot happen.
+:func:`tool_context_for` keys that slot on the server it was built for, so
+``register_tools`` and ``register_resources`` share one client whichever of
+them runs first.  The order is decided in template-owned ``server.py``, which
+a ``copier update`` re-renders, so it is not an invariant this package can
+rely on.
+
+The slot holds one entry, so two servers constructed before either lifespan
+starts leave only the later server's context staged, and the earlier one's
+client is never closed.  Construct and enter servers pairwise (the way
+``Client(make_server())`` does) and that cannot happen.
 
 Importers that need a typed Paperless client can do::
 
@@ -49,28 +56,35 @@ __all__ = [
     "Service",
     "UpstreamError",
     "ValidationError",
-    "build_tool_context",
     "pending_tool_context",
+    "tool_context_for",
 ]
 
-_pending_context: ToolContext | None = None
+_pending: tuple[object, ToolContext] | None = None
 
 
-def build_tool_context() -> ToolContext:
-    """Build the shared :class:`ToolContext` from env and stage it for the lifespan.
+def tool_context_for(mcp: object) -> ToolContext:
+    """Return the shared :class:`ToolContext` for *mcp*, building it once.
 
-    Called once per server construction by
-    :func:`~paperless_mcp.tools.register_tools`; a following
-    :func:`~paperless_mcp.resources.register_resources` reuses the staged
-    context instead of opening a second HTTP client.
+    The first registrar to ask builds the Paperless client and stages the
+    context against *mcp*; the second gets the same object back rather than
+    opening a second HTTP client. Staging is what lets :class:`Service`, which
+    the lifespan constructs long after registration, close that client.
+
+    Args:
+        mcp: The server being registered on, used only as an identity so a
+            second server does not adopt the first one's client.
 
     Returns:
-        The freshly built context, which is also the staged one.
+        The context for *mcp*, freshly built or the already-staged one.
     """
     from paperless_mcp._domain_config import load_domain_config
     from paperless_mcp.tools._context import ToolContext
 
-    global _pending_context
+    global _pending
+    if _pending is not None and _pending[0] is mcp:
+        return _pending[1]
+
     cfg = load_domain_config()
     client = PaperlessClient(
         base_url=cfg.paperless_url,
@@ -78,21 +92,22 @@ def build_tool_context() -> ToolContext:
         timeout_seconds=cfg.http_timeout_seconds,
         max_retries=cfg.http_retries,
     )
-    _pending_context = ToolContext(
+    context = ToolContext(
         client=client,
         default_page_size=cfg.default_page_size,
         public_url=cfg.public_url,
     )
-    return _pending_context
+    _pending = (mcp, context)
+    return context
 
 
 def pending_tool_context() -> ToolContext | None:
-    """Return the context staged by :func:`build_tool_context`, if any.
+    """Return the context staged by :func:`tool_context_for`, if any.
 
     Returns:
         The staged context, or ``None`` when nothing is staged.
     """
-    return _pending_context
+    return _pending[1] if _pending is not None else None
 
 
 class Service:
@@ -104,9 +119,9 @@ class Service:
 
     async def start(self) -> None:
         """Adopt the staged tool context; the lifespan now owns its client."""
-        global _pending_context
-        self._context = _pending_context
-        _pending_context = None
+        global _pending
+        self._context = pending_tool_context()
+        _pending = None
         self._ready = True
 
     async def stop(self) -> None:
