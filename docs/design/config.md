@@ -20,8 +20,17 @@ They used to live in a `pydantic-settings` `BaseSettings` class
 (`_domain_config.py`) and be hand-declared under `vars:` in
 `config-presentation.domain.yml`. That route is documented for variables the
 scan *cannot* see; nothing prevented it from seeing these, so the declaration
-and the code that read it were two sources for one fact, and the server parsed
-the environment twice per start.
+and the code that read it were two sources for one fact, and the project
+carried `pydantic-settings` for those six fields alone.
+
+**What did not change: the environment is still read twice per `make_server`.**
+`make_server` resolves a `ProjectConfig` and `tool_context_for` resolves another
+one, because the first cannot reach it (see *The config does not reach
+registration* below). Before, the second read built a `DomainConfig`; now it
+builds a second `ProjectConfig`, so `ServerConfig.from_env` runs twice where it
+used to run once. Both reads are pure and produce equal values, so this is
+waste rather than a correctness problem, and it ends when
+pvliesdonk/fastmcp-server-template#622 does.
 
 ## Three constraints that shaped the result
 
