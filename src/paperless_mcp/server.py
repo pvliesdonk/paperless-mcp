@@ -9,11 +9,8 @@ https://gofastmcp.com/servers for the FastMCP server surface and
 from __future__ import annotations
 
 import logging
-from collections.abc import AsyncIterator
-from contextlib import asynccontextmanager
 from importlib.metadata import PackageNotFoundError
 from importlib.metadata import version as _pkg_version
-from typing import Any
 
 from fastmcp import FastMCP
 from fastmcp_pvl_core import (
@@ -31,15 +28,12 @@ from fastmcp_pvl_core import (
     wire_middleware_stack,
 )
 
-from paperless_mcp._domain_config import load_domain_config
 from paperless_mcp._server_apps import register_apps
 from paperless_mcp._server_deps import server_lifespan
-from paperless_mcp.client import PaperlessClient
 from paperless_mcp.config import ProjectConfig
 from paperless_mcp.prompts import register_prompts
 from paperless_mcp.resources import register_resources
 from paperless_mcp.tools import register_tools
-from paperless_mcp.tools._context import ToolContext
 
 logger = logging.getLogger(__name__)
 
@@ -65,28 +59,6 @@ def make_server(
     """
     config = config or ProjectConfig.from_env()
     configure_logging_from_env()
-
-    domain_cfg = load_domain_config()
-    _client = PaperlessClient(
-        base_url=domain_cfg.paperless_url,
-        api_token=domain_cfg.api_token.get_secret_value(),
-        timeout_seconds=domain_cfg.http_timeout_seconds,
-        max_retries=domain_cfg.http_retries,
-    )
-    _tool_ctx = ToolContext(
-        client=_client,
-        default_page_size=domain_cfg.default_page_size,
-        public_url=domain_cfg.public_url,
-    )
-
-    @asynccontextmanager
-    async def _lifespan(mcp_arg: object) -> AsyncIterator[dict[str, Any]]:
-        async with server_lifespan(mcp_arg) as state:
-            try:
-                yield state
-            finally:
-                await _client.aclose()
-                logger.info("client_closed")
 
     # Background-task backend (SEP-1686 / Docket).  Unconditional and
     # template-owned: pydocket ships in fastmcp-pvl-core's base dependencies,
@@ -137,14 +109,14 @@ def make_server(
     mcp = FastMCP(
         name=server_name,
         instructions=instructions,
-        lifespan=_lifespan,
+        lifespan=server_lifespan,
         auth=auth,
     )
 
     wire_middleware_stack(mcp)
 
-    register_tools(mcp, _tool_ctx)
-    register_resources(mcp, _tool_ctx)
+    register_tools(mcp)
+    register_resources(mcp)
     register_prompts(mcp)
     register_apps(mcp)
 
@@ -170,6 +142,56 @@ def make_server(
     # transforms, mode toggles, alternative middleware, additional registrations);
     # kept across copier update. Leave empty for projects that don't customise
     # make_server() beyond the standard scaffold.
+    #
+    # -- Transfer subsystem (capability-link upload + download) ----------------
+    #
+    # Wiring the /transfer/{token} route needs HTTP transport (the route cannot
+    # be served under stdio) and, at build time, base_url — pvl-core raises
+    # ConfigurationError when it is unset, so gate only on the transport and let
+    # that error surface a misconfigured deployment rather than silently
+    # dropping the feature. Requires fastmcp-pvl-core >= 4.8.0.
+    #
+    # First compose a TransferConfig into ProjectConfig (config.py): add
+    # ``TransferConfig`` to its ``from fastmcp_pvl_core import (...)`` block, then
+    # a ``transfer: TransferConfig = field(default_factory=TransferConfig)`` field
+    # in CONFIG-FIELDS and ``transfer=TransferConfig.from_env(_ENV_PREFIX),`` in
+    # CONFIG-FROM-ENV. The second line is required — without it the
+    # PAPERLESS_MCP_TRANSFER_* env vars are ignored and the defaults always win.
+    #
+    # Path 1 — the generic tools, the common case. Registers create_download_link
+    # and create_upload_link with pvl-core's shared metadata (names, icons, tags):
+    #
+    # if transport != "stdio":
+    #     from fastmcp_pvl_core import register_transfer_routes
+    #
+    #     register_transfer_routes(
+    #         mcp,
+    #         config.server,
+    #         config.transfer,          # TransferConfig composed into ProjectConfig
+    #         sink=_my_transfer_sink,   # implements TransferSink (read/write)
+    #         validate=_my_validator,   # TransferValidator: (ref, kind) -> handle
+    #         # download_note/upload_note (optional) append a domain sentence to
+    #         # the generic tool descriptions — context only, no shape change.
+    #     )
+    #
+    # Path 2 — your own tool over the same capability-link machinery, when the
+    # generic pair cannot express it (a different name, a domain-accurate
+    # description, domain-specific parameters). build_transfer_links mounts the
+    # route and returns a minter, registering no tools; your tool validates the
+    # caller ref itself, then mints over the already-validated sink handle:
+    #
+    # if transport != "stdio":
+    #     from fastmcp_pvl_core import build_transfer_links
+    #
+    #     links = build_transfer_links(
+    #         mcp, config.server, config.transfer, sink=_my_transfer_sink
+    #     )
+    #
+    #     @mcp.tool
+    #     async def share_document(doc_id: str) -> dict[str, object]:
+    #         """Mint a one-shot download link for a document."""
+    #         handle = _resolve_and_check(doc_id)  # your validation -> sink handle
+    #         return await links.mint_download(handle)
     # DOMAIN-WIRING-END
 
     # Operator tool visibility (PAPERLESS_MCP_TOOLS_ALLOW /
