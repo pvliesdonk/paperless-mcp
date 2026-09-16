@@ -4,19 +4,23 @@ The tools registered in this server are listed below.
 
 ## Document tools
 
-| Tool                   | Description                                                                                                                                                                                                           |
-| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `list_documents`       | List documents with optional filters; OCR `content` stripped by default (`include_content=True` to opt in). `notes[].note` and `custom_fields[].value` are always stripped. Fetch them via single-document endpoints. |
-| `search_documents`     | Full-text and filtered document search; OCR `content` stripped by default (`include_content=True` to opt in). `notes[].note` and `custom_fields[].value` are always stripped on hits.                                 |
-| `get_document`         | Retrieve document metadata by ID; OCR `content` stripped by default (`include_content=True` to opt in)                                                                                                                |
-| `get_document_content` | Retrieve the plain-text content of a document                                                                                                                                                                         |
-| `create_document`      | Upload a new document for ingestion                                                                                                                                                                                   |
-| `update_document`      | Patch document metadata (title, tags, correspondent, etc.)                                                                                                                                                            |
-| `delete_document`      | Permanently delete a document                                                                                                                                                                                         |
-| `bulk_edit_documents`  | Apply a bulk operation to multiple documents                                                                                                                                                                          |
-| `get_document_notes`   | List notes attached to a document                                                                                                                                                                                     |
-| `add_document_note`    | Add a note to a document                                                                                                                                                                                              |
-| `get_document_history` | Retrieve audit log for a document                                                                                                                                                                                     |
+| Tool                       | Description                                                                                                                                                                                                           |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `list_documents`           | List documents with optional filters; OCR `content` stripped by default (`include_content=True` to opt in). `notes[].note` and `custom_fields[].value` are always stripped. Fetch them via single-document endpoints. |
+| `search_documents`         | Full-text and filtered document search; OCR `content` stripped by default (`include_content=True` to opt in). `notes[].note` and `custom_fields[].value` are always stripped on hits.                                 |
+| `get_document`             | Retrieve document metadata by ID; OCR `content` stripped by default (`include_content=True` to opt in)                                                                                                                |
+| `get_document_content`     | Retrieve the plain-text content of a document                                                                                                                                                                         |
+| `upload_document`          | Upload a new document for ingestion                                                                                                                                                                                   |
+| `update_document`          | Patch document metadata (title, tags, correspondent, etc.)                                                                                                                                                            |
+| `delete_document`          | Permanently delete a document                                                                                                                                                                                         |
+| `bulk_edit_documents`      | Apply a bulk operation to multiple documents                                                                                                                                                                          |
+| `get_document_metadata`    | Retrieve file metadata: original filename, checksums, MIME type                                                                                                                                                       |
+| `get_document_thumbnail`   | Retrieve the thumbnail image of a document                                                                                                                                                                            |
+| `get_document_suggestions` | Retrieve the tags, correspondent and type Paperless suggests for a document                                                                                                                                           |
+| `get_document_notes`       | List notes attached to a document                                                                                                                                                                                     |
+| `add_document_note`        | Add a note to a document                                                                                                                                                                                              |
+| `delete_document_note`     | Delete a note from a document                                                                                                                                                                                         |
+| `get_document_history`     | Retrieve audit log for a document                                                                                                                                                                                     |
 
 `get_document`, `list_documents`, `search_documents`, and `update_document` include a `web_url` field pointing to the document in the Paperless UI, such as `https://paperless.example.com/documents/42/`. Set `PAPERLESS_MCP_PAPERLESS_PUBLIC_URL` if the public URL differs from the API URL; otherwise the API URL is used.
 
@@ -37,23 +41,25 @@ All paginated tools return `next`/`previous` as bare `page=N` markers (or `None`
 
 ## Correspondent tools
 
-| Tool                   | Description                |
-| ---------------------- | -------------------------- |
-| `list_correspondents`  | List all correspondents    |
-| `get_correspondent`    | Get a correspondent by ID  |
-| `create_correspondent` | Create a new correspondent |
-| `update_correspondent` | Update a correspondent     |
-| `delete_correspondent` | Delete a correspondent     |
+| Tool                       | Description                                  |
+| -------------------------- | -------------------------------------------- |
+| `list_correspondents`      | List all correspondents                      |
+| `get_correspondent`        | Get a correspondent by ID                    |
+| `create_correspondent`     | Create a new correspondent                   |
+| `update_correspondent`     | Update a correspondent                       |
+| `delete_correspondent`     | Delete a correspondent                       |
+| `bulk_edit_correspondents` | Apply a bulk operation across correspondents |
 
 ## Document type tools
 
-| Tool                   | Description                |
-| ---------------------- | -------------------------- |
-| `list_document_types`  | List all document types    |
-| `get_document_type`    | Get a document type by ID  |
-| `create_document_type` | Create a new document type |
-| `update_document_type` | Update a document type     |
-| `delete_document_type` | Delete a document type     |
+| Tool                       | Description                                  |
+| -------------------------- | -------------------------------------------- |
+| `list_document_types`      | List all document types                      |
+| `get_document_type`        | Get a document type by ID                    |
+| `create_document_type`     | Create a new document type                   |
+| `update_document_type`     | Update a document type                       |
+| `delete_document_type`     | Delete a document type                       |
+| `bulk_edit_document_types` | Apply a bulk operation across document types |
 
 ## Custom field tools
 
@@ -77,6 +83,20 @@ The additional-data field shape depends on the custom field type. Refer to these
 
 Unknown shapes are rejected by Paperless with a 400 error.
 
+## Storage path tools
+
+| Tool                 | Description              |
+| -------------------- | ------------------------ |
+| `list_storage_paths` | List all storage paths   |
+| `get_storage_path`   | Get a storage path by ID |
+
+## Saved view tools
+
+| Tool               | Description            |
+| ------------------ | ---------------------- |
+| `list_saved_views` | List all saved views   |
+| `get_saved_view`   | Get a saved view by ID |
+
 ## Share link tools
 
 | Tool               | Description                                        |
@@ -84,7 +104,7 @@ Unknown shapes are rejected by Paperless with a 400 error.
 | `list_share_links` | List share links (optionally filtered by document) |
 | `get_share_link`   | Fetch a share link by ID                           |
 
-Both tools include a `share_url` field of the form `<PAPERLESS_MCP_PAPERLESS_PUBLIC_URL>/share/<slug>`. `PAPERLESS_MCP_PAPERLESS_PUBLIC_URL` is used when set; otherwise it defaults to `PAPERLESS_MCP_PAPERLESS_URL` via the config layer (see `PAPERLESS_MCP_PAPERLESS_PUBLIC_URL` in the README env-var table).
+Both tools include a `share_url` field of the form `<PAPERLESS_MCP_PAPERLESS_PUBLIC_URL>/share/<slug>`. `PAPERLESS_MCP_PAPERLESS_PUBLIC_URL` is used when set; otherwise it defaults to `PAPERLESS_MCP_PAPERLESS_URL` via the config layer (see [Configuration](https://pvliesdonk.github.io/paperless-mcp/unstable/configuration/index.md) for the variable).
 
 ## Task tools
 

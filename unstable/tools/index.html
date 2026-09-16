@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Paperless-NGX document management over MCP: search, tag, upload, and read documents; manage tags, correspondents, document types, and custom fields.">
+        <meta name="description" content="Paperless-NGX over MCP: search, read, upload and tag documents; manage correspondents and types.">
       
       
       
@@ -16,7 +16,7 @@
         <link rel="prev" href="../guides/authentication/">
       
       
-        <link rel="next" href="../prompts/">
+        <link rel="next" href="../resources/">
       
       
         
@@ -866,6 +866,28 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#storage-path-tools" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Storage path tools
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#saved-view-tools" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Saved view tools
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#share-link-tools" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -902,6 +924,34 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../resources/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Resources
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -1286,6 +1336,28 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#storage-path-tools" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Storage path tools
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#saved-view-tools" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Saved view tools
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#share-link-tools" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1368,7 +1440,7 @@
 <td>Retrieve the plain-text content of a document</td>
 </tr>
 <tr>
-<td><code>create_document</code></td>
+<td><code>upload_document</code></td>
 <td>Upload a new document for ingestion</td>
 </tr>
 <tr>
@@ -1384,12 +1456,28 @@
 <td>Apply a bulk operation to multiple documents</td>
 </tr>
 <tr>
+<td><code>get_document_metadata</code></td>
+<td>Retrieve file metadata: original filename, checksums, MIME type</td>
+</tr>
+<tr>
+<td><code>get_document_thumbnail</code></td>
+<td>Retrieve the thumbnail image of a document</td>
+</tr>
+<tr>
+<td><code>get_document_suggestions</code></td>
+<td>Retrieve the tags, correspondent and type Paperless suggests for a document</td>
+</tr>
+<tr>
 <td><code>get_document_notes</code></td>
 <td>List notes attached to a document</td>
 </tr>
 <tr>
 <td><code>add_document_note</code></td>
 <td>Add a note to a document</td>
+</tr>
+<tr>
+<td><code>delete_document_note</code></td>
+<td>Delete a note from a document</td>
 </tr>
 <tr>
 <td><code>get_document_history</code></td>
@@ -1464,6 +1552,10 @@
 <td><code>delete_correspondent</code></td>
 <td>Delete a correspondent</td>
 </tr>
+<tr>
+<td><code>bulk_edit_correspondents</code></td>
+<td>Apply a bulk operation across correspondents</td>
+</tr>
 </tbody>
 </table>
 <h2 id="document-type-tools">Document type tools<a class="headerlink" href="#document-type-tools" title="Permanent link">&para;</a></h2>
@@ -1494,6 +1586,10 @@
 <tr>
 <td><code>delete_document_type</code></td>
 <td>Delete a document type</td>
+</tr>
+<tr>
+<td><code>bulk_edit_document_types</code></td>
+<td>Apply a bulk operation across document types</td>
 </tr>
 </tbody>
 </table>
@@ -1557,6 +1653,44 @@
 </tbody>
 </table>
 <p>Unknown shapes are rejected by Paperless with a 400 error.</p>
+<h2 id="storage-path-tools">Storage path tools<a class="headerlink" href="#storage-path-tools" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>list_storage_paths</code></td>
+<td>List all storage paths</td>
+</tr>
+<tr>
+<td><code>get_storage_path</code></td>
+<td>Get a storage path by ID</td>
+</tr>
+</tbody>
+</table>
+<h2 id="saved-view-tools">Saved view tools<a class="headerlink" href="#saved-view-tools" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>list_saved_views</code></td>
+<td>List all saved views</td>
+</tr>
+<tr>
+<td><code>get_saved_view</code></td>
+<td>Get a saved view by ID</td>
+</tr>
+</tbody>
+</table>
 <h2 id="share-link-tools">Share link tools<a class="headerlink" href="#share-link-tools" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -1578,8 +1712,8 @@
 </table>
 <p>Both tools include a <code>share_url</code> field of the form <code>&lt;PAPERLESS_MCP_PAPERLESS_PUBLIC_URL&gt;/share/&lt;slug&gt;</code>.
 <code>PAPERLESS_MCP_PAPERLESS_PUBLIC_URL</code> is used when set; otherwise it defaults to
-<code>PAPERLESS_MCP_PAPERLESS_URL</code> via the config layer (see <code>PAPERLESS_MCP_PAPERLESS_PUBLIC_URL</code>
-in the README env-var table).</p>
+<code>PAPERLESS_MCP_PAPERLESS_URL</code> via the config layer (see
+<a href="../configuration/">Configuration</a> for the variable).</p>
 <h2 id="task-tools">Task tools<a class="headerlink" href="#task-tools" title="Permanent link">&para;</a></h2>
 <table>
 <thead>

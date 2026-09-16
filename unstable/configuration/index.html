@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Paperless-NGX document management over MCP: search, tag, upload, and read documents; manage tags, correspondents, document types, and custom fields.">
+        <meta name="description" content="Paperless-NGX over MCP: search, read, upload and tag documents; manage correspondents and types.">
       
       
       
@@ -614,50 +614,6 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#required-variables" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Required variables
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#optional-variables" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Optional variables
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#public-url" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Public URL
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#example-env" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Example .env
-      
-    </span>
-  </a>
-  
-</li>
-      
     </ul>
   
 </nav>
@@ -860,6 +816,34 @@
     
   
     Tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../resources/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Resources
   
 
     
@@ -1206,50 +1190,6 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#required-variables" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Required variables
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#optional-variables" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Optional variables
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#public-url" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Public URL
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#example-env" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Example .env
-      
-    </span>
-  </a>
-  
-</li>
-      
     </ul>
   
 </nav>
@@ -1298,7 +1238,7 @@ comma-separated list of explicit tool names:</p>
 <p>Hidden tools disappear from <code>tools/list</code> and are rejected on <code>tools/call</code>;
 resources and prompts are unaffected. Setting both variables, or setting one
 to a value with no names in it, is a startup error. A name matching no
-registered tool is ignored, but an allow list that matches nothing logs a
+registered tool is ignored, but an allowlist that matches nothing logs a
 startup <code>WARNING</code> since the instance then exposes zero tools. See
 <code>fastmcp-pvl-core</code>'s README for the full semantics.</p>
 <h2 id="background-tasks">Background tasks<a class="headerlink" href="#background-tasks" title="Permanent link">&para;</a></h2>
@@ -1320,62 +1260,12 @@ backend through <code>PAPERLESS_MCP_TASKS_URL</code> rather than
 <code>FASTMCP_DOCKET_URL</code>: the former wins when both are set, and the server warns
 about the disagreement.</p>
 <!-- DOMAIN-CONFIG-VARS-START -->
-<h2 id="required-variables">Required variables<a class="headerlink" href="#required-variables" title="Permanent link">&para;</a></h2>
-<table>
-<thead>
-<tr>
-<th>Variable</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>PAPERLESS_MCP_PAPERLESS_URL</code></td>
-<td>Base URL of the Paperless-NGX instance (no trailing slash). Example: <code>http://paperless:8000</code></td>
-</tr>
-<tr>
-<td><code>PAPERLESS_MCP_API_TOKEN</code></td>
-<td>Paperless service-account API token</td>
-</tr>
-</tbody>
-</table>
-<h2 id="optional-variables">Optional variables<a class="headerlink" href="#optional-variables" title="Permanent link">&para;</a></h2>
-<table>
-<thead>
-<tr>
-<th>Variable</th>
-<th>Default</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>PAPERLESS_MCP_PAPERLESS_PUBLIC_URL</code></td>
-<td><em>(same as <code>PAPERLESS_MCP_PAPERLESS_URL</code>)</em></td>
-<td>Public-facing Paperless UI URL. See <a href="#public-url">Public URL</a> below.</td>
-</tr>
-<tr>
-<td><code>PAPERLESS_MCP_HTTP_TIMEOUT_SECONDS</code></td>
-<td><code>30.0</code></td>
-<td>Per-request timeout (connect + read + write)</td>
-</tr>
-<tr>
-<td><code>PAPERLESS_MCP_HTTP_RETRIES</code></td>
-<td><code>2</code></td>
-<td>Retry count for idempotent requests on network errors or 5xx</td>
-</tr>
-<tr>
-<td><code>PAPERLESS_MCP_DEFAULT_PAGE_SIZE</code></td>
-<td><code>25</code></td>
-<td>Default page size for list tools (clamped 1-100)</td>
-</tr>
-</tbody>
-</table>
-<h2 id="public-url">Public URL<a class="headerlink" href="#public-url" title="Permanent link">&para;</a></h2>
-<p><code>PAPERLESS_MCP_PAPERLESS_PUBLIC_URL</code> lets you specify a different base URL for
-user-visible links than the internal API URL used by the server. When unset, it
-defaults to <code>PAPERLESS_MCP_PAPERLESS_URL</code>; trailing slashes are stripped.</p>
-<h2 id="example-env">Example <code>.env</code><a class="headerlink" href="#example-env" title="Permanent link">&para;</a></h2>
+<p><code>PAPERLESS_MCP_PAPERLESS_URL</code> and <code>PAPERLESS_MCP_API_TOKEN</code> are the two
+variables the server cannot start without. <code>PAPERLESS_MCP_PAPERLESS_PUBLIC_URL</code>
+lets you name a different base URL for user-visible links than the internal API
+URL the server calls; unset, it defaults to <code>PAPERLESS_MCP_PAPERLESS_URL</code>, and
+trailing slashes are stripped from both.</p>
+<p>A minimal <code>.env</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="nv">PAPERLESS_MCP_PAPERLESS_URL</span><span class="o">=</span>http://paperless.local:8000
 <span class="nv">PAPERLESS_MCP_API_TOKEN</span><span class="o">=</span>abc123yourtokenhere
 <span class="nv">PAPERLESS_MCP_HTTP_TIMEOUT_SECONDS</span><span class="o">=</span><span class="m">60</span>
