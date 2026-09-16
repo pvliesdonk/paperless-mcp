@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Callable
+from typing import Any
+
 import pytest
 from pydantic import ValidationError
 
@@ -11,7 +14,7 @@ from paperless_mcp.models.custom_field import (
 )
 
 
-def test_custom_field_roundtrip(load_fixture) -> None:
+def test_custom_field_roundtrip(load_fixture: Callable[[str], Any]) -> None:
     cf = CustomField.model_validate(load_fixture("custom_field.json"))
     assert cf.id == 2
     assert cf.data_type is CustomFieldDataType.LONGTEXT

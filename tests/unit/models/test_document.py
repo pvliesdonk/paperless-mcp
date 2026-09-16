@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Callable
+from typing import Any
+
 from paperless_mcp.models.document import (
     CustomFieldInstance,
     Document,
@@ -11,7 +14,7 @@ from paperless_mcp.models.document import (
 )
 
 
-def test_document_minimal(load_fixture) -> None:
+def test_document_minimal(load_fixture: Callable[[str], Any]) -> None:
     doc = Document.model_validate(load_fixture("document_minimal.json"))
     assert doc.id == 1
     assert doc.title == "Test Document"
@@ -19,7 +22,7 @@ def test_document_minimal(load_fixture) -> None:
     assert doc.tags == []
 
 
-def test_document_full(load_fixture) -> None:
+def test_document_full(load_fixture: Callable[[str], Any]) -> None:
     doc = Document.model_validate(load_fixture("document_full.json"))
     assert doc.id == 42
     assert doc.tags == [1, 4, 9]
@@ -27,7 +30,7 @@ def test_document_full(load_fixture) -> None:
     assert doc.custom_fields[0].field == 2
 
 
-def test_document_forward_compatible(load_fixture) -> None:
+def test_document_forward_compatible(load_fixture: Callable[[str], Any]) -> None:
     doc = Document.model_validate(load_fixture("document_full.json"))
     assert doc.some_future_paperless_field == "that we don't know about yet"  # type: ignore[attr-defined]
 

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+from collections.abc import AsyncIterator, Callable
+from typing import Any
 
 import httpx
 import pytest
@@ -12,7 +14,7 @@ from paperless_mcp.models.correspondent import CorrespondentCreate, Corresponden
 
 
 @pytest.fixture
-async def http():
+async def http() -> AsyncIterator[PaperlessHTTP]:
     client = PaperlessHTTP(
         base_url="http://paperless.test", api_token="t", max_retries=0
     )
@@ -26,7 +28,9 @@ def correspondents(http: PaperlessHTTP) -> CorrespondentsClient:
 
 
 @pytest.mark.asyncio
-async def test_create(correspondents, load_fixture) -> None:
+async def test_create(
+    correspondents: CorrespondentsClient, load_fixture: Callable[[str], Any]
+) -> None:
     async with respx.mock(base_url="http://paperless.test") as mock:
         mock.post("/api/correspondents/").mock(
             return_value=httpx.Response(201, json=load_fixture("correspondent.json"))
@@ -36,7 +40,9 @@ async def test_create(correspondents, load_fixture) -> None:
 
 
 @pytest.mark.asyncio
-async def test_update(correspondents, load_fixture) -> None:
+async def test_update(
+    correspondents: CorrespondentsClient, load_fixture: Callable[[str], Any]
+) -> None:
     async with respx.mock(base_url="http://paperless.test") as mock:
         mock.patch("/api/correspondents/1/").mock(
             return_value=httpx.Response(200, json=load_fixture("correspondent.json"))
@@ -46,7 +52,7 @@ async def test_update(correspondents, load_fixture) -> None:
 
 
 @pytest.mark.asyncio
-async def test_delete(correspondents) -> None:
+async def test_delete(correspondents: CorrespondentsClient) -> None:
     async with respx.mock(base_url="http://paperless.test") as mock:
         route = mock.delete("/api/correspondents/1/").mock(
             return_value=httpx.Response(204)
@@ -56,7 +62,7 @@ async def test_delete(correspondents) -> None:
 
 
 @pytest.mark.asyncio
-async def test_bulk_edit(correspondents) -> None:
+async def test_bulk_edit(correspondents: CorrespondentsClient) -> None:
     async with respx.mock(base_url="http://paperless.test") as mock:
         route = mock.post("/api/bulk_edit_objects/").mock(
             return_value=httpx.Response(200, json={"result": "OK"})

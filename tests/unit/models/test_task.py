@@ -1,16 +1,19 @@
 from __future__ import annotations
 
+from collections.abc import Callable
+from typing import Any
+
 from paperless_mcp.models.task import Task, TaskStatus
 
 
-def test_task_success_roundtrip(load_fixture) -> None:
+def test_task_success_roundtrip(load_fixture: Callable[[str], Any]) -> None:
     t = Task.model_validate(load_fixture("task_success.json"))
     assert t.task_id == "abc-123-success"
     assert t.status is TaskStatus.SUCCESS
     assert t.related_document == "42"
 
 
-def test_task_pending_roundtrip(load_fixture) -> None:
+def test_task_pending_roundtrip(load_fixture: Callable[[str], Any]) -> None:
     t = Task.model_validate(load_fixture("task_pending.json"))
     assert t.status is TaskStatus.PENDING
     assert t.date_done is None
