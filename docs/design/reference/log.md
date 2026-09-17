@@ -1,5 +1,35 @@
 # Reference research log
 
+## 2026-09-17
+
+- Added [Paperless-NGX API payload versions 9 and 10](paperless-api-versioning.md)
+  and [The Paperless-NGX 3.x REST surface this server does not expose](paperless-3x-rest-surface.md),
+  read from paperless-ngx at `d48663e9ebaadc4b413a6ca3bc88cb5fbc4e468e` (the
+  `v3.1.3` tag), from its `docs/api.md`, from `v2.20.15` for the 2.x accepted
+  versions, and from a live 3.1.3 instance. Written for
+  [#113](https://github.com/pvliesdonk/paperless-mcp/issues/113), which asked
+  what 3.x adds and what payload version 10 changes. Note that the 2026-09-16
+  pass recorded `ae9529551d17395c69dedf63a4472b45df0dab0f` as "3.1.3"; the
+  `v3.1.3` tag resolves to `d48663e9…`, so the two passes pin different
+  commits and only this one pins the release.
+- The sweep answered the issue's central question against a live AI-enabled
+  instance rather than by inference: `/api/documents/{id}/suggestions/` does
+  **not** become AI-backed when AI is enabled. AI suggestions are a separate
+  route, and the classic handler reads no AI configuration at all.
+- The refute pass caught an overclaim of my own making. The first draft said
+  fifteen of seventeen endpoints were identical across versions, but the
+  key-set comparison had silently skipped `saved_views`, `share_links` and
+  `storage_paths`, all empty on the instance — and saved views are precisely
+  where a documented difference lives (`show_on_dashboard`, `show_in_sidebar`
+  at version 9 only). Those claims are now sourced and marked `[unverified]`
+  as unreproduced. The same pass added a value-level comparison, because a
+  key-set diff cannot see the document `created` change `api.md` describes;
+  that one turned out to have no runtime branch at 3.1.3.
+- Two naming traps are recorded rather than left to be rediscovered: the chat
+  route is `/api/documents/chat/`, and `/api/chat/` redirects to a login page
+  rather than 404ing; and `src/documents/versioning.py` is about document
+  versions, not API payload versions. Next review: 2027-03-17.
+
 ## 2026-09-16
 
 - Added [Paperless-NGX version endpoints](paperless-version-endpoints.md),

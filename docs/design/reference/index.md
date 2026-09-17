@@ -14,6 +14,13 @@ its `stale_after` date passes. Project decisions belong in `docs/design/`.
   `/api/remote_version/`, `/api/ui_settings/` and `/api/status/` reports the
   installed version, which reports the newest release, and what each costs in
   permissions.
+- [Paperless-NGX API payload versions 9 and 10](paperless-api-versioning.md) —
+  how the `Accept`-header version is negotiated, what the `X-Api-Version`
+  header really reports, and every payload difference between the two
+  versions, including the reshaped `/api/tasks/`.
+- [The Paperless-NGX 3.x REST surface this server does not expose](paperless-3x-rest-surface.md)
+  — the 93-route inventory against the 30 this client wraps, and how the
+  Paperless AI chat and suggestion endpoints behave.
 
 See the [research log](log.md) for completed research passes. Add project
 references here as they are written.

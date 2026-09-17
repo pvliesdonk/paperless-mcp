@@ -3,6 +3,11 @@
 All resource clients (``documents.py``, ``tags.py``, ...) go through
 :class:`PaperlessHTTP` for authenticated requests, retry on transient
 errors, and consistent error mapping.
+
+``_ACCEPT_HEADER`` pins the Paperless payload version.  Before changing the
+number, read ``docs/design/reference/paperless-api-versioning.md``: version 10
+reshapes ``/api/tasks/`` (bare array to envelope, four renamed members,
+lowercased status) and is refused with a 406 by every Paperless 2.x instance.
 """
 
 from __future__ import annotations

@@ -152,7 +152,13 @@ question:
   on the 2.x branch would settle it.
 - Which Paperless version the deployed instance runs, and therefore which of
   these claims it exercises. [unverified]
-- Whether API payload version 10 changes any of these three bodies;
-  `ALLOWED_VERSIONS` is `["9", "10"]` with `DEFAULT_VERSION` `"10"` at this
-  commit [source: pngx-settings], and this client pins `version=9`. Scoped to
+- Whether API payload version 10 changes any of these three bodies: it does
+  not. `/api/remote_version/` and `/api/ui_settings/` were compared at both
+  versions and returned identical key sets, so the claims above hold either
+  way. `ALLOWED_VERSIONS` is `["9", "10"]` with `DEFAULT_VERSION` `"10"` at
+  this commit [source: pngx-settings], and this client still pins `version=9`;
+  the differences that decide that pin live elsewhere in the surface and are
+  recorded in
+  [Paperless-NGX API payload versions 9 and 10](paperless-api-versioning.md),
+  researched under
   [#113](https://github.com/pvliesdonk/paperless-mcp/issues/113).

@@ -1,4 +1,10 @@
-"""Pydantic models for Paperless-NGX task resources."""
+"""Pydantic models for Paperless-NGX task resources.
+
+These fields follow Paperless payload version 9, which ``client/_http.py``
+pins.  Version 10 renames ``result``, ``type`` and ``related_document`` and
+serves lowercase statuses that :class:`TaskStatus` would reject.  See
+``docs/design/reference/paperless-api-versioning.md``.
+"""
 
 from __future__ import annotations
 

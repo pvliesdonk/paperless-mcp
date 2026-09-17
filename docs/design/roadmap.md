@@ -145,21 +145,22 @@ backlog that predates this index.
   first step of that work, not a question that decides whether to start it.
 - **Which of the library's two transfer wirings fits this server.** `derived`.
   Resolved by [#111](https://github.com/pvliesdonk/paperless-mcp/issues/111).
-- **What the Paperless 3.x API adds, and what its newer payload version changes
-  in what this client already parses.** `stated` in
-  [#113](https://github.com/pvliesdonk/paperless-mcp/issues/113). Resolved by
-  that issue, now a `research` issue carrying a two-day appetite. The earlier
-  condition — "if it turns out to decide scope for a whole package rather than
-  for one feature" — was met: it decides which capabilities are worth exposing
-  at all, so no feature issue beneath this theme would have been honest before
-  the inventory exists. One facet is already pinned, and pinned in the repo
-  rather than in the tracker: `evidenced`,
-  `docs/design/reference/paperless-version-endpoints.md` records
-  `[source: pngx-settings]` that `ALLOWED_VERSIONS` is `["9", "10"]` with
-  `DEFAULT_VERSION` `"10"` while this client pins `version=9`, and scopes the
-  payload difference to #113. That page reached `main` with #127 while this
-  correction was in review — which is exactly the repoint the skill asks for
-  when research output moves from working memory to the record.
+- ~~**What the Paperless 3.x API adds, and what its newer payload version
+  changes in what this client already parses.**~~ **Answered**, `evidenced`, by
+  [#113](https://github.com/pvliesdonk/paperless-mcp/issues/113) within its
+  two-day appetite. The durable output is two reference pages,
+  `docs/design/reference/paperless-api-versioning.md` and
+  `paperless-3x-rest-surface.md`, not a spike document. Three things the
+  answer changed: the version pin **stays at 9**, now asserted as a literal in
+  the suite rather than only in prose, because version 10 reshapes
+  `/api/tasks/` beyond what the task model and client survive and is refused
+  outright by every 2.x instance; the AI surface is **additive, not
+  substitutive**, so nothing this client already parses is affected by it; and
+  the gap is 63 unwrapped routes out of 93, which is a menu to choose from
+  rather than a debt to repay. The condition that made this a research issue
+  — "if it turns out to decide scope for a whole package rather than for one
+  feature" — held: the feature issues beneath this theme could not have been
+  written honestly before the inventory existed, and they now exist.
 - **Whether any Paperless call on the deployed instance blocks long enough to
   need a job.** `stated` in
   [#110](https://github.com/pvliesdonk/paperless-mcp/issues/110), with the
@@ -178,6 +179,22 @@ backlog that predates this index.
   documented in `config.md` beside this file.
 
 ## Revisions
+
+### 2026-09-17
+
+- The Paperless 3.x known unknown is answered and struck through rather than
+  deleted, because the argument for *why* it was research rather than a feature
+  is the part worth keeping. `evidenced`: the appetite held, and the verdict
+  moved direction in one concrete way — "move to payload version 10" was a
+  plausible next step before the sweep and is now explicitly not one, since the
+  only version-10 difference this client meets breaks tasks and buys nothing.
+- The 63 unwrapped routes are deliberately **not** decomposed into a package
+  here. `derived`: the roadmapping skill wants packages charted only as far as
+  they can honestly be seen, and the inventory's own finding is that most of
+  those routes are administrative surface this server has no stated user need
+  for. Feature issues were opened for the three capabilities the evidence
+  argues for; the rest stay an inventory in the reference, which is where a
+  menu belongs.
 
 ### 2026-09-16
 
