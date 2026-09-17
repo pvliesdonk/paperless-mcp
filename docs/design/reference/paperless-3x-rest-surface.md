@@ -159,6 +159,11 @@ exposing is a project decision kept in the tracker, not here.
   is disabled, 400 JSON `{"ai": ["Invalid AI configuration."]}` on a
   configuration error, and **503** `{"ai": ["AI backend request timed out."]}`
   on backend timeout. [source: pngx-doc-views]
+- **That 503 is not in the OpenAPI document.** The endpoint's `extend_schema`
+  declares only 200, 400, 403 and 404, so a client generated from the vendored
+  spec — or from any other capture of it — will not know the call can fail
+  with a 503 on backend timeout. This is the one place where reading the spec
+  alone is insufficient. [source: pngx-doc-views] [source: live-schema]
 - Suggestions are cached per backend, model, endpoint, language **and user**,
   and the cache stores only the model's raw choices, never resolved ids, so
   permission filtering re-runs for each requester.

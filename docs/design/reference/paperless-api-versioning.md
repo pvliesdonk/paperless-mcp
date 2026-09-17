@@ -155,9 +155,13 @@ accident.
   created"`); version 10 exposes the structured `result_data` object instead.
   A client reading `result` as prose is reading a version 9 artefact.
   [source: pngx-serialisers]
-- The `?task_name=` and `?type=` query filters are accepted **only** at
+- The `?task_name=` and `?type=` query filters are honoured **only** at
   version 9, where they are mapped onto `task_type` and `trigger_source`;
-  `?task_id=` is honoured at both. [source: pngx-doc-views]
+  `?task_id=` works at both. At version 10 they are not rejected but
+  **silently dropped** — the filter set exposes `task_type` and
+  `trigger_source` under their new names, so django-filter discards the old
+  spellings without a 400 and returns an unfiltered page.
+  [source: pngx-doc-views]
 - The document `created` field is byte-identical at both versions on 3.1.3.
   `docs/api.md` lists "created is now a date, not a datetime" under version 9,
   but no runtime branch implements it at this release, so both versions serve

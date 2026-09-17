@@ -38,7 +38,15 @@
 - Two naming traps are recorded rather than left to be rediscovered: the chat
   route is `/api/documents/chat/`, and `/api/chat/` redirects to a login page
   rather than 404ing; and `src/documents/versioning.py` is about document
-  versions, not API payload versions. Next review: 2027-03-17.
+  versions, not API payload versions.
+- A second, independent pass re-found all fifteen load-bearing `[source: ...]`
+  citations against fresh checkouts of `v3.1.3` and `v2.20.15`, reading the
+  code rather than trusting the pass that wrote the claims — which is what the
+  `verified` entry on both pages attests. No claim mismatched and no cited
+  range was wrong. Two refinements came out of it and are folded in: the
+  version 10 task filters are *silently dropped* rather than rejected, and the
+  `ai_suggestions` 503 is absent from the OpenAPI document, so the vendored
+  spec under-describes that endpoint's failure modes. Next review: 2027-03-17.
 
 ## 2026-09-16
 
