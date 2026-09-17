@@ -3,7 +3,7 @@
   "name": "io.github.pvliesdonk/paperless-mcp",
   "title": "Paperless MCP",
   "description": "Paperless-NGX over MCP: search, read, upload and tag documents; manage correspondents and types.",
-  "version": "1.0.2",
+  "version": "2.0.0",
   "websiteUrl": "https://pvliesdonk.github.io/paperless-mcp/",
   "repository": {
     "url": "https://github.com/pvliesdonk/paperless-mcp",
@@ -13,7 +13,7 @@
     {
       "registryType": "pypi",
       "identifier": "pvliesdonk-paperless-mcp",
-      "version": "1.0.2",
+      "version": "2.0.0",
       "runtimeHint": "uvx",
       "transport": {
         "type": "stdio"
@@ -101,7 +101,7 @@
     },
     {
       "registryType": "oci",
-      "identifier": "ghcr.io/pvliesdonk/paperless-mcp:v1.0.2",
+      "identifier": "ghcr.io/pvliesdonk/paperless-mcp:v2.0.0",
       "transport": {
         "type": "streamable-http",
         "url": "http://localhost:{--port}/mcp"
