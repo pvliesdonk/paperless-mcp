@@ -220,15 +220,28 @@ def test_instructions_env_override(
 def test_instructions_compose_semantic_operator_roles(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Operator routing and policy retain their semantic positions."""
+    """Operator routing and policy retain their semantic positions.
+
+    The domain's instance snippet (``domain.add_instance_instructions``, wired
+    in ``DOMAIN-WIRING``) carries the ``CAPABILITIES`` role, which sorts after
+    the operator's routing and policy and before the documentation pointer.
+    Its prose is asserted in ``tests/unit/test_server_boot.py``; what this test
+    pins is the position, so a snippet that displaced the operator's text would
+    fail here rather than silently reorder the composition.
+    """
     monkeypatch.delenv("PAPERLESS_MCP_INSTRUCTIONS", raising=False)
     monkeypatch.setenv("PAPERLESS_MCP_INSTANCE_DESCRIPTION", "Demo material.")
     monkeypatch.setenv("PAPERLESS_MCP_INSTRUCTIONS_EXTRA", "House rule: be brief.")
-    text = make_server().instructions or ""
-    assert text.split("\n\n") == [
+    parts = (make_server().instructions or "").split("\n\n")
+    assert parts[:3] == [
         "paperless-mcp: Paperless-NGX over MCP: search, read, upload and tag documents; manage correspondents and types.",
         "Demo material.",
         "House rule: be brief.",
+    ]
+    assert parts[3].startswith(
+        "This server fronts the Paperless-NGX instance at http://paperless.test."
+    )
+    assert parts[4:] == [
         "Full documentation for this server: https://pvliesdonk.github.io/paperless-mcp/latest/llms.txt",
     ]
 

@@ -41,6 +41,8 @@ import asyncio
 import logging
 from typing import TYPE_CHECKING
 
+from fastmcp_pvl_core import InstructionRole, instructions_for
+
 from paperless_mcp.client import (
     AuthError,
     ConflictError,
@@ -56,6 +58,8 @@ from paperless_mcp.config import _ENV_PREFIX, ProjectConfig
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
 
+    from fastmcp import FastMCP
+
     from paperless_mcp.tools._context import ToolContext
 
 logger = logging.getLogger(__name__)
@@ -70,6 +74,7 @@ __all__ = [
     "Service",
     "UpstreamError",
     "ValidationError",
+    "add_instance_instructions",
     "build_tool_context",
     "pending_tool_context",
     "tool_context_for",
@@ -247,6 +252,57 @@ def upstream_version_provider(
         return {"version": installed}
 
     return _paperless_version
+
+
+def add_instance_instructions(mcp: FastMCP, config: ProjectConfig) -> None:
+    """Tell the model which Paperless instance this server fronts.
+
+    Without this the composed instructions are the identity line and the
+    documentation pointer, so a model handed a link such as
+    ``https://paperless.example.org/documents/42/`` in conversation has no
+    stated basis for recognising it as *this* server's instance, and the
+    ``paperless://`` resource URIs are described nowhere it reads before its
+    first call.  The server already knows the URL — tool results build
+    ``web_url`` and ``share_url`` from the same :attr:`ProjectConfig.public_url`
+    — so stating it costs the operator nothing, where
+    ``PAPERLESS_MCP_INSTANCE_DESCRIPTION`` would have them retype it by hand.
+
+    One ``CAPABILITIES`` snippet rather than two, and no ``requires_tools``:
+
+    * The URL alone would fit ``INSTANCE`` better, but it is only *useful*
+      together with the mapping from a link to an id and a resource URI, and
+      splitting the two across roles puts the operator's ``POLICY`` text
+      between the halves (``_ROLE_ORDER`` runs INSTANCE, POLICY, CAPABILITIES).
+    * ``requires_tools`` gates on tool names, and half of what this snippet
+      describes is resources, which the operator visibility rule does not touch
+      at all.  Naming one tool would drop the instance URL for an operator who
+      merely hid that tool, so the prose says "the document tools" instead.
+
+    Called from ``make_server``'s ``DOMAIN-WIRING`` block, which runs before
+    ``finalize_instructions`` renders the builder.
+
+    Args:
+        mcp: The server whose instruction builder receives the snippet.
+        config: The resolved project config, read for
+            :attr:`~paperless_mcp.config.ProjectConfig.public_url`.
+    """
+    url = config.public_url
+    if not url:
+        # Only reachable through a hand-built ``ProjectConfig()``: the config
+        # the server runs on cannot get this far without a URL, because
+        # ``build_tool_context`` refuses to register tools without one.
+        logger.debug("instance_instructions_skipped reason=no_public_url")
+        return
+
+    instructions_for(mcp).add(
+        f"This server fronts the Paperless-NGX instance at {url}. "
+        f"A link of the form {url}/documents/<id>/ is a document on it: pass "
+        "<id> to the document tools, or read paperless://documents/<id> "
+        "(also /content, /metadata, /notes, /history, /thumbnail, /preview, "
+        "/download). Collections read as <name>://paperless, "
+        "for example tags://paperless.",
+        role=InstructionRole.CAPABILITIES,
+    )
 
 
 class Service:

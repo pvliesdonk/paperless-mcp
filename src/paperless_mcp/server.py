@@ -205,9 +205,21 @@ def make_server(
     # The provider captures the ToolContext register_tools already staged, so
     # it reuses the open Paperless client and opens no second one, and it
     # returns None rather than raising when Paperless cannot answer.
-    from paperless_mcp.domain import upstream_version_provider
+    from paperless_mcp.domain import (
+        add_instance_instructions,
+        upstream_version_provider,
+    )
 
     _paperless_version = upstream_version_provider(mcp)
+    #
+    # -- Naming the instance in the composed instructions ----------------------
+    #
+    # A CAPABILITIES snippet built from config.public_url, so the model reads
+    # which Paperless this server fronts, and how a link under that URL maps to
+    # a document id and a paperless:// resource, before its first call. The
+    # config passed to make_server wins here, which is why this reads `config`
+    # rather than the environment.
+    add_instance_instructions(mcp, config)
     #
     # -- Transfer subsystem (capability-link upload + download) ----------------
     #

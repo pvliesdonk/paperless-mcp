@@ -211,6 +211,15 @@ lets you name a different base URL for user-visible links than the internal API
 URL the server calls; unset, it defaults to `PAPERLESS_MCP_PAPERLESS_URL`, and
 trailing slashes are stripped from both.
 
+Whichever of the two resolves is also the URL the generated MCP instructions
+state, so the model reads which Paperless instance this server fronts, that a
+link of the form `<public URL>/documents/<id>/` carries a document id it can
+pass to the document tools, and what the `paperless://` resource URIs look
+like. Set `PAPERLESS_MCP_PAPERLESS_PUBLIC_URL` whenever the API URL is not the
+one a person opens in a browser: the instructions then name the host that
+matches the links people paste into a conversation. You need no
+`PAPERLESS_MCP_INSTANCE_DESCRIPTION` to say any of this by hand.
+
 A minimal `.env`:
 
 ```bash
