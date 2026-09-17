@@ -3,11 +3,10 @@
 from __future__ import annotations
 
 import pytest
-from fastmcp import FastMCP
-from fastmcp_pvl_core import build_event_store, finalize_instructions, instructions_for
+from fastmcp_pvl_core import build_event_store
 
 from paperless_mcp.config import ProjectConfig
-from paperless_mcp.domain import add_instance_instructions
+from paperless_mcp.domain import pending_tool_context
 from paperless_mcp.server import make_server
 
 
@@ -71,21 +70,30 @@ def test_instructions_fall_back_to_the_api_url(monkeypatch: pytest.MonkeyPatch) 
     assert "Paperless-NGX instance at https://paperless.example.org." in text
 
 
-def test_instance_snippet_skipped_without_a_url() -> None:
-    """A config carrying no Paperless URL contributes no snippet at all.
+def test_instance_snippet_names_the_url_tool_results_use(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The snippet follows the staged context, not ``make_server``'s config.
 
-    ``make_server`` cannot reach this — registration fails first, without a URL
-    there is no client — but ``ProjectConfig()`` with no arguments is legal, so
-    the guard is the difference between silence and prose naming an empty host.
+    ``register_tools`` builds its context from the environment, so a config
+    passed to ``make_server`` does not reach the Paperless client
+    (pvliesdonk/fastmcp-server-template#622). Reading that config for the
+    snippet would let the instructions name one instance while every ``web_url``
+    in a tool result named another, so this pins which of the two wins.
     """
-    config = ProjectConfig()
-    mcp: FastMCP = FastMCP(name="paperless-mcp")
-    instructions_for(mcp).identity("paperless-mcp", "Paperless-NGX over MCP.")
+    monkeypatch.setenv("PAPERLESS_MCP_PAPERLESS_URL", "https://env.example.org")
+    monkeypatch.setenv("PAPERLESS_MCP_API_TOKEN", "t")
+    # No token: this config is never used to build a Paperless client, which is
+    # precisely what the test is about.
+    passed = ProjectConfig(paperless_url="https://passed.example.org")
 
-    add_instance_instructions(mcp, config)
-    finalize_instructions(mcp, config.server, env_prefix="PAPERLESS_MCP")
+    text = make_server(config=passed).instructions or ""
 
-    assert mcp.instructions == "paperless-mcp: Paperless-NGX over MCP."
+    staged = pending_tool_context()
+    assert staged is not None
+    assert staged.public_url == "https://env.example.org"
+    assert "Paperless-NGX instance at https://env.example.org." in text
+    assert "passed.example.org" not in text
 
 
 def test_sse_server_boots_without_artifact_store(

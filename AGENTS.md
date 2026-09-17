@@ -250,17 +250,22 @@ contract does not quite fit (a required field cannot be expressed; the config
 cannot reach `register_tools`), are in `docs/design/config.md`.
 
 **The instructions name the instance.** `DOMAIN-WIRING` calls
-`domain.add_instance_instructions(mcp, config)`, which contributes one
-`CAPABILITIES` snippet built from `config.public_url`: the instance URL, the
-mapping from a `<public URL>/documents/<id>/` link to a document id and a
-`paperless://documents/<id>` resource, and the collection URI shape. One
-snippet rather than two, because the URL alone would suit the `INSTANCE` role
-but is only useful together with that mapping, and the roles serialise
-`INSTANCE`, `POLICY`, `CAPABILITIES` — splitting them would put the operator's
-policy text between the halves. No `requires_tools`, because half of what the
-snippet describes is *resources*, which tool visibility never touches: gating
-on a tool name would drop the instance URL for an operator who merely hid that
-tool. The composed text runs ~590 of pvl-core's 1,536-unit guidance budget.
+`domain.add_instance_instructions(mcp)`, which contributes one `CAPABILITIES`
+snippet: the instance URL, the mapping from a `<public URL>/documents/<id>/`
+link to a document id and a `paperless://documents/<id>` resource, and the
+collection URI shape. The URL comes from the `ToolContext` the registrars
+staged, *not* from `make_server`'s `config` argument — the staged one is what
+tool results build `web_url` and `share_url` from, and the two can differ
+(template#622), so naming an instance whose links point elsewhere would be
+worse than saying nothing. One snippet rather than two, because the URL alone
+would suit the `INSTANCE` role but is only useful together with that mapping,
+and the roles serialise `INSTANCE`, `POLICY`, `CAPABILITIES` — splitting them
+would put the operator's policy text between the halves. No `requires_tools`,
+because half of what the snippet describes is *resources*, which tool
+visibility never touches: gating on a tool name would drop the instance URL for
+an operator who merely hid that tool. The composed text runs ~590 of pvl-core's
+1,536-unit guidance budget. The full argument, including the whitespace-URL
+rejection this added to `ProjectConfig`, is in `docs/design/instructions.md`.
 
 **`get_server_info` reports Paperless too.** The `DOMAIN-UPSTREAM` sentinel in
 `server.py` wires `upstream_version=lambda: _paperless_version()` with

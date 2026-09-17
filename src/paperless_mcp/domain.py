@@ -1,4 +1,5 @@
-"""Domain layer for paperless-mcp: the Paperless client lifecycle and re-exports.
+"""Domain layer for paperless-mcp: the Paperless client lifecycle, the
+instruction and ``get_server_info`` contributions built from it, and re-exports.
 
 The template's ``_server_deps.server_lifespan`` (template-owned) constructs a
 :class:`Service` here on startup and stops it on shutdown.  Tool and resource
@@ -254,7 +255,7 @@ def upstream_version_provider(
     return _paperless_version
 
 
-def add_instance_instructions(mcp: FastMCP, config: ProjectConfig) -> None:
+def add_instance_instructions(mcp: FastMCP) -> None:
     """Tell the model which Paperless instance this server fronts.
 
     Without this the composed instructions are the identity line and the
@@ -262,10 +263,23 @@ def add_instance_instructions(mcp: FastMCP, config: ProjectConfig) -> None:
     ``https://paperless.example.org/documents/42/`` in conversation has no
     stated basis for recognising it as *this* server's instance, and the
     ``paperless://`` resource URIs are described nowhere it reads before its
-    first call.  The server already knows the URL — tool results build
-    ``web_url`` and ``share_url`` from the same :attr:`ProjectConfig.public_url`
-    — so stating it costs the operator nothing, where
-    ``PAPERLESS_MCP_INSTANCE_DESCRIPTION`` would have them retype it by hand.
+    first call.  The server already knows the URL, so stating it costs the
+    operator nothing, where ``PAPERLESS_MCP_INSTANCE_DESCRIPTION`` would have
+    them retype it by hand.
+
+    The URL comes from the :class:`ToolContext` the registrars staged — the
+    same source :func:`upstream_version_provider` reads — and deliberately not
+    from ``make_server``'s ``config`` argument.  The two can name different
+    instances: ``register_tools`` builds its context from
+    ``ProjectConfig.from_env()``, so a config passed to
+    ``make_server(config=...)`` never reaches the Paperless client
+    (pvliesdonk/fastmcp-server-template#622, and the module docstring above).
+    Reading that config here would let the instructions name one instance while
+    every ``web_url`` and ``share_url`` in a tool result named another, which is
+    the one way this snippet could be worse than saying nothing.  Taking the
+    staged context instead makes "the URL your links will match" true by
+    construction, and leaves no empty case to guard:
+    :func:`build_tool_context` refuses to build a context without a URL.
 
     One ``CAPABILITIES`` snippet rather than two, and no ``requires_tools``:
 
@@ -278,21 +292,15 @@ def add_instance_instructions(mcp: FastMCP, config: ProjectConfig) -> None:
       at all.  Naming one tool would drop the instance URL for an operator who
       merely hid that tool, so the prose says "the document tools" instead.
 
-    Called from ``make_server``'s ``DOMAIN-WIRING`` block, which runs before
-    ``finalize_instructions`` renders the builder.
+    Called from ``make_server``'s ``DOMAIN-WIRING`` block, which runs after the
+    registrars have staged the context and before ``finalize_instructions``
+    renders the builder.
 
     Args:
-        mcp: The server whose instruction builder receives the snippet.
-        config: The resolved project config, read for
-            :attr:`~paperless_mcp.config.ProjectConfig.public_url`.
+        mcp: The server whose staged context supplies the URL, and whose
+            instruction builder receives the snippet.
     """
-    url = config.public_url
-    if not url:
-        # Only reachable through a hand-built ``ProjectConfig()``: the config
-        # the server runs on cannot get this far without a URL, because
-        # ``build_tool_context`` refuses to register tools without one.
-        logger.debug("instance_instructions_skipped reason=no_public_url")
-        return
+    url = tool_context_for(mcp).public_url
 
     instructions_for(mcp).add(
         f"This server fronts the Paperless-NGX instance at {url}. "

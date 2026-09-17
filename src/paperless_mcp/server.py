@@ -214,12 +214,13 @@ def make_server(
     #
     # -- Naming the instance in the composed instructions ----------------------
     #
-    # A CAPABILITIES snippet built from config.public_url, so the model reads
-    # which Paperless this server fronts, and how a link under that URL maps to
-    # a document id and a paperless:// resource, before its first call. The
-    # config passed to make_server wins here, which is why this reads `config`
-    # rather than the environment.
-    add_instance_instructions(mcp, config)
+    # A CAPABILITIES snippet naming the Paperless this server fronts, so the
+    # model reads how a link under that URL maps to a document id and a
+    # paperless:// resource before its first call. It reads the ToolContext the
+    # registrars staged rather than `config`, because that staged URL is the one
+    # tool results build their links from and the two can differ (template#622);
+    # naming an instance whose links do not match would be worse than silence.
+    add_instance_instructions(mcp)
     #
     # -- Transfer subsystem (capability-link upload + download) ----------------
     #

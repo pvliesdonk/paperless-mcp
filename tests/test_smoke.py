@@ -225,23 +225,28 @@ def test_instructions_compose_semantic_operator_roles(
     The domain's instance snippet (``domain.add_instance_instructions``, wired
     in ``DOMAIN-WIRING``) carries the ``CAPABILITIES`` role, which sorts after
     the operator's routing and policy and before the documentation pointer.
-    Its prose is asserted in ``tests/unit/test_server_boot.py``; what this test
-    pins is the position, so a snippet that displaced the operator's text would
-    fail here rather than silently reorder the composition.
+
+    Deliberately an exact match on the whole composition rather than a
+    positional or substring check: every paragraph here is deterministic (the
+    conftest presets ``PAPERLESS_MCP_PAPERLESS_URL``), and this is the one test
+    that fails when a contributor *adds* a paragraph. ``docs/design/
+    long-running-calls.md`` leans on that — adopting the Jobs framework inserts
+    a job-handle paragraph, and this assertion breaking is how the cost shows
+    up rather than being discovered by a model at runtime.
     """
     monkeypatch.delenv("PAPERLESS_MCP_INSTRUCTIONS", raising=False)
     monkeypatch.setenv("PAPERLESS_MCP_INSTANCE_DESCRIPTION", "Demo material.")
     monkeypatch.setenv("PAPERLESS_MCP_INSTRUCTIONS_EXTRA", "House rule: be brief.")
-    parts = (make_server().instructions or "").split("\n\n")
-    assert parts[:3] == [
+    assert (make_server().instructions or "").split("\n\n") == [
         "paperless-mcp: Paperless-NGX over MCP: search, read, upload and tag documents; manage correspondents and types.",
         "Demo material.",
         "House rule: be brief.",
-    ]
-    assert parts[3].startswith(
-        "This server fronts the Paperless-NGX instance at http://paperless.test."
-    )
-    assert parts[4:] == [
+        "This server fronts the Paperless-NGX instance at http://paperless.test. "
+        "A link of the form http://paperless.test/documents/<id>/ is a document on "
+        "it: pass <id> to the document tools, or read paperless://documents/<id> "
+        "(also /content, /metadata, /notes, /history, /thumbnail, /preview, "
+        "/download). Collections read as <name>://paperless, for example "
+        "tags://paperless.",
         "Full documentation for this server: https://pvliesdonk.github.io/paperless-mcp/latest/llms.txt",
     ]
 

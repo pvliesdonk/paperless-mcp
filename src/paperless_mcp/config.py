@@ -180,6 +180,21 @@ class ProjectConfig:
             "paperless_public_url",
             (self.paperless_public_url or "").rstrip("/") or self.paperless_url,
         )
+        # A URL carrying whitespace is already broken for httpx and for the
+        # ``web_url`` / ``share_url`` links tools build from it, and since
+        # ``domain.add_instance_instructions`` it also reaches the model: the
+        # composed instructions state this URL, so an embedded blank line would
+        # forge an instruction paragraph of its own.  ``env`` strips only
+        # *surrounding* whitespace, which is why the check is for any of it
+        # rather than for a value that needs trimming.
+        for suffix, value in (
+            ("PAPERLESS_URL", self.paperless_url),
+            ("PAPERLESS_PUBLIC_URL", self.paperless_public_url or ""),
+        ):
+            if any(char.isspace() for char in value):
+                raise ValueError(
+                    f"{_ENV_PREFIX}_{suffix} must not contain whitespace, got {value!r}"
+                )
         if not 0 < self.http_timeout_seconds <= 600:
             raise ValueError(
                 f"{_ENV_PREFIX}_HTTP_TIMEOUT_SECONDS must be > 0 and <= 600, "
