@@ -22,5 +22,10 @@ its `stale_after` date passes. Project decisions belong in `docs/design/`.
   — the 93-route inventory against the 30 this client wraps, and how the
   Paperless AI chat and suggestion endpoints behave.
 
+- [Who may read an MCP resource](mcp-resource-access.md) — why `resources/read`
+  is a client action the model cannot take unaided, how far hosts differ on
+  routing the model's selection, and which of this server's resources have no
+  tool twin.
+
 See the [research log](log.md) for completed research passes. Add project
 references here as they are written.

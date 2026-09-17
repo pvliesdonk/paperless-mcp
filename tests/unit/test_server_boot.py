@@ -51,8 +51,14 @@ def test_instructions_name_the_public_instance(monkeypatch: pytest.MonkeyPatch) 
     assert "Paperless-NGX instance at https://paperless.example.org." in text
     assert "https://paperless.example.org/documents/<id>/" in text
     assert "paperless://documents/<id>" in text
-    assert "tags://paperless" in text
+    assert "<name>://paperless" in text
     assert "paperless.internal" not in text
+    # Resources are read by the client, never called by the model
+    # (docs/design/reference/mcp-resource-access.md). The snippet must not tell
+    # the model to read a URI, and must say which variants no tool covers.
+    assert "which the client reads rather than you calling them" in text
+    assert "Only /preview and /download have no tool." in text
+    assert "or read paperless://" not in text
 
 
 def test_instructions_fall_back_to_the_api_url(monkeypatch: pytest.MonkeyPatch) -> None:

@@ -71,6 +71,28 @@ context for the same reason.
 pins this by handing `make_server` a config whose URL differs from the
 environment's and asserting the environment's URL is the one stated.
 
+## Resources are what the client reads, not what the model calls
+
+The first draft of the snippet said "pass `<id>` to the document tools, or read
+`paperless://documents/<id>`". That instructed the model to perform an action
+it does not have: `resources/read` is a client-to-server request, and the MCP
+specification makes resources application-driven, so whether a model can cause
+one is the host's choice rather than a property of this server. It tested clean
+locally only because Claude Code grants that affordance through its own
+`ReadMcpResourceTool`, which the protocol does not require any host to provide.
+
+The snippet now names the tools as the model's path and frames the
+`paperless://` family as what the client reads. It also states the one place
+the two surfaces genuinely disagree: `/preview` and `/download` have no tool
+twin, so on a tool-only client nothing reaches them. Evidence, host positions
+and the full resource-to-tool table are in
+[`reference/mcp-resource-access.md`](reference/mcp-resource-access.md).
+
+The general rule this leaves behind: anything the model must be able to do
+unaided is named as a tool. A resource URI may still be stated, because it is
+useful to a host with a picker or a model that has the affordance, but never
+phrased as the model's own action.
+
 ## A URL with whitespace is refused
 
 The snippet interpolates an operator-supplied URL into model-facing prose, twice.
@@ -102,5 +124,5 @@ check when a pvl-core major lands.
 pvl-core targets 1,536 UTF-16 units of generated guidance, reserving the rest of
 Claude Code's 2,048-unit limit for operator routing and policy, and warns rather
 than truncates when either is crossed. The composed text with this snippet is
-about 590 units, the exact figure depending on the URL's length because it
+about 690 units, the exact figure depending on the URL's length because it
 appears twice.

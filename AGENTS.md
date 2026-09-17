@@ -252,8 +252,13 @@ cannot reach `register_tools`), are in `docs/design/config.md`.
 **The instructions name the instance.** `DOMAIN-WIRING` calls
 `domain.add_instance_instructions(mcp)`, which contributes one `CAPABILITIES`
 snippet: the instance URL, the mapping from a `<public URL>/documents/<id>/`
-link to a document id and a `paperless://documents/<id>` resource, and the
-collection URI shape. The URL comes from the `ToolContext` the registrars
+link to a document id it can pass to the document *tools*, and the
+`paperless://` resource family framed as what the **client** reads. That
+framing is load-bearing, not stylistic: `resources/read` is a client-to-server
+request, so telling the model to "read" a URI names an action it does not have
+on a host that grants no such affordance — see
+`docs/design/reference/mcp-resource-access.md`. The URL comes from the
+`ToolContext` the registrars
 staged, *not* from `make_server`'s `config` argument — the staged one is what
 tool results build `web_url` and `share_url` from, and the two can differ
 (template#622), so naming an instance whose links point elsewhere would be
@@ -263,7 +268,7 @@ and the roles serialise `INSTANCE`, `POLICY`, `CAPABILITIES` — splitting them
 would put the operator's policy text between the halves. No `requires_tools`,
 because half of what the snippet describes is *resources*, which tool
 visibility never touches: gating on a tool name would drop the instance URL for
-an operator who merely hid that tool. The composed text runs ~590 of pvl-core's
+an operator who merely hid that tool. The composed text runs ~690 of pvl-core's
 1,536-unit guidance budget. The full argument, including the whitespace-URL
 rejection this added to `ProjectConfig`, is in `docs/design/instructions.md`.
 
