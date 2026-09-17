@@ -76,10 +76,17 @@ without ever becoming an epic.
   becoming one" — is what happened; it is committed to `020` below.
 - **Calls that outlast a client's patience** —
   [#110](https://github.com/pvliesdonk/paperless-mcp/issues/110). `stated`,
-  including its own doubt: "not sure there is anything (yet)". Also now a
-  `research` issue, with a one-day appetite that goes past measurement into a
-  spike wiring the Jobs framework for one tool, so that a "not needed yet"
-  verdict records the cost of the integration and not only its absence.
+  including its own doubt: "not sure there is anything (yet)". Answered inside
+  its one-day appetite, and the doubt turned out to be misplaced: `evidenced`,
+  one of the three candidate calls blocks long enough to need a job, and the
+  throwaway spike that priced the integration passed every local gate. The
+  verdict, the distribution it rests on and the cost table are in
+  `long-running-calls.md`. `derived`: this theme does not become a package of
+  its own. Adopting jobs for a single tool is one pull request, and the calls
+  that will need the machinery by design belong to the AI surface
+  ([#137](https://github.com/pvliesdonk/paperless-mcp/issues/137),
+  [#138](https://github.com/pvliesdonk/paperless-mcp/issues/138)), so it
+  sequences with them rather than ahead of them.
 
 ## Packages
 
@@ -164,12 +171,23 @@ backlog that predates this index.
 - **Whether any Paperless call on the deployed instance blocks long enough to
   need a job.** `stated` in
   [#110](https://github.com/pvliesdonk/paperless-mcp/issues/110), with the
-  owner's own "not sure". Resolved by that issue, now a `research` issue
-  carrying a one-day appetite. This entry previously read "recording it is
-  enough: not knowing changes nothing about what happens next". `derived`: that
-  is no longer the honest framing. Committing an appetite is a decision to find
-  out, so the question is now scheduled work rather than a noted unknown — a
-  change in what we intend, not in what we know.
+  owner's own "not sure". **Answered**, within the one-day appetite; the numbers
+  and the cost table are in `long-running-calls.md` beside this file.
+  `evidenced`: one call does. A document consume waited on through
+  `wait_for_task` runs to a median of 46.8s and a p95 of 113.7s against that
+  tool's own 60s default, so 45% of the observed API uploads would fail on the
+  deadline rather than on anything wrong upstream. The two other candidates the
+  issue named block for nothing — Paperless returns from both the upload and
+  the bulk-edit endpoints before the work they queue has run. `derived`: the
+  wait is queue contention rather than OCR (median execution is 1.7s), and the
+  queue is the caller's own — all 44 uploads arrived in bursts about a second
+  apart and backed up behind each other on a single consume worker, so the nth
+  upload waits roughly 2n seconds. `evidenced`: each burst's first upload
+  waited essentially nothing. That narrows the verdict rather than weakening
+  it: a lone ad-hoc upload never needs a job, and batch ingestion always will.
+  This entry stays rather than disappearing, because what it settles is narrow:
+  warranted for one tool, in one usage shape, while the calls that will be slow
+  *by design* are still unbuilt.
 - **Whether a required domain configuration field becomes expressible upstream,
   and whether the resolved config can reach tool registration.** `evidenced`:
   both are worked around in this repository and filed as
@@ -195,6 +213,33 @@ backlog that predates this index.
   for. Feature issues were opened for the three capabilities the evidence
   argues for; the rest stay an inventory in the reference, which is where a
   menu belongs.
+- The long-running-calls known unknown is answered, and the answer contradicts
+  the issue's own doubt. `evidenced`: `wait_for_task` blocks past its own
+  default on 45% of observed API uploads, so the honest verdict is "warranted"
+  rather than the "not needed yet" the issue anticipated. `derived`: two
+  corrections to direction follow. First, the issue's three candidates are
+  really one — Paperless returns from the upload and bulk-edit endpoints before
+  the work they queue runs, so only the polling tool ever blocks, which shrinks
+  the theme to a single pull request. Second, the binding deadline is the
+  tool's own 60s default and not the client's 180s patience, so this was never
+  the client-timeout problem ADR 0002 was written for; it is a tool-layer
+  default meeting a queue. Third, that queue is self-inflicted: the first
+  stated cause — ambient load from the frequent `mail_fetch` schedule — was
+  **refuted** by the arrival gaps, which show one batch of 37 uploads queuing
+  behind itself at ~1.2s intervals. `derived`: recording the refutation matters
+  more than the correction did, because the wrong cause would have pointed the
+  next reader at instance tuning, when what actually changes the exposure is
+  how many documents a caller uploads at once — which
+  [#111](https://github.com/pvliesdonk/paperless-mcp/issues/111) and
+  [#112](https://github.com/pvliesdonk/paperless-mcp/issues/112) will increase.
+- The measurement deliberately did not run through this server's own
+  `upload_document`. `derived`: that path carries file bytes as a base64 tool
+  argument, which is exactly the shape
+  [#111](https://github.com/pvliesdonk/paperless-mcp/issues/111) and
+  [#112](https://github.com/pvliesdonk/paperless-mcp/issues/112) exist to
+  replace, so timing it would have measured a transport on its way out. Reading
+  the instance's own task history instead cost nothing, mutated nothing, and
+  gave 4,133 records where an upload probe would have given one.
 
 ### 2026-09-16
 
