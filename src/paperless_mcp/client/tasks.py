@@ -1,4 +1,11 @@
-"""Tasks resource client."""
+"""Tasks resource client.
+
+The bare-array response this module paginates client-side is specific to
+Paperless payload version 9, which ``client/_http.py`` pins.  Version 10
+returns a paginated envelope instead, which would make :meth:`TasksClient.list`
+iterate the envelope's keys and :meth:`TasksClient.get` return ``None`` for
+every lookup.  See ``docs/design/reference/paperless-api-versioning.md``.
+"""
 
 from __future__ import annotations
 

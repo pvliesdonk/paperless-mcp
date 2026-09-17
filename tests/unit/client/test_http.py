@@ -48,6 +48,12 @@ async def test_accept_header_pins_version(http: PaperlessHTTP) -> None:
     accept = route.calls.last.request.headers["accept"]
     assert "application/json" in accept
     assert "version=" in accept
+    # The number is asserted, not just its presence: version 10 reshapes
+    # /api/tasks/ (bare array -> envelope, renamed members, lowercased status)
+    # and is refused outright by 2.x instances, so moving the pin is a
+    # deliberate rework rather than an edit.  See
+    # docs/design/reference/paperless-api-versioning.md.
+    assert "version=9" in accept
 
 
 @pytest.mark.asyncio
