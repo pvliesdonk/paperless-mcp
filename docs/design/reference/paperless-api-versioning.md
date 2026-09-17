@@ -98,7 +98,8 @@ accident.
   `versioning_class` in the tree is `src/documents/versioning.py`, which
   implements *document* versions (a `?version=<doc_id>` query parameter) and
   is unrelated to API payload versioning — a name collision worth not
-  conflating. [source: pngx-doc-views] [source: pngx-settings]
+  conflating.
+  [observed: `versioning_class|version_param` grepped across `src/` at d48663e9, returning only that file]
 
 ### What the response headers report
 

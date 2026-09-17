@@ -9,9 +9,12 @@
   versions, and from a live 3.1.3 instance. Written for
   [#113](https://github.com/pvliesdonk/paperless-mcp/issues/113), which asked
   what 3.x adds and what payload version 10 changes. Note that the 2026-09-16
-  pass recorded `ae9529551d17395c69dedf63a4472b45df0dab0f` as "3.1.3"; the
-  `v3.1.3` tag resolves to `d48663e9…`, so the two passes pin different
-  commits and only this one pins the release.
+  pass recorded `ae9529551d17395c69dedf63a4472b45df0dab0f` as "3.1.3" while
+  the `v3.1.3` tag resolves to `d48663e9…`, so the two passes pin different
+  commits and only this one pins the release. The difference is exactly one
+  commit — `ae95295` is the tag plus "Documentation: Add v3.1.3 changelog",
+  which touches no source file — so no line that page cites can have moved,
+  and its `subject_version` is left as it stands rather than corrected.
 - The instance's own OpenAPI document is vendored into the bundle as
   `paperless-openapi-3.1.3.json.gz` with a plain-text route list beside it,
   because it is the only complete description of the 3.x surface —
