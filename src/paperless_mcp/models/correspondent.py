@@ -2,11 +2,9 @@
 
 from __future__ import annotations
 
-from datetime import datetime
-
 from pydantic import BaseModel, ConfigDict, Field
 
-from paperless_mcp.models._compat import UserId
+from paperless_mcp.models._compat import OptionalPaperlessDatetime, UserId
 
 
 class Correspondent(BaseModel):
@@ -18,7 +16,7 @@ class Correspondent(BaseModel):
     matching_algorithm: int | None = None
     is_insensitive: bool = True
     document_count: int | None = None
-    last_correspondence: datetime | None = None
+    last_correspondence: OptionalPaperlessDatetime = None
     owner: UserId = None
     user_can_change: bool = True
 
