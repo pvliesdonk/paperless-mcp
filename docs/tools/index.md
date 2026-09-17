@@ -117,7 +117,8 @@ Both tools include a `share_url` field of the form `<PAPERLESS_MCP_PAPERLESS_PUB
 |---|---|
 | `list_tasks` | List background Celery tasks. Paginates (`page`, `page_size` up to 100). Defaults to unacknowledged tasks only. Pass `include_acknowledged=True` to include acknowledged tasks, or `acknowledged=True` to return only acknowledged ones. |
 | `get_task` | Get a task by UUID |
-| `wait_for_task` | Poll until a task reaches a terminal state or times out |
+| `wait_for_task` | Poll until a task reaches a terminal state or times out. May answer with a job handle instead; see `get_job_result` |
+| `get_job_result` | Retrieve the outcome of a background job started by a long-running tool. Call with the `job_id` a tool returned, every few seconds, until the status is terminal |
 
 ## System tools
 

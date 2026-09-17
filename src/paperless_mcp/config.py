@@ -15,6 +15,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from fastmcp_pvl_core import (
+    JobsConfig,
     ServerConfig,
     # Used by `_default_server_name` below, and re-exported so CONFIG-FROM-ENV
     # additions don't need a new import.  No `noqa: F401` — that factory makes
@@ -71,6 +72,13 @@ class ProjectConfig:
     # ``ProjectConfig()`` with no arguments and a field without a default makes
     # that a ``TypeError``.  Their help text carries the requirement instead
     # (pvliesdonk/fastmcp-server-template#621).
+    #
+    # SPIKE (#110): composed, not inherited — same rule as `server` above. It
+    # lives inside the domain block because the template does not wire jobs.
+    # Holding it here is also what is meant to put the PAPERLESS_MCP_JOBS_*
+    # vars in front of the config-surface generator: `server_config_surface()`
+    # covers ServerConfig only.
+    jobs: JobsConfig = field(default_factory=JobsConfig)
     paperless_url: str = field(
         default="",
         metadata={
@@ -216,5 +224,9 @@ class ProjectConfig:
             http_retries=int(env(_ENV_PREFIX, "HTTP_RETRIES") or 2),
             default_page_size=int(env(_ENV_PREFIX, "DEFAULT_PAGE_SIZE") or 25),
             paperless_public_url=env(_ENV_PREFIX, "PAPERLESS_PUBLIC_URL"),
+            # SPIKE (#110): not a literal ``env(prefix, "SUFFIX")`` call, so
+            # whether the generator's AST scan sees the JOBS_* vars at all is
+            # exactly what running ``gen_config_surface.py --check`` decides.
+            jobs=JobsConfig.from_env(_ENV_PREFIX),
             # CONFIG-FROM-ENV-END
         )

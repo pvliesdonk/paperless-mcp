@@ -229,6 +229,14 @@ def test_instructions_compose_semantic_operator_roles(
         "paperless-mcp: Paperless-NGX over MCP: search, read, upload and tag documents; manage correspondents and types.",
         "Demo material.",
         "House rule: be brief.",
+        # SPIKE (#110): `register_job_tools` adds this paragraph itself, via
+        # `instructions_for(mcp).add(...)`.  Wiring the jobs poller therefore
+        # changes the composed instructions, which is why this exact-match
+        # assertion had to be updated — the cost is not confined to tool count.
+        "A long-running tool returns a job id when this client cannot run it "
+        "as a task; poll get_job_result with that id until the status is "
+        "completed or failed, honouring retry_after_s, instead of invoking "
+        "the tool again.",
         "Full documentation for this server: https://pvliesdonk.github.io/paperless-mcp/latest/llms.txt",
     ]
 

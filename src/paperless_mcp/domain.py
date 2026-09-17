@@ -122,10 +122,15 @@ def build_tool_context(config: ProjectConfig) -> ToolContext:
         timeout_seconds=config.http_timeout_seconds,
         max_retries=config.http_retries,
     )
+    # SPIKE (#110): one Jobs per server, shared by every long-running tool and
+    # by the single `get_job_result` poller.
+    from fastmcp_pvl_core import build_jobs
+
     return ToolContext(
         client=client,
         default_page_size=config.default_page_size,
         public_url=config.public_url,
+        jobs=build_jobs(config.server, config.jobs),
     )
 
 

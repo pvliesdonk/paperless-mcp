@@ -23,6 +23,17 @@ from paperless_mcp.tools import (
 )
 from paperless_mcp.tools._context import ToolContext
 
+# SPIKE (#110): the domain sentence appended to pvl-core's generic
+# `get_job_result` description.  The numbers come from the task history of the
+# deployed instance — see docs/design/long-running-calls.md.
+_JOBS_NOTE = (
+    "Paperless queues document consumption: an uploaded document typically "
+    "waits about 45 seconds before the worker starts it, and occasionally "
+    "several minutes, while the OCR itself takes only a second or two. "
+    "`wait_for_task` therefore commonly answers with a job_id rather than a "
+    "task; a consume that finishes quickly answers inline, with no job."
+)
+
 
 def _register_all(mcp: FastMCP, ctx: ToolContext) -> None:
     documents.register(mcp, ctx)
@@ -50,3 +61,10 @@ def register_tools(mcp: FastMCP, ctx: ToolContext | None = None) -> None:
     if ctx is None:
         ctx = domain.tool_context_for(mcp)
     _register_all(mcp, ctx)
+    # SPIKE (#110): the single server-wide poller.  Registered once, after the
+    # category modules, so every handle — whichever tool minted it — resolves
+    # through one contract.
+    if ctx.jobs is not None:
+        from fastmcp_pvl_core import register_job_tools
+
+        register_job_tools(mcp, ctx.jobs, note=_JOBS_NOTE)

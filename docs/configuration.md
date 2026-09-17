@@ -232,4 +232,12 @@ PAPERLESS_MCP_DEFAULT_PAGE_SIZE=50
 | `PAPERLESS_MCP_HTTP_RETRIES` | `2` | No | Retries for idempotent requests after network errors or 5xx responses. |
 | `PAPERLESS_MCP_DEFAULT_PAGE_SIZE` | `25` | No | Default page size for list tools, from 1 through 100. |
 | `PAPERLESS_MCP_PAPERLESS_PUBLIC_URL` | (none) | No | Public Paperless UI URL for user-visible links; defaults to PAPERLESS_URL. |
+
+### Jobs
+
+| Variable | Default | Required | Description |
+|---|---|---|---|
+| `PAPERLESS_MCP_JOBS_SOFT_DEADLINE_S` | `25.0` | No | Seconds a long-running tool call may run in the foreground before it is promoted to a background job and a job handle is returned instead. |
+| `PAPERLESS_MCP_JOBS_RESULT_TTL_S` | `3600.0` | No | Seconds a background-job record (working or finished) is retained for polling before it expires from the store. |
+| `PAPERLESS_MCP_JOBS_MAX_PER_SUBJECT` | `256` | No | Maximum live background jobs per calling subject; further promotions are rejected until older records expire. |
 <!-- GENERATED-ENV-TABLE-REF-DOMAIN-END -->
