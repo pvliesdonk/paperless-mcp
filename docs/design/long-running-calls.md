@@ -53,10 +53,13 @@ The honest verdict is therefore narrower than "consumes are slow":
 
 That distinction matters for sequencing rather than for the answer, because
 batch ingestion is the normal shape of agent-driven upload, and
-[#111](https://github.com/pvliesdonk/paperless-mcp/issues/111) and
-[#112](https://github.com/pvliesdonk/paperless-mcp/issues/112) will make it
+[#111](https://github.com/pvliesdonk/paperless-mcp/issues/111) will make it
 more common by removing the context-window ceiling that currently discourages
-it.
+a many-document upload. It is the issue that carries an upload path
+(`create_upload_link`); its sibling
+[#112](https://github.com/pvliesdonk/paperless-mcp/issues/112) is the download
+side — OCR content out as a file — and so does not change how many consumes
+are queued. An earlier version of this note named both, which was wrong.
 
 The other two candidates the issue named are **not** long-running calls at all,
 because neither waits for the work it starts. That was worth measuring: it
