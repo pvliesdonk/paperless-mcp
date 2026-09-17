@@ -1,0 +1,35 @@
+# paperless-mcp
+
+> Paperless-NGX over MCP: search, read, upload and tag documents; manage correspondents and types.
+
+## Getting Started
+
+- [Home](https://pvliesdonk.github.io/paperless-mcp/2.0/index.md)
+- [Installation](https://pvliesdonk.github.io/paperless-mcp/2.0/installation/index.md)
+- [Configuration](https://pvliesdonk.github.io/paperless-mcp/2.0/configuration/index.md)
+- [Configuration Generator](https://pvliesdonk.github.io/paperless-mcp/2.0/configuration-generator/index.md)
+
+## Guides
+
+- [Authentication](https://pvliesdonk.github.io/paperless-mcp/2.0/guides/authentication/index.md)
+
+## MCP Interface
+
+- [Tools](https://pvliesdonk.github.io/paperless-mcp/2.0/tools/index.md)
+- [Resources](https://pvliesdonk.github.io/paperless-mcp/2.0/resources/index.md)
+- [Prompts](https://pvliesdonk.github.io/paperless-mcp/2.0/prompts/index.md)
+
+## Deployment
+
+- [Claude Desktop](https://pvliesdonk.github.io/paperless-mcp/2.0/deployment/claude-desktop/index.md)
+- [Docker](https://pvliesdonk.github.io/paperless-mcp/2.0/deployment/docker/index.md)
+- [OIDC Authentication](https://pvliesdonk.github.io/paperless-mcp/2.0/deployment/oidc/index.md)
+- [Release Process](https://pvliesdonk.github.io/paperless-mcp/2.0/deployment/release-process/index.md)
+- [Repository Protection](https://pvliesdonk.github.io/paperless-mcp/2.0/deployment/repository-protection/index.md)
+- [Template Updates](https://pvliesdonk.github.io/paperless-mcp/2.0/deployment/template-updates/index.md)
+
+## Release Notes
+
+- [1.0](https://pvliesdonk.github.io/paperless-mcp/2.0/releases/1.0/index.md)
+- [2.0](https://pvliesdonk.github.io/paperless-mcp/2.0/releases/2.0/index.md)
+
