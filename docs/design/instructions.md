@@ -74,28 +74,15 @@ environment's and asserting the environment's URL is the one stated.
 
 ## No resource URIs in the snippet
 
-This took two corrections, and the intermediate one is worth recording because
-it is the more tempting mistake.
+The snippet names tools and stops. `resources/read` is a client-to-server
+request, so a `paperless://` URI names no action the model can take; on a host
+that does expose resource reading (Claude Code, via `ReadMcpResourceTool`),
+that host's own tools carry the URIs and the schema. Stating the family cost
+roughly 40% of the snippet's budget and bought no action. Reframing it as "what
+the client reads" does not help: accurate prose is not automatically useful
+prose.
 
-The first draft said "pass `<id>` to the document tools, **or read**
-`paperless://documents/<id>`". That names an action the model does not have:
-`resources/read` is a client-to-server request, and the specification makes
-resources application-driven, so whether a model can cause one is the host's
-choice. It tested clean locally only because Claude Code grants that affordance
-through its own `ReadMcpResourceTool`, which no host is required to provide.
-
-The second draft kept the URI list and merely *reframed* it as "which the
-client reads rather than you calling them". That is the same error wearing a
-disclaimer. Accurate prose is not automatically useful prose, and the question
-that settles it is **what would the model do with this sentence**. The answer
-was nothing: it cannot call a resource, and if its host does expose resource
-reading, that host's own tool carries the schema and the listing. The URI list
-was roughly 40% of the snippet's budget buying no action.
-
-So the snippet states the instance URL and the link-to-id mapping, and stops.
-Two facts, each of which changes what the model does.
-
-Evidence that the resource half is redundant rather than merely unusable:
+The family is also redundant, not merely unusable:
 `ListMcpResourcesTool` against this server returns only the ten concrete
 collection resources — `resources/list` does not carry templates, so the eight
 `paperless://documents/{id}` templates never appear — and every collection plus
@@ -103,37 +90,25 @@ six of the eight document variants has a tool twin. Host positions and the full
 resource-to-tool table are in
 [`reference/mcp-resource-access.md`](reference/mcp-resource-access.md).
 
-One residue is left deliberately: `/preview` and `/download` have no tool twin,
-so on a tool-only client nothing reaches them. Documenting an unreachable
-resource in the instructions does not fix that; two tools would. It is recorded
-in the reference page and noted on #114, not papered over in prose the model
-cannot act on.
+`/preview` and `/download` are the exception: no tool twin, so on a tool-only
+client nothing reaches them. Two tools would fix that; prose naming an
+unreachable resource would not.
 
-**The rule for anything added to this snippet.** Ask what the model would do
-with the sentence. If the answer is "nothing it could not already do", it does
-not go in — accuracy is the floor, not the bar. Anything the model must do
-unaided is named as a tool.
-
-Note that #114's own "desired outcome" asked for the URI family. The issue was
-agent-filed carrying the same wrong belief about resources, so it was corrected
-rather than satisfied. An issue is evidence of what someone believed when they
-wrote it, not an authority over what is true.
+The test for anything added here: what would the model *do* with the sentence?
+Accuracy is the floor, not the bar. #114 asked for the URI family; it was
+agent-filed carrying the same wrong premise, so it was corrected rather than
+satisfied.
 
 ## A URL with whitespace is refused
 
-The snippet interpolates an operator-supplied URL into model-facing prose, twice.
-`env()` strips only *surrounding* whitespace, so a value carrying an embedded
+The snippet interpolates an operator-supplied URL into model-facing prose, and
+`env()` strips only *surrounding* whitespace — so a value carrying an embedded
 blank line survived into `public_url` and would have rendered as an extra
-top-level paragraph in the instructions, indistinguishable from a real
-instruction block.
-
-No trust boundary is crossed by that (the same operator already owns
-`PAPERLESS_MCP_INSTRUCTIONS_EXTRA`, which is arbitrary model-facing prose by
-design), but the failure was silent and its symptom — a model behaving oddly —
-pointed nowhere near the configuration. `ProjectConfig.__post_init__` now
-rejects whitespace in either URL field, which also protects the `web_url` and
-`share_url` links built from the same field and the httpx `base_url` built from
-its sibling.
+top-level instruction paragraph, indistinguishable from a real one.
+`ProjectConfig.__post_init__` now rejects whitespace in either URL field, which
+also protects the `web_url` / `share_url` links and the httpx `base_url` built
+from the same fields. No trust boundary is crossed — the same operator owns
+`PAPERLESS_MCP_INSTRUCTIONS_EXTRA` — but the failure was silent.
 
 ## A migration site inside a seeded file
 

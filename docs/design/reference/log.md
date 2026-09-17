@@ -3,21 +3,17 @@
 ## 2026-09-17
 
 - Added [Who may read an MCP resource](mcp-resource-access.md), read from the
-  MCP 2025-06-18 resources specification, FastMCP's `ResourcesAsTools` page,
-  and the running Claude Code host's own tool schemas. Written during review of
-  [#114](https://github.com/pvliesdonk/paperless-mcp/issues/114), whose first
-  draft told the model to "read `paperless://documents/<id>`". The spec settles
-  it: `resources/read` is a client-to-server request and resources are
-  "application-driven", so the model is never the protocol actor — but the same
+  MCP 2025-06-18 resources specification, FastMCP's `ResourcesAsTools` page and
+  the running host's own tool schemas, during review of
+  [#114](https://github.com/pvliesdonk/paperless-mcp/issues/114).
+  `resources/read` is a client-to-server request and resources are
+  "application-driven", so the model is never the protocol actor; the same
   section permits a host to include context by "the AI model's selection",
-  which is what Claude Code's `ReadMcpResourceTool` implements. That is the
-  trap worth recording: resource-reading prose tests clean on this host
-  precisely because this host grants an affordance the protocol does not
-  require, so testing here cannot tell you whether the prose is portable.
-  The Claude Code claim rests on in-session tool schemas rather than the
-  published MCP page, which documents configuration and tools but not the
-  resource interaction model; the page says so rather than citing a doc that
-  does not make the claim.
+  which Claude Code's `ReadMcpResourceTool` implements. Worth recording because
+  prose naming resource URIs therefore tests clean on this host whether or not
+  it is portable. The Claude Code claim rests on in-session tool schemas: the
+  published MCP page documents configuration and tools, not the resource
+  interaction model.
 - Added [Paperless-NGX API payload versions 9 and 10](paperless-api-versioning.md)
   and [The Paperless-NGX 3.x REST surface this server does not expose](paperless-3x-rest-surface.md),
   read from paperless-ngx at `d48663e9ebaadc4b413a6ca3bc88cb5fbc4e468e` (the

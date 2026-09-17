@@ -250,27 +250,16 @@ contract does not quite fit (a required field cannot be expressed; the config
 cannot reach `register_tools`), are in `docs/design/config.md`.
 
 **The instructions name the instance.** `DOMAIN-WIRING` calls
-`domain.add_instance_instructions(mcp)`, which contributes one `CAPABILITIES`
-snippet: the instance URL, and the mapping from a `<public URL>/documents/<id>/`
-link to a document id it passes to the document *tools*. Nothing else. The
-`paperless://` resource URIs are deliberately **not** stated: `resources/read`
-is a client-to-server request, so a resource URI names nothing the model can
-act on, and every variant worth acting on has a tool twin anyway — see
-`docs/design/reference/mcp-resource-access.md`. The test for anything added
-here is "what would the model *do* with this sentence"; prose that fails it is
-budget spent on trivia. The URL comes from the `ToolContext` the registrars
-staged, *not* from `make_server`'s `config` argument — the staged one is what
-tool results build `web_url` and `share_url` from, and the two can differ
-(template#622), so naming an instance whose links point elsewhere would be
-worse than saying nothing. One snippet rather than two, because the URL alone
-would suit the `INSTANCE` role but is only useful together with that mapping,
-and the roles serialise `INSTANCE`, `POLICY`, `CAPABILITIES` — splitting them
-would put the operator's policy text between the halves. No `requires_tools`,
-because half of what the snippet describes is *resources*, which tool
-visibility never touches: gating on a tool name would drop the instance URL for
-an operator who merely hid that tool. The composed text runs ~690 of pvl-core's
-1,536-unit guidance budget. The full argument, including the whitespace-URL
-rejection this added to `ProjectConfig`, is in `docs/design/instructions.md`.
+`domain.add_instance_instructions(mcp)`: one `CAPABILITIES` snippet carrying the
+instance URL and the `<public URL>/documents/<id>/` → id → document-tools
+mapping, and nothing else. It reads the staged `ToolContext`, not
+`make_server`'s `config`, because the two can differ (template#622) and the
+staged URL is the one tool results build `web_url` from. No `requires_tools`:
+the snippet names no individual tool, so hiding one must not drop the instance
+URL. No `paperless://` URIs: `resources/read` is a client action, so they name
+nothing the model can do, and every variant worth acting on has a tool twin.
+~390 of pvl-core's 1,536-unit budget. Rationale, and the whitespace-URL
+rejection in `ProjectConfig`: `docs/design/instructions.md`.
 
 **`get_server_info` reports Paperless too.** The `DOMAIN-UPSTREAM` sentinel in
 `server.py` wires `upstream_version=lambda: _paperless_version()` with
