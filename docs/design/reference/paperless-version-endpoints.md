@@ -155,7 +155,8 @@ question:
 - Whether API payload version 10 changes any of these three bodies: it does
   not. `/api/remote_version/` and `/api/ui_settings/` were compared at both
   versions and returned identical key sets, so the claims above hold either
-  way. `ALLOWED_VERSIONS` is `["9", "10"]` with `DEFAULT_VERSION` `"10"` at
+  way.
+  [observed: each endpoint fetched with `Accept: application/json; version=9` and `version=10` against a live 3.1.3 instance and compared as recursive key sets, on 2026-09-17] `ALLOWED_VERSIONS` is `["9", "10"]` with `DEFAULT_VERSION` `"10"` at
   this commit [source: pngx-settings], and this client still pins `version=9`;
   the differences that decide that pin live elsewhere in the surface and are
   recorded in

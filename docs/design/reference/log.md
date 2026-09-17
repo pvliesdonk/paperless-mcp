@@ -12,6 +12,13 @@
   pass recorded `ae9529551d17395c69dedf63a4472b45df0dab0f` as "3.1.3"; the
   `v3.1.3` tag resolves to `d48663e9…`, so the two passes pin different
   commits and only this one pins the release.
+- The instance's own OpenAPI document is vendored into the bundle as
+  `paperless-openapi-3.1.3.json.gz` with a plain-text route list beside it,
+  because it is the only complete description of the 3.x surface —
+  `docs/api.md` documents neither chat nor AI suggestions. Storing it makes
+  the next refresh a diff instead of a re-derivation. It is committed
+  compressed to stay under the repository's 500 KB added-file limit, and was
+  checked for hostnames, credentials and archive content before committing.
 - The sweep answered the issue's central question against a live AI-enabled
   instance rather than by inference: `/api/documents/{id}/suggestions/` does
   **not** become AI-backed when AI is enabled. AI suggestions are a separate
