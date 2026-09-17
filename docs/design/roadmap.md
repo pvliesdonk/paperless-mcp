@@ -230,8 +230,12 @@ backlog that predates this index.
   more than the correction did, because the wrong cause would have pointed the
   next reader at instance tuning, when what actually changes the exposure is
   how many documents a caller uploads at once — which
-  [#111](https://github.com/pvliesdonk/paperless-mcp/issues/111) and
-  [#112](https://github.com/pvliesdonk/paperless-mcp/issues/112) will increase.
+  [#111](https://github.com/pvliesdonk/paperless-mcp/issues/111) will increase,
+  because it is the sibling that carries an upload path. `evidenced`: this
+  entry first named [#112](https://github.com/pvliesdonk/paperless-mcp/issues/112)
+  alongside it, which is the download side and cannot change how many consumes
+  are queued; corrected under
+  [#143](https://github.com/pvliesdonk/paperless-mcp/issues/143).
 - The measurement deliberately did not run through this server's own
   `upload_document`. `derived`: that path carries file bytes as a base64 tool
   argument, which is exactly the shape
