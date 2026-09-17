@@ -243,11 +243,7 @@ def test_instructions_compose_semantic_operator_roles(
         "House rule: be brief.",
         "This server fronts the Paperless-NGX instance at http://paperless.test. "
         "A link of the form http://paperless.test/documents/<id>/ is a document on "
-        "it: pass <id> to the document tools. The same documents are also published "
-        "as MCP resources, which the client reads rather than you calling them: "
-        "paperless://documents/<id> with /content, /metadata, /notes, /history, "
-        "/thumbnail, /preview and /download, and collections as <name>://paperless. "
-        "Only /preview and /download have no tool.",
+        "it: pass <id> to the document tools.",
         "Full documentation for this server: https://pvliesdonk.github.io/paperless-mcp/latest/llms.txt",
     ]
 

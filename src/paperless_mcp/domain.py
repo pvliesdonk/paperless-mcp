@@ -305,11 +305,7 @@ def add_instance_instructions(mcp: FastMCP) -> None:
     instructions_for(mcp).add(
         f"This server fronts the Paperless-NGX instance at {url}. "
         f"A link of the form {url}/documents/<id>/ is a document on it: pass "
-        "<id> to the document tools. The same documents are also published as "
-        "MCP resources, which the client reads rather than you calling them: "
-        "paperless://documents/<id> with /content, /metadata, /notes, "
-        "/history, /thumbnail, /preview and /download, and collections as "
-        "<name>://paperless. Only /preview and /download have no tool.",
+        "<id> to the document tools.",
         role=InstructionRole.CAPABILITIES,
     )
 

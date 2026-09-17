@@ -11,7 +11,7 @@ templating one string. This project contributes three:
 | Role | Contributor | Content |
 |---|---|---|
 | `IDENTITY` | `server.py`, shaped API | `paperless-mcp: <product description>` |
-| `CAPABILITIES` | `domain.add_instance_instructions` | the instance URL and the URI families |
+| `CAPABILITIES` | `domain.add_instance_instructions` | the instance URL and the link-to-id mapping |
 | `DOCUMENTATION` | `server.py`, shaped API | the `llms.txt` pointer |
 
 The operator's `PAPERLESS_MCP_INSTANCE_DESCRIPTION` (`ROUTING`) and
@@ -21,9 +21,10 @@ itself, not here.
 Until [#114](https://github.com/pvliesdonk/paperless-mcp/issues/114) the middle
 row did not exist, so the composed text never named the Paperless instance the
 server fronts. A model handed `https://paperless.example.org/documents/42/` in
-conversation had no stated basis for recognising it as this server's instance,
-and nothing it reads before its first call described the `paperless://` resource
-URIs at all.
+conversation had no stated basis for recognising it as this server's instance.
+
+#114 also asked for the `paperless://` resource URI family to be stated. That
+half of its desired outcome was withdrawn during review; see below.
 
 ## One snippet, not two
 
@@ -71,27 +72,52 @@ context for the same reason.
 pins this by handing `make_server` a config whose URL differs from the
 environment's and asserting the environment's URL is the one stated.
 
-## Resources are what the client reads, not what the model calls
+## No resource URIs in the snippet
 
-The first draft of the snippet said "pass `<id>` to the document tools, or read
-`paperless://documents/<id>`". That instructed the model to perform an action
-it does not have: `resources/read` is a client-to-server request, and the MCP
-specification makes resources application-driven, so whether a model can cause
-one is the host's choice rather than a property of this server. It tested clean
-locally only because Claude Code grants that affordance through its own
-`ReadMcpResourceTool`, which the protocol does not require any host to provide.
+This took two corrections, and the intermediate one is worth recording because
+it is the more tempting mistake.
 
-The snippet now names the tools as the model's path and frames the
-`paperless://` family as what the client reads. It also states the one place
-the two surfaces genuinely disagree: `/preview` and `/download` have no tool
-twin, so on a tool-only client nothing reaches them. Evidence, host positions
-and the full resource-to-tool table are in
+The first draft said "pass `<id>` to the document tools, **or read**
+`paperless://documents/<id>`". That names an action the model does not have:
+`resources/read` is a client-to-server request, and the specification makes
+resources application-driven, so whether a model can cause one is the host's
+choice. It tested clean locally only because Claude Code grants that affordance
+through its own `ReadMcpResourceTool`, which no host is required to provide.
+
+The second draft kept the URI list and merely *reframed* it as "which the
+client reads rather than you calling them". That is the same error wearing a
+disclaimer. Accurate prose is not automatically useful prose, and the question
+that settles it is **what would the model do with this sentence**. The answer
+was nothing: it cannot call a resource, and if its host does expose resource
+reading, that host's own tool carries the schema and the listing. The URI list
+was roughly 40% of the snippet's budget buying no action.
+
+So the snippet states the instance URL and the link-to-id mapping, and stops.
+Two facts, each of which changes what the model does.
+
+Evidence that the resource half is redundant rather than merely unusable:
+`ListMcpResourcesTool` against this server returns only the ten concrete
+collection resources — `resources/list` does not carry templates, so the eight
+`paperless://documents/{id}` templates never appear — and every collection plus
+six of the eight document variants has a tool twin. Host positions and the full
+resource-to-tool table are in
 [`reference/mcp-resource-access.md`](reference/mcp-resource-access.md).
 
-The general rule this leaves behind: anything the model must be able to do
-unaided is named as a tool. A resource URI may still be stated, because it is
-useful to a host with a picker or a model that has the affordance, but never
-phrased as the model's own action.
+One residue is left deliberately: `/preview` and `/download` have no tool twin,
+so on a tool-only client nothing reaches them. Documenting an unreachable
+resource in the instructions does not fix that; two tools would. It is recorded
+in the reference page and noted on #114, not papered over in prose the model
+cannot act on.
+
+**The rule for anything added to this snippet.** Ask what the model would do
+with the sentence. If the answer is "nothing it could not already do", it does
+not go in — accuracy is the floor, not the bar. Anything the model must do
+unaided is named as a tool.
+
+Note that #114's own "desired outcome" asked for the URI family. The issue was
+agent-filed carrying the same wrong belief about resources, so it was corrected
+rather than satisfied. An issue is evidence of what someone believed when they
+wrote it, not an authority over what is true.
 
 ## A URL with whitespace is refused
 
@@ -124,5 +150,5 @@ check when a pvl-core major lands.
 pvl-core targets 1,536 UTF-16 units of generated guidance, reserving the rest of
 Claude Code's 2,048-unit limit for operator routing and policy, and warns rather
 than truncates when either is crossed. The composed text with this snippet is
-about 690 units, the exact figure depending on the URL's length because it
+about 390 units, the exact figure depending on the URL's length because it
 appears twice.

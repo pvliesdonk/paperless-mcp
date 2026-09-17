@@ -251,14 +251,14 @@ cannot reach `register_tools`), are in `docs/design/config.md`.
 
 **The instructions name the instance.** `DOMAIN-WIRING` calls
 `domain.add_instance_instructions(mcp)`, which contributes one `CAPABILITIES`
-snippet: the instance URL, the mapping from a `<public URL>/documents/<id>/`
-link to a document id it can pass to the document *tools*, and the
-`paperless://` resource family framed as what the **client** reads. That
-framing is load-bearing, not stylistic: `resources/read` is a client-to-server
-request, so telling the model to "read" a URI names an action it does not have
-on a host that grants no such affordance — see
-`docs/design/reference/mcp-resource-access.md`. The URL comes from the
-`ToolContext` the registrars
+snippet: the instance URL, and the mapping from a `<public URL>/documents/<id>/`
+link to a document id it passes to the document *tools*. Nothing else. The
+`paperless://` resource URIs are deliberately **not** stated: `resources/read`
+is a client-to-server request, so a resource URI names nothing the model can
+act on, and every variant worth acting on has a tool twin anyway — see
+`docs/design/reference/mcp-resource-access.md`. The test for anything added
+here is "what would the model *do* with this sentence"; prose that fails it is
+budget spent on trivia. The URL comes from the `ToolContext` the registrars
 staged, *not* from `make_server`'s `config` argument — the staged one is what
 tool results build `web_url` and `share_url` from, and the two can differ
 (template#622), so naming an instance whose links point elsewhere would be
