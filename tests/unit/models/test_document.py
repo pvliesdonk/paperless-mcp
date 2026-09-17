@@ -48,6 +48,22 @@ def test_document_patch_allows_partial() -> None:
     assert patch.model_dump(exclude_unset=True) == {"title": "New title"}
 
 
+def test_document_accepts_date_only_created() -> None:
+    """Paperless-NGX may return ``created`` as a bare date, no time or offset."""
+    doc = Document.model_validate(
+        {"id": 7, "title": "Date-only created", "created": "2018-11-01"}
+    )
+    assert doc.created.tzinfo is not None
+    assert doc.created.isoformat() == "2018-11-01T00:00:00+00:00"
+
+
+def test_document_created_offset_preserved() -> None:
+    doc = Document.model_validate(
+        {"id": 8, "title": "Aware created", "created": "2026-04-20T14:30:00+02:00"}
+    )
+    assert doc.created.isoformat() == "2026-04-20T14:30:00+02:00"
+
+
 def test_document_note_roundtrip() -> None:
     note = DocumentNote.model_validate(
         {"id": 5, "note": "hi", "created": "2026-04-23T10:00:00Z", "user": 1}
