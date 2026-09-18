@@ -170,6 +170,15 @@ are not yet searchable, and nothing tells the model when they will be. A job
 handle would be the wrong fix, because Paperless does not give the bulk-edit
 response the task id it would need.
 
+That issue was [#141](https://github.com/pvliesdonk/paperless-mcp/issues/141),
+and it closed by correcting what the tool promises and adding a `task_type`
+filter to `list_tasks`, so the queued `bulk_update` record — which exists from
+the moment the task is published — can be found and waited on. The endpoint
+behaviour behind both is recorded in
+[`reference/paperless-bulk-edit-indexing.md`](reference/paperless-bulk-edit-indexing.md),
+including the two findings that bound the fix: only whoosh reads lag, and no
+task record can be tied to the documents a given bulk edit touched.
+
 `llm_index` at 1400s is the slowest thing on the instance, but it is only
 reachable through `/api/tasks/run/`, which this server does not wrap.
 

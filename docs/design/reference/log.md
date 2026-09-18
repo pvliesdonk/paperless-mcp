@@ -1,5 +1,29 @@
 # Reference research log
 
+## 2026-09-18
+
+- Added [Paperless-NGX bulk edit and deferred search indexing](paperless-bulk-edit-indexing.md),
+  read from paperless-ngx at the `v3.1.3` tag and from a live 3.1.3 instance.
+  Written for [#141](https://github.com/pvliesdonk/paperless-mcp/issues/141),
+  which asked whether `bulk_edit_documents` should say that its `OK` precedes
+  the search-index rebuild.
+- The pass settled both questions the issue left `[unverified]`. The other
+  three `bulk_edit_*` tools are **not** affected: `BulkEditObjectsView.post`
+  runs `set_permissions` and `delete` inline and queues nothing. And no
+  handle on the queued task can identify it — `_extract_input_data` stores
+  input only for `consume_file` and `mail_fetch`, so every `bulk_update`
+  record carries `input_data: {}` and `related_document_ids: []`, at payload
+  version 10 as much as at 9.
+- A scratch-tag probe reproduced the symptom the issue could not: straight
+  after the `OK`, a full-text search for the new tag returned nothing while
+  the equivalent tag filter returned the document. That distinction — whoosh
+  reads lag, ORM reads do not — is what the tool description now states.
+- The refute pass narrowed one claim. "Bulk edits queue a reindex" is true
+  only of the nine metadata methods; `delete`, `reprocess`, `rotate`,
+  `split`, `delete_pages` and `merge` dispatch different tasks or none, so
+  the page records the dispatch per method rather than for the endpoint.
+  Next review: 2027-03-18.
+
 ## 2026-09-17
 
 - Added [Paperless-NGX API payload versions 9 and 10](paperless-api-versioning.md)

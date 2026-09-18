@@ -39,7 +39,7 @@ from paperless_mcp.models.share_link import ShareLink, ShareLinkFileVersion
 from paperless_mcp.models.storage_path import StoragePath
 from paperless_mcp.models.system import RemoteVersion, Statistics
 from paperless_mcp.models.tag import Tag, TagCreate, TagPatch
-from paperless_mcp.models.task import Task, TaskStatus
+from paperless_mcp.models.task import Task, TaskStatus, TaskType
 
 __all__ = [
     "BulkEditOperation",
@@ -74,5 +74,6 @@ __all__ = [
     "TagPatch",
     "Task",
     "TaskStatus",
+    "TaskType",
     "UploadTaskAcknowledgement",
 ]
