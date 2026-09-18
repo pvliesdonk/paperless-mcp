@@ -102,17 +102,28 @@ def register_tool(
 ) -> Callable[[F], F]:
     """Return a decorator that registers *func* as an MCP tool named *name*.
 
-    Looks up icons from :data:`paperless_mcp.tools._icons.ICON_REGISTRY`
-    and annotations from :data:`paperless_mcp.tools._annotations.ANNOTATION_REGISTRY`.
+    Looks up icons from :data:`paperless_mcp.tools._icons.ICON_REGISTRY`,
+    behavioural hints from
+    :data:`paperless_mcp.tools._annotations.ANNOTATION_REGISTRY`, and the
+    human-readable label from
+    :data:`paperless_mcp.tools._titles.TITLE_REGISTRY`.
 
     Raises:
-        KeyError: If *name* is not present in either registry.
+        KeyError: If *name* is not present in every one of the three
+            registries.  Registration happens at import, so a tool added
+            without a title fails immediately rather than shipping its machine
+            name as its label.
     """
     from paperless_mcp.tools._annotations import ANNOTATION_REGISTRY
     from paperless_mcp.tools._icons import ICON_REGISTRY
+    from paperless_mcp.tools._titles import TITLE_REGISTRY
 
     icons = ICON_REGISTRY[name]
-    annotations = ANNOTATION_REGISTRY[name]
+    # Hints are shared between tools, the title is per-tool; they are merged
+    # here rather than stored together.  ``title`` goes first only so it reads
+    # first in a repr — the hints are what decide client behaviour, and no key
+    # collides.
+    annotations = {"title": TITLE_REGISTRY[name], **ANNOTATION_REGISTRY[name]}
 
     def decorator(func: F) -> F:
         wrapped = _wrap_with_error_handling(name, func)
