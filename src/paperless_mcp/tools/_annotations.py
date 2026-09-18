@@ -4,8 +4,13 @@ Every tool that talks to Paperless is ``openWorldHint=True`` — it interacts wi
 an external system.  The other hints encode CRUD semantics and guide clients
 on when to prompt for confirmation / cache results.
 
-Keep this registry in lock-step with :data:`paperless_mcp.tools._icons.ICON_REGISTRY`;
-:func:`paperless_mcp.tools._registry.register_tool` raises ``KeyError`` on mismatch.
+These are the *shared* half of a tool's annotations: forty-nine tools map onto
+the five dicts below.  The per-tool label lives in
+:data:`paperless_mcp.tools._titles.TITLE_REGISTRY`, which
+:func:`paperless_mcp.tools._registry.register_tool` merges in.
+
+Keep this registry in lock-step with :data:`paperless_mcp.tools._icons.ICON_REGISTRY`
+and ``TITLE_REGISTRY``; ``register_tool`` raises ``KeyError`` on mismatch.
 """
 
 from __future__ import annotations
