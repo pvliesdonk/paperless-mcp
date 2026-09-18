@@ -1408,6 +1408,10 @@ ignores both additive variables, and logs a deprecation warning at startup.</p>
 operator routing and policy within Claude Code's known 2,048-unit limit.
 Crossing either threshold logs a warning; startup continues and the server does
 not truncate the instructions.</p>
+<p>The generated guidance names the Paperless instance this deployment fronts,
+taking the URL from <code>PAPERLESS_MCP_PAPERLESS_PUBLIC_URL</code> or, unset, from
+<code>PAPERLESS_MCP_PAPERLESS_URL</code>. A model can then recognise a link to that
+instance and read the document id out of it.</p>
 <p><code>PAPERLESS_MCP_TOOLS_ALLOW</code> and <code>PAPERLESS_MCP_TOOLS_DENY</code> trim which
 tools an instance exposes. Hidden tools disappear from <code>tools/list</code> and are
 rejected on <code>tools/call</code>; resources and prompts are unaffected. Setting both

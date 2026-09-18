@@ -10,6 +10,8 @@ Transport, identity, and tool visibility. `PAPERLESS_MCP_SERVER_NAME` identifies
 
 Generated guidance targets 1,536 UTF-16 units, reserving 512 units for normal operator routing and policy within Claude Code's known 2,048-unit limit. Crossing either threshold logs a warning; startup continues and the server does not truncate the instructions.
 
+The generated guidance names the Paperless instance this deployment fronts, taking the URL from `PAPERLESS_MCP_PAPERLESS_PUBLIC_URL` or, unset, from `PAPERLESS_MCP_PAPERLESS_URL`. A model can then recognise a link to that instance and read the document id out of it.
+
 `PAPERLESS_MCP_TOOLS_ALLOW` and `PAPERLESS_MCP_TOOLS_DENY` trim which tools an instance exposes. Hidden tools disappear from `tools/list` and are rejected on `tools/call`; resources and prompts are unaffected. Setting both variables, or setting one to a value with no names in it, is a startup error. A name matching no registered tool is ignored, but an allowlist that matches nothing logs a startup warning, since the instance then exposes zero tools. See `fastmcp-pvl-core`'s README for the full semantics.
 
 `PAPERLESS_MCP_HEALTH_DETAIL` decides how much the unauthenticated `/health` and `/health/ready` bodies say, since anyone who can reach the port can read them: `status` alone, the default `standard` with the server name, version and a verdict per readiness check, or `full` with a redacted reason for each check that raised. See [Docker deployment](https://pvliesdonk.github.io/paperless-mcp/unstable/deployment/docker/#health) for the routes themselves.
