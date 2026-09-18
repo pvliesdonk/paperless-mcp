@@ -22,7 +22,7 @@ calling a tool.
 | `upload_document` | Upload a new document for ingestion |
 | `update_document` | Patch document metadata (title, tags, correspondent, etc.) |
 | `delete_document` | Permanently delete a document |
-| `bulk_edit_documents` | Apply a bulk operation to multiple documents |
+| `bulk_edit_documents` | Apply a bulk operation to multiple documents. The change lands before the call returns, but Paperless queues the search-index rebuild, so `search_documents` may miss the edited documents for seconds to minutes while `list_documents` and `get_document` see them at once. Track the queued task with `list_tasks(task_type="bulk_update")` |
 | `get_document_metadata` | Retrieve file metadata: original filename, checksums, MIME type |
 | `get_document_thumbnail` | Retrieve the thumbnail image of a document |
 | `get_document_suggestions` | Retrieve the tags, correspondent and type Paperless suggests for a document |
@@ -122,7 +122,7 @@ Both tools include a `share_url` field of the form `<PAPERLESS_MCP_PAPERLESS_PUB
 
 | Tool | Description |
 |---|---|
-| `list_tasks` | List background Celery tasks. Paginates (`page`, `page_size` up to 100). Defaults to unacknowledged tasks only. Pass `include_acknowledged=True` to include acknowledged tasks, or `acknowledged=True` to return only acknowledged ones. |
+| `list_tasks` | List background Celery tasks, newest first. Paginates (`page`, `page_size` up to 100). Defaults to unacknowledged tasks only. Pass `include_acknowledged=True` to include acknowledged tasks, or `acknowledged=True` to return only acknowledged ones. Filter by kind of work with `task_type`, such as `task_type="bulk_update"` for the search-index rebuild `bulk_edit_documents` queues. |
 | `get_task` | Get a task by UUID |
 | `wait_for_task` | Poll until a task reaches a terminal state or times out |
 

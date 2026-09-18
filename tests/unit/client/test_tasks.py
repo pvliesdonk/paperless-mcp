@@ -11,7 +11,7 @@ from paperless_mcp.client import PaperlessClient
 from paperless_mcp.client._http import PaperlessHTTP
 from paperless_mcp.client.tasks import TasksClient
 from paperless_mcp.models.common import Paginated
-from paperless_mcp.models.task import Task, TaskStatus
+from paperless_mcp.models.task import Task, TaskStatus, TaskType
 
 
 @pytest.fixture
@@ -146,6 +146,51 @@ async def test_list_tasks_acknowledged_none_sends_no_filter(
     assert route.called
     call = route.calls[0].request
     assert "acknowledged" not in call.url.params
+
+
+@pytest.mark.asyncio
+async def test_list_tasks_task_type_filter_is_sent(
+    load_fixture: Callable[[str], Any],
+    paperless_base_url: str,
+    paperless_api_token: str,
+) -> None:
+    # Paperless honours ?task_type= at payload version 9 as well as 10, so a
+    # caller can find the bulk_update task a bulk edit queued.  See
+    # docs/design/reference/paperless-bulk-edit-indexing.md.
+    async with respx.mock(base_url=paperless_base_url) as mock:
+        route = mock.get("/api/tasks/").mock(
+            return_value=httpx.Response(200, json=load_fixture("tasks_page1.json"))
+        )
+        client = PaperlessClient(
+            base_url=paperless_base_url, api_token=paperless_api_token
+        )
+        try:
+            await client.tasks.list(task_type=TaskType.BULK_UPDATE)
+        finally:
+            await client.aclose()
+
+    assert route.calls.last.request.url.params.get("task_type") == "bulk_update"
+
+
+@pytest.mark.asyncio
+async def test_list_tasks_without_task_type_sends_no_filter(
+    load_fixture: Callable[[str], Any],
+    paperless_base_url: str,
+    paperless_api_token: str,
+) -> None:
+    async with respx.mock(base_url=paperless_base_url) as mock:
+        route = mock.get("/api/tasks/").mock(
+            return_value=httpx.Response(200, json=load_fixture("tasks_page1.json"))
+        )
+        client = PaperlessClient(
+            base_url=paperless_base_url, api_token=paperless_api_token
+        )
+        try:
+            await client.tasks.list()
+        finally:
+            await client.aclose()
+
+    assert "task_type" not in route.calls.last.request.url.params
 
 
 @pytest.mark.asyncio

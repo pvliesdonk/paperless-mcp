@@ -5,6 +5,10 @@ Paperless payload version 9, which ``client/_http.py`` pins.  Version 10
 returns a paginated envelope instead, which would make :meth:`TasksClient.list`
 iterate the envelope's keys and :meth:`TasksClient.get` return ``None`` for
 every lookup.  See ``docs/design/reference/paperless-api-versioning.md``.
+
+The ``task_type`` filter is what makes deferred work observable — notably the
+``bulk_update`` rebuild a bulk edit queues after answering ``OK``.  See
+``docs/design/reference/paperless-bulk-edit-indexing.md``.
 """
 
 from __future__ import annotations
@@ -15,7 +19,7 @@ import time
 
 from paperless_mcp.client._http import PaperlessHTTP
 from paperless_mcp.models.common import Paginated
-from paperless_mcp.models.task import Task, TaskStatus
+from paperless_mcp.models.task import Task, TaskStatus, TaskType
 
 _TERMINAL_STATUSES = {TaskStatus.SUCCESS, TaskStatus.FAILURE, TaskStatus.REVOKED}
 
@@ -32,6 +36,7 @@ class TasksClient:
         page: int = 1,
         page_size: int = 25,
         status: TaskStatus | None = None,
+        task_type: TaskType | None = None,
         acknowledged: bool | None = None,
         include_acknowledged: bool = False,
     ) -> Paginated[Task]:
@@ -51,6 +56,11 @@ class TasksClient:
             page: Page number (1-based).
             page_size: Results per page. Tool layer clamps 1-100.
             status: Filter by task status.
+            task_type: Filter by kind of work, such as
+                :attr:`TaskType.BULK_UPDATE` for the search-index rebuild a
+                bulk edit queues.  Paperless honours this filter at payload
+                version 9 as well as 10, even though version 9 responses
+                carry the value under ``task_name``.
 
         Returns:
             A :class:`Paginated` page of :class:`Task` objects.
@@ -58,6 +68,8 @@ class TasksClient:
         params: dict[str, object] = {}
         if status is not None:
             params["status"] = status.value
+        if task_type is not None:
+            params["task_type"] = task_type.value
         if acknowledged is None and not include_acknowledged:
             acknowledged = False
         if acknowledged is not None:

@@ -292,7 +292,17 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
         ids: list[int],
         parameters: dict[str, object] | None = None,
     ) -> BulkEditResult:
-        """Apply a bulk operation to a set of documents."""
+        """Apply a bulk operation to a set of documents.
+
+        Paperless writes the change before answering ``OK``, then queues the
+        search-index rebuild as a background task.  A following
+        ``search_documents`` call can therefore miss the edited documents for
+        seconds to minutes, while ``list_documents`` and ``get_document``
+        reflect the change at once.  Metadata operations queue a
+        ``bulk_update`` task: find it with
+        ``list_tasks(task_type="bulk_update")`` and ``wait_for_task`` on its
+        ``task_id`` to wait for full-text search to catch up.
+        """
         return await client.documents.bulk_edit(
             document_ids=ids, method=operation, parameters=parameters
         )

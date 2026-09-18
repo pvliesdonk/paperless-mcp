@@ -77,6 +77,19 @@ def test_all_tools_have_icons(mock_client: Any) -> None:
         assert tool.icons, f"tool {tool.name} missing icons"
 
 
+def test_bulk_edit_documents_declares_deferred_indexing(mock_client: Any) -> None:
+    # Paperless answers OK before the search-index rebuild it queues runs, so
+    # the description has to say so and name the task a caller can wait on.
+    # See docs/design/reference/paperless-bulk-edit-indexing.md.
+    mcp = FastMCP("test")
+    ctx = ToolContext(client=mock_client, default_page_size=25, public_url="")
+    documents_mod.register(mcp, ctx)
+    tools = {t.name: t for t in asyncio.run(mcp.list_tools())}
+    description = tools["bulk_edit_documents"].description or ""
+    assert "search_documents" in description
+    assert "bulk_update" in description
+
+
 def test_list_and_search_expose_include_content(mock_client: Any) -> None:
     mcp = FastMCP("test")
     ctx = ToolContext(client=mock_client, default_page_size=25, public_url="")
