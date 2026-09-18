@@ -18,7 +18,7 @@ calling a tool.
 | `list_documents` | List documents with optional filters; OCR `content` stripped by default (`include_content=True` to opt in). `notes[].note` and `custom_fields[].value` are always stripped. Fetch them via single-document endpoints. |
 | `search_documents` | Full-text and filtered document search; OCR `content` stripped by default (`include_content=True` to opt in). `notes[].note` and `custom_fields[].value` are always stripped on hits. |
 | `get_document` | Retrieve document metadata by ID; OCR `content` stripped by default (`include_content=True` to opt in) |
-| `get_document_content` | Retrieve the plain-text content of a document |
+| `get_document_content` | Retrieve the plain-text content of a document; capped at 100,000 characters by default (`max_chars=None` for the full text). A capped result names the range returned and the `offset` to pass to read the next section. |
 | `upload_document` | Upload a new document for ingestion |
 | `update_document` | Patch document metadata (title, tags, correspondent, etc.) |
 | `delete_document` | Permanently delete a document |

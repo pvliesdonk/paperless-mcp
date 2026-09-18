@@ -26,6 +26,59 @@ from paperless_mcp.models.document import (
 from paperless_mcp.tools._context import ToolContext
 from paperless_mcp.tools._registry import register_tool
 
+#: Default ceiling on inline OCR text returned by ``get_document_content``.
+#:
+#: Chosen as a per-call context budget rather than to fit any particular
+#: document: ~14k tokens of real OCR text, which one tool result can spend
+#: without crowding out the rest of a conversation.  See
+#: ``docs/design/inline-content-size.md`` for the measured distribution the
+#: number is drawn from.
+CONTENT_CHAR_CAP = 100_000
+
+
+def _content_marker(*, offset: int, end: int, total: int) -> str:
+    """Build the header line that precedes a partial document slice.
+
+    Args:
+        offset: First character index of the returned slice.
+        end: One past the last character index of the returned slice.
+        total: Full length of the document's text.
+
+    Returns:
+        A one-line marker ending in a blank line, naming the range returned
+        and — when text remains — the exact ``offset`` to pass next.
+    """
+    if offset >= total:
+        return f"[offset {offset:,} is past the end of this document ({total:,} chars)]\n\n"
+    if end >= total:
+        return f"[chars {offset:,}-{total:,} of {total:,} - final section]\n\n"
+    return (
+        f"[chars {offset:,}-{end:,} of {total:,} - truncated; call "
+        f"get_document_content again with offset={end} to continue]\n\n"
+    )
+
+
+def _slice_content(text: str, *, max_chars: int | None, offset: int) -> str:
+    """Return *text* from *offset*, capped at *max_chars*.
+
+    Text returned whole — the common case of a short document read from the
+    start — comes back byte-identical with no marker, so callers that never
+    hit the cap see exactly what they saw before the cap existed.
+
+    Args:
+        text: The document's full OCR text.
+        max_chars: Maximum characters to return, or ``None`` for no cap.
+        offset: Character position to start from.
+
+    Returns:
+        The requested slice, prefixed by a marker when it is not the whole text.
+    """
+    total = len(text)
+    end = total if max_chars is None else min(total, offset + max_chars)
+    if offset == 0 and end >= total:
+        return text
+    return _content_marker(offset=offset, end=end, total=total) + text[offset:end]
+
 
 def register(mcp: FastMCP, ctx: ToolContext) -> None:
     """Register document tools on *mcp*.
@@ -116,8 +169,9 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
         """Fetch one document by ID.
 
         By default, the OCR ``content`` is stripped to keep responses small.
-        Pass ``include_content=True`` for the full text, or call
-        ``get_document_content`` to retrieve just the text.
+        Pass ``include_content=True`` for the full text however long it is, or
+        call ``get_document_content`` for the text alone, which caps its length
+        by default and can page through a long document.
         """
         doc = await client.documents.get(document_id)
         if not include_content:
@@ -126,9 +180,32 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
         return doc
 
     @register_tool(mcp, "get_document_content")
-    async def get_document_content(document_id: int) -> str:
-        """Return the OCR'd text content of a document."""
-        return await client.documents.get_content(document_id)
+    async def get_document_content(
+        document_id: int,
+        max_chars: Annotated[int | None, Field(gt=0)] = CONTENT_CHAR_CAP,
+        offset: Annotated[int, Field(ge=0)] = 0,
+    ) -> str:
+        """Return the OCR'd text content of a document.
+
+        Documents such as books and technical standards can run to millions of
+        characters, so the text is capped by default.  A capped result opens
+        with a marker naming the character range returned, the document's full
+        length, and the ``offset`` to pass to read the next section; text that
+        fits under the cap is returned whole with no marker.
+
+        Args:
+            document_id: ID of the document to read.
+            max_chars: Maximum number of characters to return.  Pass ``None``
+                for the entire text however long it is.
+            offset: Character position to start reading from.  Pass the value
+                named in a truncation marker to continue from where it stopped.
+
+        Returns:
+            The document's text, prefixed with a marker when the returned
+            section is not the whole document.
+        """
+        text = await client.documents.get_content(document_id)
+        return _slice_content(text, max_chars=max_chars, offset=offset)
 
     @register_tool(mcp, "get_document_thumbnail")
     async def get_document_thumbnail(document_id: int) -> ImageContent:
