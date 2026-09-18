@@ -58,7 +58,14 @@ without ever becoming an epic.
   library offers this server should take. #111 and #112 share one subsystem, so
   they are one story or neither; #35 is `derived` as the same story's inline
   half and needs neither that subsystem nor that decision, which is why it
-  could be committed to `020` on its own.
+  could be committed to `020` on its own. `evidenced`, for the text half only:
+  the *text* half of the size distribution this story wants now exists in
+  `inline-content-size.md` — 63.5% of the deployed archive's OCR text exceeds
+  the 50,000-character cap #35 ships and its top decile exceeds a whole context
+  window, measured while capping #35. That number prices inline text and
+  nothing else: it says nothing about PDF bytes, so it is not evidence toward
+  #111 or toward the wiring decision, both of which remain unmeasured and
+  unmade.
 - **What Paperless 3.x offers that this server does not** —
   [#113](https://github.com/pvliesdonk/paperless-mcp/issues/113). `stated`: the
   client was written against the 2.x API and Paperless has since shipped a

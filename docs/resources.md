@@ -25,7 +25,7 @@ return the full set as JSON; document resources take a document ID.
 | URI | Description |
 |---|---|
 | `paperless://documents/{document_id}` | Document metadata by ID |
-| `paperless://documents/{document_id}/content` | Extracted text content |
+| `paperless://documents/{document_id}/content` | Extracted text content, in full. Resources take no arguments, so the character cap that `get_document_content` applies by default does not apply here. |
 | `paperless://documents/{document_id}/metadata` | File metadata: original filename, checksums, MIME type |
 | `paperless://documents/{document_id}/notes` | Notes attached to the document |
 | `paperless://documents/{document_id}/history` | Audit history |
