@@ -1487,7 +1487,7 @@ calling a tool.</p>
 </tr>
 <tr>
 <td><code>bulk_edit_documents</code></td>
-<td>Apply a bulk operation to multiple documents</td>
+<td>Apply a bulk operation to multiple documents. The change lands before the call returns, but Paperless queues the search-index rebuild, so <code>search_documents</code> may miss the edited documents for seconds to minutes while <code>list_documents</code> and <code>get_document</code> see them at once. Track the queued task with <code>list_tasks(task_type="bulk_update")</code></td>
 </tr>
 <tr>
 <td><code>get_document_metadata</code></td>
@@ -1759,7 +1759,7 @@ calling a tool.</p>
 <tbody>
 <tr>
 <td><code>list_tasks</code></td>
-<td>List background Celery tasks. Paginates (<code>page</code>, <code>page_size</code> up to 100). Defaults to unacknowledged tasks only. Pass <code>include_acknowledged=True</code> to include acknowledged tasks, or <code>acknowledged=True</code> to return only acknowledged ones.</td>
+<td>List background Celery tasks, newest first. Paginates (<code>page</code>, <code>page_size</code> up to 100). Defaults to unacknowledged tasks only. Pass <code>include_acknowledged=True</code> to include acknowledged tasks, or <code>acknowledged=True</code> to return only acknowledged ones. Filter by kind of work with <code>task_type</code>, such as <code>task_type="bulk_update"</code> for the search-index rebuild <code>bulk_edit_documents</code> queues.</td>
 </tr>
 <tr>
 <td><code>get_task</code></td>
