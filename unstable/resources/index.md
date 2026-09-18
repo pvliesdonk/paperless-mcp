@@ -19,13 +19,13 @@ The MCP resources this server registers are listed below. Collection resources r
 
 ## Document resources
 
-| URI                                             | Description                                            |
-| ----------------------------------------------- | ------------------------------------------------------ |
-| `paperless://documents/{document_id}`           | Document metadata by ID                                |
-| `paperless://documents/{document_id}/content`   | Extracted text content                                 |
-| `paperless://documents/{document_id}/metadata`  | File metadata: original filename, checksums, MIME type |
-| `paperless://documents/{document_id}/notes`     | Notes attached to the document                         |
-| `paperless://documents/{document_id}/history`   | Audit history                                          |
-| `paperless://documents/{document_id}/thumbnail` | Thumbnail image                                        |
-| `paperless://documents/{document_id}/preview`   | PDF preview                                            |
-| `paperless://documents/{document_id}/download`  | Original file download                                 |
+| URI                                             | Description                                                                                                                                            |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `paperless://documents/{document_id}`           | Document metadata by ID                                                                                                                                |
+| `paperless://documents/{document_id}/content`   | Extracted text content, in full. Resources take no arguments, so the character cap that `get_document_content` applies by default does not apply here. |
+| `paperless://documents/{document_id}/metadata`  | File metadata: original filename, checksums, MIME type                                                                                                 |
+| `paperless://documents/{document_id}/notes`     | Notes attached to the document                                                                                                                         |
+| `paperless://documents/{document_id}/history`   | Audit history                                                                                                                                          |
+| `paperless://documents/{document_id}/thumbnail` | Thumbnail image                                                                                                                                        |
+| `paperless://documents/{document_id}/preview`   | PDF preview                                                                                                                                            |
+| `paperless://documents/{document_id}/download`  | Original file download                                                                                                                                 |

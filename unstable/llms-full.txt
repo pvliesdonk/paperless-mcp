@@ -448,23 +448,23 @@ Every tool also carries a human-readable title, which clients that support title
 
 ## Document tools
 
-| Tool                       | Description                                                                                                                                                                                                           |
-| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `list_documents`           | List documents with optional filters; OCR `content` stripped by default (`include_content=True` to opt in). `notes[].note` and `custom_fields[].value` are always stripped. Fetch them via single-document endpoints. |
-| `search_documents`         | Full-text and filtered document search; OCR `content` stripped by default (`include_content=True` to opt in). `notes[].note` and `custom_fields[].value` are always stripped on hits.                                 |
-| `get_document`             | Retrieve document metadata by ID; OCR `content` stripped by default (`include_content=True` to opt in)                                                                                                                |
-| `get_document_content`     | Retrieve the plain-text content of a document                                                                                                                                                                         |
-| `upload_document`          | Upload a new document for ingestion                                                                                                                                                                                   |
-| `update_document`          | Patch document metadata (title, tags, correspondent, etc.)                                                                                                                                                            |
-| `delete_document`          | Permanently delete a document                                                                                                                                                                                         |
-| `bulk_edit_documents`      | Apply a bulk operation to multiple documents                                                                                                                                                                          |
-| `get_document_metadata`    | Retrieve file metadata: original filename, checksums, MIME type                                                                                                                                                       |
-| `get_document_thumbnail`   | Retrieve the thumbnail image of a document                                                                                                                                                                            |
-| `get_document_suggestions` | Retrieve the tags, correspondent and type Paperless suggests for a document                                                                                                                                           |
-| `get_document_notes`       | List notes attached to a document                                                                                                                                                                                     |
-| `add_document_note`        | Add a note to a document                                                                                                                                                                                              |
-| `delete_document_note`     | Delete a note from a document                                                                                                                                                                                         |
-| `get_document_history`     | Retrieve audit log for a document                                                                                                                                                                                     |
+| Tool                       | Description                                                                                                                                                                                                             |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `list_documents`           | List documents with optional filters; OCR `content` stripped by default (`include_content=True` to opt in). `notes[].note` and `custom_fields[].value` are always stripped. Fetch them via single-document endpoints.   |
+| `search_documents`         | Full-text and filtered document search; OCR `content` stripped by default (`include_content=True` to opt in). `notes[].note` and `custom_fields[].value` are always stripped on hits.                                   |
+| `get_document`             | Retrieve document metadata by ID; OCR `content` stripped by default (`include_content=True` to opt in)                                                                                                                  |
+| `get_document_content`     | Retrieve the plain-text content of a document; capped at 50,000 characters by default (`max_chars=None` for the full text). A capped result names the range returned and the `offset` to pass to read the next section. |
+| `upload_document`          | Upload a new document for ingestion                                                                                                                                                                                     |
+| `update_document`          | Patch document metadata (title, tags, correspondent, etc.)                                                                                                                                                              |
+| `delete_document`          | Permanently delete a document                                                                                                                                                                                           |
+| `bulk_edit_documents`      | Apply a bulk operation to multiple documents                                                                                                                                                                            |
+| `get_document_metadata`    | Retrieve file metadata: original filename, checksums, MIME type                                                                                                                                                         |
+| `get_document_thumbnail`   | Retrieve the thumbnail image of a document                                                                                                                                                                              |
+| `get_document_suggestions` | Retrieve the tags, correspondent and type Paperless suggests for a document                                                                                                                                             |
+| `get_document_notes`       | List notes attached to a document                                                                                                                                                                                       |
+| `add_document_note`        | Add a note to a document                                                                                                                                                                                                |
+| `delete_document_note`     | Delete a note from a document                                                                                                                                                                                           |
+| `get_document_history`     | Retrieve audit log for a document                                                                                                                                                                                       |
 
 `get_document`, `list_documents`, `search_documents`, and `update_document` include a `web_url` field pointing to the document in the Paperless UI, such as `https://paperless.example.com/documents/42/`. Set `PAPERLESS_MCP_PAPERLESS_PUBLIC_URL` if the public URL differs from the API URL; otherwise the API URL is used.
 
@@ -607,16 +607,16 @@ The MCP resources this server registers are listed below. Collection resources r
 
 ## Document resources
 
-| URI                                             | Description                                            |
-| ----------------------------------------------- | ------------------------------------------------------ |
-| `paperless://documents/{document_id}`           | Document metadata by ID                                |
-| `paperless://documents/{document_id}/content`   | Extracted text content                                 |
-| `paperless://documents/{document_id}/metadata`  | File metadata: original filename, checksums, MIME type |
-| `paperless://documents/{document_id}/notes`     | Notes attached to the document                         |
-| `paperless://documents/{document_id}/history`   | Audit history                                          |
-| `paperless://documents/{document_id}/thumbnail` | Thumbnail image                                        |
-| `paperless://documents/{document_id}/preview`   | PDF preview                                            |
-| `paperless://documents/{document_id}/download`  | Original file download                                 |
+| URI                                             | Description                                                                                                                                            |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `paperless://documents/{document_id}`           | Document metadata by ID                                                                                                                                |
+| `paperless://documents/{document_id}/content`   | Extracted text content, in full. Resources take no arguments, so the character cap that `get_document_content` applies by default does not apply here. |
+| `paperless://documents/{document_id}/metadata`  | File metadata: original filename, checksums, MIME type                                                                                                 |
+| `paperless://documents/{document_id}/notes`     | Notes attached to the document                                                                                                                         |
+| `paperless://documents/{document_id}/history`   | Audit history                                                                                                                                          |
+| `paperless://documents/{document_id}/thumbnail` | Thumbnail image                                                                                                                                        |
+| `paperless://documents/{document_id}/preview`   | PDF preview                                                                                                                                            |
+| `paperless://documents/{document_id}/download`  | Original file download                                                                                                                                 |
 
 # Prompts
 

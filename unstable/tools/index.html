@@ -1471,7 +1471,7 @@ calling a tool.</p>
 </tr>
 <tr>
 <td><code>get_document_content</code></td>
-<td>Retrieve the plain-text content of a document</td>
+<td>Retrieve the plain-text content of a document; capped at 50,000 characters by default (<code>max_chars=None</code> for the full text). A capped result names the range returned and the <code>offset</code> to pass to read the next section.</td>
 </tr>
 <tr>
 <td><code>upload_document</code></td>
