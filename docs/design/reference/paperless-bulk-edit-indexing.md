@@ -127,6 +127,11 @@ takes, and what a caller can observe — the questions
   records under both `Accept` headers. [source: pngx-filters]
   [observed: live 3.1.3 instance, 2026-09-18]
   [pins: tests/unit/client/test_tasks.py::test_list_tasks_task_type_filter_is_sent]
+- `TasksViewSet` sets `ordering = ["-date_created"]`, so the most recently
+  created task comes first — at payload version 9 too, where the response is
+  an unpaginated list rather than an envelope. Recency is therefore readable
+  off the head of the list, which is what makes correlation-by-recency usable
+  at all. [source: pngx-views]
 - `PaperlessTask.TaskType` has thirteen values: `consume_file`,
   `train_classifier`, `sanity_check`, `index_optimize`, `mail_fetch`,
   `llm_index`, `empty_trash`, `check_workflows`, `bulk_update`,

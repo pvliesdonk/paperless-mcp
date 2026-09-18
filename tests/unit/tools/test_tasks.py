@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import asyncio
-import json
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
@@ -80,6 +79,44 @@ def test_list_tasks_exposes_task_type_choices(mock_client: Any) -> None:
     ctx = ToolContext(client=mock_client, default_page_size=25, public_url="")
     tasks_mod.register(mcp, ctx)
     tools = {t.name: t for t in asyncio.run(mcp.list_tools())}
-    schema = json.dumps(tools["list_tasks"].parameters)
-    assert "task_type" in tools["list_tasks"].parameters["properties"]
-    assert "bulk_update" in schema
+    schema = tools["list_tasks"].parameters
+    assert "task_type" in schema["properties"]
+    # Every upstream task type is offered, not just the one bulk edits queue.
+    # The enum is inlined into the property's anyOf, beside the null variant.
+    variants = schema["properties"]["task_type"]["anyOf"]
+    enum_values = {value for variant in variants for value in variant.get("enum", ())}
+    assert enum_values == {member.value for member in TaskType}
+
+
+@pytest.mark.asyncio
+async def test_list_tasks_result_carries_task_name(mock_client: Any) -> None:
+    # The kind of work arrives as `task_name` at payload version 9 — an
+    # undeclared field kept by `extra="allow"`, which list_tasks' docstring
+    # promises reaches the caller.  `type` is the trigger source instead.
+    mcp = FastMCP("test")
+    ctx = ToolContext(client=mock_client, default_page_size=25, public_url="")
+    tasks_mod.register(mcp, ctx)
+    mock_client.tasks.list.return_value = Paginated[Task].model_validate(
+        {
+            "count": 1,
+            "results": [
+                {
+                    "id": 3950,
+                    "task_id": "2cf8a2c0",
+                    "task_name": "bulk_update",
+                    "type": "auto_task",
+                    "status": "SUCCESS",
+                    "date_created": "2026-09-16T11:54:21.192534+02:00",
+                    "acknowledged": False,
+                }
+            ],
+        }
+    )
+
+    async with Client(mcp) as c:
+        result = await c.call_tool("list_tasks", {"task_type": "bulk_update"})
+
+    assert result.structured_content is not None
+    task = result.structured_content["results"][0]
+    assert task["task_name"] == "bulk_update"
+    assert task["type"] == "auto_task"
