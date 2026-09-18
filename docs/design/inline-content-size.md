@@ -11,16 +11,25 @@ out to sit in the wrong place.
 
 ## Verdict
 
-**Cap at 100,000 characters, and ship paging with it.**
+**Cap at 50,000 characters, and ship paging with it.**
 
-100,000 characters is roughly **14,000 tokens** of real OCR text — a per-call
+50,000 characters is roughly **6,900 tokens** of real OCR text — a per-call
 context budget one tool result can spend without crowding out a conversation,
-and still under 25,000 tokens even at a pessimistic 4:1 ratio.
+and still under 13,000 tokens even at a pessimistic 4:1 ratio.
 
 The number is chosen as a *token budget*, not to fit any particular document.
 That distinction is the point of this note: no cap that a context window can
 afford also fits the documents in this archive, so a cap cannot be justified by
 the fraction of documents it returns whole. What it is for is the tail.
+
+**A cap that fires often is the intended behaviour, not a defect — given
+paging.** At 50,000 characters about a third of this archive arrives whole and
+the rest arrives in sections. An earlier draft of this note argued for 100,000
+on the grounds that a default firing on half the archive "is not a safety rail,
+it is the normal path". That objection holds only in a world without `offset`:
+once continuation exists, the cost of the cap firing is one more call, while
+the cost of it not firing is a flooded context. The asymmetry is the whole
+argument, and it points at the smaller number.
 
 ## The measurement
 
@@ -48,9 +57,11 @@ Two facts do the work:
   1,009-page TPM 2.0 library specification — is about 330,000 tokens on its
   own. It cannot be read inline at any cap, capped or not; the cap's job is to
   fail it legibly rather than by flooding.
-- **The issue's 50,000 would have truncated the median document.** At 88,080
-  characters the median is not a long tail case, and a default that fires on
-  half the archive is not a safety rail, it is the normal path.
+- **Every affordable cap fires on most of this archive.** At 88,080 characters
+  the median document exceeds each candidate below, so "which cap returns most
+  documents whole" has no good answer and is the wrong question. The right one
+  is how much context a single call may spend, which is what makes paging the
+  load-bearing half of this change rather than an extension of it.
 
 Coverage at candidate caps, as a share of documents returned *complete*:
 
@@ -64,11 +75,16 @@ Coverage at candidate caps, as a share of documents returned *complete*:
 ## Why paging is not optional
 
 #35 filed `offset` as a deferred extension. The distribution says otherwise: at
-a 100,000-character cap, 46% of this archive is returned partially, and without
-`offset` that content is **unreachable** — the caller can see that text was cut
-and has no way to read the rest. A cap alone therefore replaces one failure
-(context flooded) with a worse one (document silently unreadable past its first
-section). `offset` ships with the cap.
+the 50,000-character cap this change ships, 63.5% of this archive is returned
+partially, and without `offset` that content is **unreachable** — the caller
+can see that text was cut and has no way to read the rest. A cap alone
+therefore replaces one failure (context flooded) with a worse one (document
+silently unreadable past its first section). `offset` ships with the cap.
+
+The dependency runs the other way too, and it is why the cap could be set
+defensively rather than generously: paging is what makes a small cap cheap. A
+cap without continuation must be generous enough to be *sufficient*; a cap with
+continuation only has to be affordable.
 
 ## Caveats, stated rather than buried
 
@@ -88,12 +104,20 @@ section). `offset` ships with the cap.
   built. Until it is, the cap plus `offset` is what stands in front of the
   tail, and model-facing text deliberately does not advertise #112.
 
+  This sets the ceiling on how defensive the cap may be. 50,000 characters has
+  to stay *usable on its own*, because paging through a 2.4M-character document
+  in 50k sections is the only route to its tail that exists today. Once #112
+  offers that text as a file the model never reads into context, the cap is
+  free to go seriously low — the full text would then have a route that costs
+  no context at all, and truncation would stop being a loss. Tightening it is
+  therefore #112's business, not a number to revisit before then.
+
 ## Beyond #35
 
 The roadmap's bytes theme says the
 [#111](https://github.com/pvliesdonk/paperless-mcp/issues/111)/#112 story is
 promoted by "a size distribution from the deployed archive that says how much of
 it is actually unreachable". For the text half, that distribution is the table
-above: **46% of documents exceed a context-affordable inline cap, and the top
-decile exceeds a whole context window.** This note does not re-open the
+above: **63.5% of documents exceed the 50,000-character cap this change ships,
+and the top decile exceeds a whole context window.** This note does not re-open the
 sequencing argument; it records the evidence that was missing.

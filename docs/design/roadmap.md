@@ -60,8 +60,8 @@ without ever becoming an epic.
   half and needs neither that subsystem nor that decision, which is why it
   could be committed to `020` on its own. `evidenced`, for the text half only:
   the *text* half of the size distribution this story wants now exists in
-  `inline-content-size.md` — 46% of the deployed archive's OCR text exceeds a
-  context-affordable inline cap and its top decile exceeds a whole context
+  `inline-content-size.md` — 63.5% of the deployed archive's OCR text exceeds
+  the 50,000-character cap #35 ships and its top decile exceeds a whole context
   window, measured while capping #35. That number prices inline text and
   nothing else: it says nothing about PDF bytes, so it is not evidence toward
   #111 or toward the wiring decision, both of which remain unmeasured and

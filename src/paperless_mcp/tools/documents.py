@@ -29,11 +29,12 @@ from paperless_mcp.tools._registry import register_tool
 #: Default ceiling on inline OCR text returned by ``get_document_content``.
 #:
 #: Chosen as a per-call context budget rather than to fit any particular
-#: document: ~14k tokens of real OCR text, which one tool result can spend
-#: without crowding out the rest of a conversation.  See
-#: ``docs/design/inline-content-size.md`` for the measured distribution the
-#: number is drawn from.
-CONTENT_CHAR_CAP = 100_000
+#: document: ~7k tokens of real OCR text, which one tool result can spend
+#: without crowding out the rest of a conversation.  Deliberately defensive —
+#: most documents in a text-heavy archive arrive in sections rather than whole,
+#: which ``offset`` makes cheap.  See ``docs/design/inline-content-size.md``
+#: for the measured distribution the number is drawn from.
+CONTENT_CHAR_CAP = 50_000
 
 
 def _content_marker(*, offset: int, end: int, total: int) -> str:
