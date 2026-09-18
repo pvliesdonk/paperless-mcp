@@ -209,6 +209,36 @@ def make_server(
 
     _paperless_version = upstream_version_provider(mcp)
     #
+    # -- Instance identity in the composed instructions ------------------------
+    #
+    # Name the Paperless this server fronts, so a link pasted into the
+    # conversation is recognisable as this instance and its id routable to the
+    # document tools.
+    #
+    # Read the staged ToolContext, not this function's ``config``:
+    # ``register_tools`` builds its own from ``ProjectConfig.from_env()``, so a
+    # config passed to ``make_server`` would name an instance that every
+    # ``web_url`` in a tool result contradicts
+    # (pvliesdonk/fastmcp-server-template#622).  ``public_url`` is non-empty and
+    # carries no trailing slash by here: ``build_tool_context`` refuses to stage
+    # a context without a URL, and ``__post_init__`` normalises it.
+    #
+    # No ``requires_tools``: the instance is worth naming even where an
+    # operator's deny-list has hidden the document tools.  ``InstructionRole`` is
+    # imported here rather than added to the import block above, which copier
+    # re-renders.
+    from fastmcp_pvl_core import InstructionRole
+
+    from paperless_mcp.domain import tool_context_for
+
+    _public_url = tool_context_for(mcp).public_url
+    instructions_for(mcp).add(
+        f"This server fronts the Paperless-NGX instance at {_public_url}. "
+        f"A link of the form {_public_url}/documents/<id>/ names a document by "
+        "its id; pass that id to the document tools.",
+        role=InstructionRole.INSTANCE,
+    )
+    #
     # -- Transfer subsystem (capability-link upload + download) ----------------
     #
     # Wiring the /transfer/{token} route needs HTTP transport (the route cannot

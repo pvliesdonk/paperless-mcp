@@ -13,6 +13,8 @@ import respx
 from fastmcp import Client
 
 from paperless_mcp._server_apps import register_apps
+from paperless_mcp.config import ProjectConfig
+from paperless_mcp.domain import tool_context_for
 from paperless_mcp.server import make_server
 
 
@@ -228,9 +230,32 @@ def test_instructions_compose_semantic_operator_roles(
     assert text.split("\n\n") == [
         "paperless-mcp: Paperless-NGX over MCP: search, read, upload and tag documents; manage correspondents and types.",
         "Demo material.",
+        "This server fronts the Paperless-NGX instance at http://paperless.test. "
+        "A link of the form http://paperless.test/documents/<id>/ names a document "
+        "by its id; pass that id to the document tools.",
         "House rule: be brief.",
         "Full documentation for this server: https://pvliesdonk.github.io/paperless-mcp/latest/llms.txt",
     ]
+
+
+def test_instructions_name_the_instance_the_tools_call(
+    paperless_api_token: str,
+) -> None:
+    """The instance named in the instructions is the one the tools call.
+
+    The URL comes from the staged ``ToolContext``, so the instructions cannot
+    name one Paperless while every ``web_url`` in a tool result points at
+    another.  Asserting the two *agree* — rather than asserting which source
+    wins — keeps this honest once a config passed to ``make_server`` reaches
+    ``register_tools`` (pvliesdonk/fastmcp-server-template#622); today the
+    environment wins on both sides, and afterwards the passed config will.
+    """
+    server = make_server(
+        config=ProjectConfig(
+            paperless_url="https://passed-in.example", api_token=paperless_api_token
+        )
+    )
+    assert tool_context_for(server).public_url in (server.instructions or "")
 
 
 def test_blank_overrides_fall_back_to_defaults(
