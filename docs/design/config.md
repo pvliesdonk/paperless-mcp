@@ -94,3 +94,11 @@ three requests.
 plain `str` on a dataclass it would print in every `repr(config)`, so the field
 carries `repr=False`. Outbound `Authorization` headers are separately masked in
 logs by `_SecretMaskFilter` in `client/_http.py`.
+
+## Transfer configuration
+
+`ProjectConfig.transfer` composes core's `TransferConfig` and calls its
+`from_env` reader. The generated config reference and environment examples
+include its five variables. The subsystem is activated for HTTP/SSE only when
+`ServerConfig.base_url` is set; see [document transfers](document-transfers.md)
+for the compatibility choice and URL routing contract.

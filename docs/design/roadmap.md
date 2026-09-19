@@ -53,9 +53,12 @@ without ever becoming an epic.
   a context window can take, so the file endpoints are unusable for the
   documents they exist for
   ([#111](https://github.com/pvliesdonk/paperless-mcp/issues/111)). Promoted by
-  a size distribution from the deployed archive that says how much of it is
-  actually unreachable, and by a decision on which of the two wiring paths the
-  library offers this server should take. #111 and #112 share one subsystem, so
+  a delivery path that keeps file bytes outside model context. `evidenced`:
+  [document transfers](document-transfers.md) resolves the wiring choice in
+  favor of domain tools over core's link minter, with explicit document IDs,
+  representations and upload metadata. File-size measurement remains useful
+  for server-memory sizing, but does not determine the transfer API. #111 and
+  #112 share one subsystem, so
   they are one story or neither; #35 is `derived` as the same story's inline
   half and needs neither that subsystem nor that decision, which is why it
   could be committed to `020` on its own. `evidenced`, for the text half only:
@@ -64,8 +67,8 @@ without ever becoming an epic.
   the 50,000-character cap #35 ships and its top decile exceeds a whole context
   window, measured while capping #35. That number prices inline text and
   nothing else: it says nothing about PDF bytes, so it is not evidence toward
-  #111 or toward the wiring decision, both of which remain unmeasured and
-  unmade.
+  #111's file-size distribution. The wiring decision is recorded in
+  [document transfers](document-transfers.md).
 - **What Paperless 3.x offers that this server does not** —
   [#113](https://github.com/pvliesdonk/paperless-mcp/issues/113). `stated`: the
   client was written against the 2.x API and Paperless has since shipped a
@@ -136,13 +139,17 @@ argument, not an information-gain one, and it is worth naming the difference
 rather than dressing it up. Nothing in `020` teaches us anything about
 `#111`/`#112`; the three issues in it are simply shaped enough to hand to an
 implementer today,
-while the bytes work is gated on a design decision nobody has made — which of
-the library's two transfer wirings this server takes. Committing a cut to work
-whose shape is undecided is what the horizon rule exists to prevent.
+while the bytes work required a choice of transfer wiring. That choice is now
+recorded in [document transfers](document-transfers.md): domain tools supply
+Paperless parameters over the shared route. `derived`: #111 and #112 form one
+implementation because file and OCR delivery use the same sink, configuration
+and retry contract.
 
 No package beyond `020` exists. `derived`: the horizon rule says create
 packages only as far ahead as you can genuinely see them, and the next
-candidate — #111 with #112 — is behind that undecided wiring path. An issue
+candidate, #111 with #112, has a shared design in
+[document transfers](document-transfers.md). A design decision alone does not
+assign the work to a release cut. An issue
 with no milestone is backlog, sitting under its epic or on its own; that
 includes [#110](https://github.com/pvliesdonk/paperless-mcp/issues/110),
 [#111](https://github.com/pvliesdonk/paperless-mcp/issues/111),
@@ -155,10 +162,14 @@ backlog that predates this index.
 - **How much of the deployed archive is too large to reach through the current
   file endpoints.** `derived`. Resolved by
   [#111](https://github.com/pvliesdonk/paperless-mcp/issues/111), whose own
-  text records the gap. Not a separate research issue: the measurement is the
-  first step of that work, not a question that decides whether to start it.
-- **Which of the library's two transfer wirings fits this server.** `derived`.
-  Resolved by [#111](https://github.com/pvliesdonk/paperless-mcp/issues/111).
+  text records the gap. No file-size distribution was measured during the
+  transfer implementation; it remains unknown for server-memory sizing. This
+  does not change the delivery API or block the user-requested implementation.
+- **Which of the library's two transfer wirings fits this server.** `evidenced`:
+  [document transfers](document-transfers.md) selects domain tools over
+  `build_transfer_links` for typed Paperless parameters and the existing tool
+  registration wrapper. The same design includes full OCR Markdown downloads
+  and file uploads, including Markdown, with explicit upload metadata.
 - ~~**What the Paperless 3.x API adds, and what its newer payload version
   changes in what this client already parses.**~~ **Answered**, `evidenced`, by
   [#113](https://github.com/pvliesdonk/paperless-mcp/issues/113) within its
@@ -204,6 +215,19 @@ backlog that predates this index.
   documented in `config.md` beside this file.
 
 ## Revisions
+
+### 2026-09-19 (document transfers)
+
+- `stated`: implement #111 and #112 together, with Markdown uploads for
+  symmetry (implementation session, 2026-09-19). `derived`: preserve uploaded
+  bytes and accept explicit metadata; exported front matter remains content.
+- `evidenced`: the [core transfer reference](reference/core-transfer-links.md)
+  establishes that successful uploads may replay during grace. The
+  [design](document-transfers.md) records persisted acknowledgements and a
+  conservative recovery path when Paperless acceptance is uncertain.
+- `derived`: keep the inline default and pagination unchanged. File delivery
+  removes the need to read an entire document merely to copy it; changing how
+  much text a reader sees by default needs its own rationale.
 
 ### 2026-09-17
 

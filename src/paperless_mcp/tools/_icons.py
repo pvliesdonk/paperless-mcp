@@ -20,6 +20,8 @@ def _icon(name: str) -> Icon:
 
 
 ICON_REGISTRY: dict[str, list[Icon]] = {
+    "create_document_download_link": [_icon("files")],
+    "create_document_upload_link": [_icon("upload")],
     # Documents — reads
     "list_documents": [_icon("files")],
     "search_documents": [_icon("search")],

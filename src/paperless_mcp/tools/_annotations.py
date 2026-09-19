@@ -47,6 +47,8 @@ _BULK_EDIT: dict[str, bool] = {
 }
 
 ANNOTATION_REGISTRY: dict[str, dict[str, bool]] = {
+    "create_document_download_link": {**_READ, "idempotentHint": False},
+    "create_document_upload_link": _CREATE,
     # Documents — reads
     "list_documents": _READ,
     "search_documents": _READ,

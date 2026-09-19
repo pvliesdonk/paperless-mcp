@@ -16,6 +16,7 @@ from dataclasses import dataclass, field
 
 from fastmcp_pvl_core import (
     ServerConfig,
+    TransferConfig,
     # Used by `_default_server_name` below, and re-exported so CONFIG-FROM-ENV
     # additions don't need a new import.  No `noqa: F401` — that factory makes
     # the import genuinely used, and a redundant directive fails RUF100.
@@ -61,6 +62,7 @@ class ProjectConfig:
     server_name: str = field(default_factory=_default_server_name)
 
     # CONFIG-FIELDS-START — add domain fields below; kept across copier update
+    transfer: TransferConfig = field(default_factory=TransferConfig)
     #
     # One flat field per Paperless env var, named exactly after the var's
     # suffix, so the config-surface generator pairs each field's metadata with
@@ -208,6 +210,7 @@ class ProjectConfig:
             # not imported by the template's own import block, and adding them
             # would be an edit outside every sentinel, so the numeric reads are
             # parsed inline; their bounds are enforced in ``__post_init__``.
+            transfer=TransferConfig.from_env(_ENV_PREFIX),
             paperless_url=env(_ENV_PREFIX, "PAPERLESS_URL") or "",
             api_token=env(_ENV_PREFIX, "API_TOKEN") or "",
             http_timeout_seconds=float(
