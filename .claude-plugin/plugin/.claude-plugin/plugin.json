@@ -1,7 +1,7 @@
 {
   "name": "paperless-mcp",
   "description": "Paperless-NGX over MCP: search, read, upload and tag documents; manage correspondents and types.",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "author": {
     "name": "pvliesdonk"
   },
