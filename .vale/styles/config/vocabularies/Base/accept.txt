@@ -64,3 +64,8 @@ validators
 
 # --- Diagnostics / observability ---
 traceback
+
+# --- Model and agent terminology ---
+LLM
+LLM's
+LLMs
