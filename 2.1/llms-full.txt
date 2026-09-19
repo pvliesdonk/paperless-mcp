@@ -1,0 +1,1673 @@
+# paperless-mcp
+
+> Paperless-NGX over MCP: search, read, upload and tag documents; manage correspondents and types.
+
+# Getting Started
+
+# Paperless MCP
+
+Paperless-NGX over MCP: search, read, upload and tag documents; manage correspondents and types.
+
+## Getting started
+
+- [Installation](https://pvliesdonk.github.io/paperless-mcp/2.1/installation/index.md)
+- [Configuration](https://pvliesdonk.github.io/paperless-mcp/2.1/configuration/index.md)
+- [Tools](https://pvliesdonk.github.io/paperless-mcp/2.1/tools/index.md)
+
+## Features
+
+- *Add features specific to your server here.*
+
+## What you can do
+
+- *Add usage examples here.*
+
+# Installation
+
+## From PyPI
+
+```
+pip install pvliesdonk-paperless-mcp
+```
+
+## From Docker
+
+```
+docker pull ghcr.io/pvliesdonk/paperless-mcp:latest
+```
+
+The `latest` tag is the newest stable release. The rolling `edge` tag tracks every merge to `main` and carries no version identity; see [Image tags](https://pvliesdonk.github.io/paperless-mcp/2.1/deployment/docker/#image-tags) for the full list.
+
+## From source
+
+```
+git clone https://github.com/pvliesdonk/paperless-mcp
+cd paperless-mcp
+uv sync --all-extras --all-groups
+```
+
+# Configuration
+
+Paperless MCP reads all configuration from environment variables. Domain variables carry the `PAPERLESS_MCP_` prefix; a few third-party variables (`FASTMCP_*`, `PUID`/`PGID`) keep their upstream names.
+
+This page is the complete reference: every variable the server reads appears in exactly one table below. The tables come from the same source as `.env.example`, the packaged env files, and the [configuration generator](https://pvliesdonk.github.io/paperless-mcp/2.1/configuration-generator/index.md), so the four cannot disagree. The README carries a hand-picked subset of these variables as its quick entry point.
+
+## Server
+
+Transport, identity, and tool visibility. `PAPERLESS_MCP_SERVER_NAME` identifies the deployment, `PAPERLESS_MCP_INSTANCE_DESCRIPTION` distinguishes its material or responsibility for routing, and `PAPERLESS_MCP_INSTRUCTIONS_EXTRA` supplies deployment-specific behavioral policy. The legacy `PAPERLESS_MCP_INSTRUCTIONS` replaces all generated text, ignores both additive variables, and logs a deprecation warning at startup.
+
+Generated guidance targets 1,536 UTF-16 units, reserving 512 units for normal operator routing and policy within Claude Code's known 2,048-unit limit. Crossing either threshold logs a warning; startup continues and the server does not truncate the instructions.
+
+The generated guidance names the Paperless instance this deployment fronts, taking the URL from `PAPERLESS_MCP_PAPERLESS_PUBLIC_URL` or, unset, from `PAPERLESS_MCP_PAPERLESS_URL`. A model can then recognise a link to that instance and read the document id out of it.
+
+`PAPERLESS_MCP_TOOLS_ALLOW` and `PAPERLESS_MCP_TOOLS_DENY` trim which tools an instance exposes. Hidden tools disappear from `tools/list` and are rejected on `tools/call`; resources and prompts are unaffected. Setting both variables, or setting one to a value with no names in it, is a startup error. A name matching no registered tool is ignored, but an allowlist that matches nothing logs a startup warning, since the instance then exposes zero tools. See `fastmcp-pvl-core`'s README for the full semantics.
+
+`PAPERLESS_MCP_HEALTH_DETAIL` decides how much the unauthenticated `/health` and `/health/ready` bodies say, since anyone who can reach the port can read them: `status` alone, the default `standard` with the server name, version and a verdict per readiness check, or `full` with a redacted reason for each check that raised. See [Docker deployment](https://pvliesdonk.github.io/paperless-mcp/2.1/deployment/docker/#health) for the routes themselves.
+
+| Variable                             | Default     | Description                                                                                                                                                                                                                                                 |
+| ------------------------------------ | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PAPERLESS_MCP_TRANSPORT`            | `stdio`     | Transport the server speaks: `stdio` for local Claude Desktop/Code, `http` or `sse` for a network server.                                                                                                                                                   |
+| `PAPERLESS_MCP_HOST`                 | `127.0.0.1` | Interface the HTTP server binds to.                                                                                                                                                                                                                         |
+| `PAPERLESS_MCP_PORT`                 | `8000`      | TCP port for the HTTP server.                                                                                                                                                                                                                               |
+| `PAPERLESS_MCP_BASE_URL`             | (none)      | Public base URL of the deployed server (`https://mcp.example.com`). Required for OIDC. Also the fallback source of the MCP Apps domain when `app_domain` is unset.                                                                                          |
+| `PAPERLESS_MCP_TOOLS_ALLOW`          | (none)      | Comma-separated explicit tool names this instance exposes; every other tool is hidden from listings and cannot be invoked. Names matching no registered tool are inert. Mutually exclusive with `tools_deny`. Takes effect through `apply_tool_visibility`. |
+| `PAPERLESS_MCP_TOOLS_DENY`           | (none)      | Comma-separated explicit tool names hidden from this instance (absent from listings, cannot be invoked). Names matching no registered tool are inert. Mutually exclusive with `tools_allow`. Takes effect through `apply_tool_visibility`.                  |
+| `PAPERLESS_MCP_SERVER_NAME`          | (none)      | Rename this server instance; defaults to the project name.                                                                                                                                                                                                  |
+| `PAPERLESS_MCP_INSTANCE_DESCRIPTION` | (none)      | Concise routing context that distinguishes this deployment's material or responsibility.                                                                                                                                                                    |
+| `PAPERLESS_MCP_INSTRUCTIONS_EXTRA`   | (none)      | Deployment-specific behavioral policy added to the generated MCP instructions.                                                                                                                                                                              |
+| `PAPERLESS_MCP_INSTRUCTIONS`         | (none)      | Legacy: replaces all generated MCP instructions (deprecated; use \_INSTANCE_DESCRIPTION for routing and \_INSTRUCTIONS_EXTRA for policy).                                                                                                                   |
+| `PAPERLESS_MCP_HTTP_PATH`            | `/mcp`      | Mount path for the MCP endpoint; the health routes derive their prefix from it.                                                                                                                                                                             |
+| `PAPERLESS_MCP_HEALTH_DETAIL`        | `standard`  | How much the unauthenticated /health and /health/ready bodies say: status, standard (adds name, version and per-check verdicts), or full (adds redacted reasons; trusted networks only).                                                                    |
+
+## Authentication
+
+Callers authenticate with a bearer token, with OIDC, or with both. OIDC itself has two modes. **remote** validates tokens locally against the provider's JWKS and needs only `PAPERLESS_MCP_BASE_URL` and `PAPERLESS_MCP_OIDC_CONFIG_URL`. **oidc-proxy** runs the OAuth flow itself and also needs `PAPERLESS_MCP_OIDC_CLIENT_ID` and `PAPERLESS_MCP_OIDC_CLIENT_SECRET`, registered with the provider as a confidential client whose redirect URI points at this server.
+
+The Required column below marks the oidc-proxy set. Setting all four selects that mode and omitting the two client credentials selects remote, so `PAPERLESS_MCP_AUTH_MODE` is the way to state the choice rather than leave it to be inferred. With none of these set, the server starts and serves unauthenticated. See the [authentication guide](https://pvliesdonk.github.io/paperless-mcp/2.1/guides/authentication/index.md) for setup, mapped multi-subject tokens, and troubleshooting.
+
+| Variable                                 | Default                 | Required | Description                                                                                                                                                                                                                                                                                                                                                                   |
+| ---------------------------------------- | ----------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PAPERLESS_MCP_BEARER_TOKEN`             | (none)                  | No       | Single shared bearer token; enables bearer auth unless `bearer_tokens_file` is set, which takes precedence.                                                                                                                                                                                                                                                                   |
+| `PAPERLESS_MCP_OIDC_CONFIG_URL`          | (none)                  | **Yes**  | OIDC discovery document URL (`https://auth.example.com/.well-known/openid-configuration`).                                                                                                                                                                                                                                                                                    |
+| `PAPERLESS_MCP_OIDC_CLIENT_ID`           | (none)                  | **Yes**  | OIDC client identifier registered with the provider.                                                                                                                                                                                                                                                                                                                          |
+| `PAPERLESS_MCP_OIDC_CLIENT_SECRET`       | (none)                  | **Yes**  | OIDC client secret registered with the provider.                                                                                                                                                                                                                                                                                                                              |
+| `PAPERLESS_MCP_OIDC_AUDIENCE`            | (none)                  | No       | Expected `aud` claim; tokens issued for another audience are rejected.                                                                                                                                                                                                                                                                                                        |
+| `PAPERLESS_MCP_OIDC_REQUIRED_SCOPES`     | `openid`                | No       | Scopes a caller must present, space- or comma-separated. Defaults to `openid` in oidc-proxy mode.                                                                                                                                                                                                                                                                             |
+| `PAPERLESS_MCP_OIDC_ADVERTISED_SCOPES`   | `openid offline_access` | No       | Scopes advertised to MCP clients in protected-resource metadata, space- or comma-separated. Overrides the default `openid offline_access`; `oidc_required_scopes` is always added on top. Set this when the registered client is not permitted `offline_access`, or to have clients request extra claim scopes (such as `groups`) without also requiring them in every token. |
+| `PAPERLESS_MCP_OIDC_JWT_SIGNING_KEY`     | `derived`               | No       | Signing key for issued tokens; used in oidc-proxy mode only. When unset, the key is derived deterministically from `oidc_client_secret`, so tokens survive a restart. Rotating that secret then invalidates every issued token. Set this explicitly to decouple token validity from secret rotation. Generate with `openssl rand -hex 32`.                                    |
+| `PAPERLESS_MCP_OIDC_VERIFY_ACCESS_TOKEN` | `false`                 | No       | Validate the access token instead of the id token.                                                                                                                                                                                                                                                                                                                            |
+| `PAPERLESS_MCP_AUTH_MODE`                | (none)                  | No       | Explicit auth-mode override, accepting `remote` or `oidc-proxy` (case- and whitespace-insensitive). When unset the mode is auto-detected from which auth variables are set; the override exists because having all four OIDC variables set is ambiguous between those two modes. Other values are ignored with a warning.                                                     |
+| `PAPERLESS_MCP_BEARER_TOKENS_FILE`       | (none)                  | No       | Path to a TOML file mapping bearer tokens to subjects; overrides the single-token `bearer_token` mode.                                                                                                                                                                                                                                                                        |
+| `PAPERLESS_MCP_BEARER_DEFAULT_SUBJECT`   | `bearer-anon`           | No       | Subject assigned to the single-token bearer mode; ignored when `bearer_tokens_file` is set, since mapped mode carries per-token subjects.                                                                                                                                                                                                                                     |
+
+## Persistence
+
+One URL configures every stateful subsystem. A `redis://` `PAPERLESS_MCP_KV_STORE_URL` is also reused for background tasks when `PAPERLESS_MCP_TASKS_URL` is unset, so a single URL covers both.
+
+| Variable                        | Default              | Description                                                                                                                                                                                                                                                                                                                                                                                                               |
+| ------------------------------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PAPERLESS_MCP_KV_STORE_URL`    | `file:///data/state` | Persistent-state backend URL shared by every pvl-core subsystem that needs state. `memory://` is in-process and lost on restart; `file:///path` persists on one server; `redis://`, `dynamodb://` and `mongodb://` each need their matching extra. When unset, defaults to `file:///data/state` (the volume family Docker images mount), or to `memory://` (with a warning) on a host where that directory is not usable. |
+| `PAPERLESS_MCP_EVENT_STORE_URL` | (none)               | Legacy state-backend override, used by `build_event_store` and `build_kv_store` only when `kv_store_url` is unset. It then backs every namespace, not just HTTP resumability. Prefer `kv_store_url` for new deployments.                                                                                                                                                                                                  |
+| `PAPERLESS_MCP_TASKS_URL`       | (none)               | Background-task (Docket) backend URL: `memory://` is in-process and lost on restart; `redis://` is durable and multi-process. When unset, a `redis://` `kv_store_url` is reused for tasks too; otherwise fastmcp's `memory://` default applies. Only applies when task-enabled tools exist. Applied via `configure_task_backend`.                                                                                         |
+
+## Background tasks
+
+Every Paperless MCP instance wires a background-task backend at startup, so a tool registered with `task=True` works with no extra setup. `PAPERLESS_MCP_TASKS_URL` (under Persistence above) picks the backend: `memory://` runs tasks in-process and loses them on restart; `redis://...` is durable and shared across processes. With neither it nor a `redis://` KV store set, the backend falls back to `memory://`, which the server logs at startup when running over HTTP. The queue name comes from the `PAPERLESS_MCP` prefix, so two servers sharing one Redis do not share a queue.
+
+Worker tuning stays on the native `FASTMCP_DOCKET_*` variables below. Set the backend through `PAPERLESS_MCP_TASKS_URL` rather than `FASTMCP_DOCKET_URL`: the former wins when both are set, and the server warns about the disagreement.
+
+| Variable                                | Default | Description                                                                              |
+| --------------------------------------- | ------- | ---------------------------------------------------------------------------------------- |
+| `FASTMCP_DOCKET_CONCURRENCY`            | `10`    | Maximum background tasks this worker runs at once.                                       |
+| `FASTMCP_DOCKET_WORKER_NAME`            | (none)  | Identifies this worker in the queue; defaults to a generated name.                       |
+| `FASTMCP_DOCKET_REDELIVERY_TIMEOUT`     | `300`   | Seconds before a task claimed by a worker that never finished is redelivered to another. |
+| `FASTMCP_DOCKET_RECONNECTION_DELAY`     | `5`     | Seconds to wait before reconnecting after the queue connection drops.                    |
+| `FASTMCP_DOCKET_MINIMUM_CHECK_INTERVAL` | `0.05`  | Seconds between queue polls; lower cuts latency and raises idle load.                    |
+
+## MCP Apps
+
+| Variable                   | Default | Description                                                                                  |
+| -------------------------- | ------- | -------------------------------------------------------------------------------------------- |
+| `PAPERLESS_MCP_APP_DOMAIN` | (none)  | MCP Apps iframe domain, used for CSP sandboxing. Overrides the host derived from `base_url`. |
+
+## Logging
+
+`FASTMCP_ENABLE_RICH_LOGGING` picks the shape of FastMCP's own log output, the request-logging middleware included. Left on, Rich renders each record with color, a time column and the source file that emitted it. Turned off, the middleware emits one JSON object per record and the rest of FastMCP's loggers emit `LEVEL: message`. This server's own `paperless_mcp.*` lines are not affected either way: the CLI attaches its own one-line handler to the root logger.
+
+The container image and the packaged systemd unit both default it to `false`, because neither stream is a terminal. Rich falls back to 80 columns there, and a structured record does not fit in what its own columns leave, so each record wraps across three space-padded lines that neither `docker logs` nor a collector reads back. `docker logs -t` and `journalctl` both carry a timestamp per line, covering the column Rich stops printing. Both are ordinary environment defaults: `.env`, the compose `environment:` block and `/etc/paperless-mcp/env` all override them. Turning Rich back on inside a container wraps the records again unless `COLUMNS` is set too, which is what Rich reads in preference to asking the terminal.
+
+| Variable                      | Default | Description                                                                                                                                                                                                                 |
+| ----------------------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `FASTMCP_LOG_LEVEL`           | `INFO`  | Log level for FastMCP internals and app loggers (DEBUG / INFO / WARNING / ERROR / CRITICAL). The -v CLI flag overrides to DEBUG.                                                                                            |
+| `FASTMCP_ENABLE_RICH_LOGGING` | `true`  | Rich color output for a terminal; false gives one plain or JSON line per record. Off in the container image and the systemd unit, since neither is a terminal and Rich wraps a structured record at its 80-column fallback. |
+
+## Container runtime
+
+Read by the container entrypoint (Docker / Compose), not by the server process.
+
+| Variable | Default | Description                                                                                                  |
+| -------- | ------- | ------------------------------------------------------------------------------------------------------------ |
+| `PUID`   | `1000`  | Run the server process as this UID; the container entrypoint reassigns ownership of writable paths to match. |
+| `PGID`   | `1000`  | Run the server process as this GID; pair with PUID to match the owner of a mounted volume.                   |
+
+## Remote debugger
+
+Development only; the image must be built with `--build-arg DEBUG=true`, and the protocol is unauthenticated. See [remote debugging](https://pvliesdonk.github.io/paperless-mcp/2.1/deployment/docker/#remote-debugging).
+
+| Variable                   | Default | Description                                                                 |
+| -------------------------- | ------- | --------------------------------------------------------------------------- |
+| `PAPERLESS_MCP_DEBUG_PORT` | `5678`  | debugpy listen port; the image must be built with `--build-arg DEBUG=true`. |
+| `PAPERLESS_MCP_DEBUG_WAIT` | `false` | Block startup until a debugger attaches.                                    |
+
+## Domain variables
+
+`PAPERLESS_MCP_PAPERLESS_URL` and `PAPERLESS_MCP_API_TOKEN` are the two variables the server cannot start without: leave either unset and startup stops with a message naming it. The table below still shows them under `Required: No`, because that column reports whether the underlying field declares a default rather than whether the server runs without a value; read the description column for these two. `PAPERLESS_MCP_PAPERLESS_PUBLIC_URL` lets you name a different base URL for user-visible links than the internal API URL the server calls; unset, it defaults to `PAPERLESS_MCP_PAPERLESS_URL`, and trailing slashes are stripped from both.
+
+A minimal `.env`:
+
+```
+PAPERLESS_MCP_PAPERLESS_URL=http://paperless.local:8000
+PAPERLESS_MCP_API_TOKEN=abc123yourtokenhere
+PAPERLESS_MCP_HTTP_TIMEOUT_SECONDS=60
+PAPERLESS_MCP_DEFAULT_PAGE_SIZE=50
+```
+
+### Paperless
+
+| Variable                             | Default | Required | Description                                                                                               |
+| ------------------------------------ | ------- | -------- | --------------------------------------------------------------------------------------------------------- |
+| `PAPERLESS_MCP_PAPERLESS_URL`        | (none)  | No       | Base URL of the Paperless-NGX REST API, without a trailing slash. The server refuses to start without it. |
+| `PAPERLESS_MCP_API_TOKEN`            | (none)  | No       | Paperless service-account token used for outbound API requests. The server refuses to start without it.   |
+| `PAPERLESS_MCP_HTTP_TIMEOUT_SECONDS` | `30.0`  | No       | Per-request HTTP timeout in seconds.                                                                      |
+| `PAPERLESS_MCP_HTTP_RETRIES`         | `2`     | No       | Retries for idempotent requests after network errors or 5xx responses.                                    |
+| `PAPERLESS_MCP_DEFAULT_PAGE_SIZE`    | `25`    | No       | Default page size for list tools, from 1 through 100.                                                     |
+| `PAPERLESS_MCP_PAPERLESS_PUBLIC_URL` | (none)  | No       | Public Paperless UI URL for user-visible links; defaults to PAPERLESS_URL.                                |
+
+# Configuration Generator
+
+Answer a few questions and copy a ready-to-use configuration for your exact deployment. Everything runs in your browser; nothing you type is sent anywhere. Secret fields (tokens, keys) are never included in the shareable link; replace the `<YOUR_...>` placeholders if you leave them blank.
+
+Loading the configuration generator…
+# Guides
+
+# Authentication
+
+This guide covers how to protect your MCP server with authentication. Choose the mode that fits your deployment.
+
+Transport requirement
+
+Authentication only works with HTTP transport (`--transport http` or `sse`). It has no effect with `--transport stdio`.
+
+## Auth modes
+
+The server supports five authentication modes:
+
+| Mode                  | When to use                                                                                                      | Configuration                                                                                       |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| **Multi-auth**        | Mixed clients, such as Claude web (OIDC) + Claude Code (bearer token) on the same server                         | Set both `PAPERLESS_MCP_BEARER_TOKEN` and the OIDC variables                                        |
+| **Bearer token**      | Simple deployments behind a VPN, Docker compose stacks, development                                              | Set `PAPERLESS_MCP_BEARER_TOKEN` only                                                               |
+| **OIDC (remote)**     | Production with user identity, SSO, multi-user access; local JWKS validation, no confidential client to register | Set `PAPERLESS_MCP_BASE_URL` + `PAPERLESS_MCP_OIDC_CONFIG_URL` only                                 |
+| **OIDC (oidc-proxy)** | The same, where the server should run the OAuth flow itself and manage sessions                                  | Set all four OIDC variables (`BASE_URL`, `OIDC_CONFIG_URL`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`) |
+| **No auth**           | Local stdio usage, trusted networks                                                                              | Default (nothing to configure)                                                                      |
+
+When both bearer token and OIDC are configured, the server accepts **either** credential: a valid bearer token or a valid OIDC session. This is useful when different clients require different authentication flows against the same server instance.
+
+______________________________________________________________________
+
+## Bearer token
+
+The simplest way to protect your server. A single static token shared between server and clients.
+
+### Setup
+
+1. Generate a random token:
+
+   ```
+   openssl rand -hex 32
+   ```
+
+1. Set the environment variable:
+
+   ```
+   PAPERLESS_MCP_BEARER_TOKEN=your-generated-token
+   ```
+
+1. Start the server with HTTP transport:
+
+   ```
+   paperless-mcp serve --transport http --port 8000
+   ```
+
+### Client usage
+
+Clients must include the token in every request:
+
+```
+Authorization: Bearer your-generated-token
+```
+
+### When to use bearer token
+
+- Deployments behind a VPN or firewall
+- Docker compose stacks where services communicate internally
+- Development and testing environments
+- Any scenario where full OIDC is overkill
+
+### Mapped bearer tokens (multi-subject)
+
+The bearer-token mode above shares one subject across every authenticated caller. By default this is the library's `bearer-anon`; override with `PAPERLESS_MCP_BEARER_DEFAULT_SUBJECT`. For audit logs and authorization that distinguish callers, switch to mapped-token mode by pointing `PAPERLESS_MCP_BEARER_TOKENS_FILE` at a TOML file:
+
+```
+# tokens.toml
+[tokens]
+"ghp_alice_xxxxxxxx" = "user:alice@example.com"
+"sk_ci_yyyyyyyy"     = "service:ci-bot"
+```
+
+Each token resolves to a distinct subject string for downstream attribution. Subject strings are opaque: the `<kind>:<id>` convention (`user:`, `service:`, `token:`) is documentation only. When `BEARER_TOKENS_FILE` is set it overrides `BEARER_TOKEN` (a `WARNING` is logged if both are present). A missing or malformed file aborts startup with `ConfigurationError` rather than silently denying every request.
+
+______________________________________________________________________
+
+## OIDC
+
+Full OAuth 2.1 authentication using an external identity provider. Supports user login flows, SSO, and multi-user access control. Which of the two OIDC modes runs follows from which variables are set; `PAPERLESS_MCP_AUTH_MODE` states the choice instead of leaving it to be inferred.
+
+### How remote mode works
+
+The client authenticates with the identity provider and presents the resulting token, which the server validates locally against the provider's JWKS:
+
+```
+Client → OIDC Provider (log in, get JWT)
+Client → paperless-mcp (present JWT, validated via JWKS)
+```
+
+No redirect passes through the server and no code exchange happens, so the provider needs no client registered for this server.
+
+### How oidc-proxy mode works
+
+The server proxies OIDC itself, with no external auth sidecar to deploy:
+
+```
+Client → paperless-mcp → OIDC Provider
+```
+
+1. Client connects to the server
+1. Server redirects to the OIDC provider for login
+1. Provider authenticates the user and returns a code
+1. Server exchanges the code for tokens
+1. Subsequent requests include the JWT
+
+### Remote mode variables
+
+`PAPERLESS_MCP_BASE_URL` and `PAPERLESS_MCP_OIDC_CONFIG_URL`, plus any of the optional variables below. Omitting the two client credentials is what selects this mode.
+
+### OIDCProxy required variables
+
+| Variable                           | Description                                                                                                                                                        |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `PAPERLESS_MCP_BASE_URL`           | Public base URL of the deployed server (`https://mcp.example.com`). Required for OIDC. Also the fallback source of the MCP Apps domain when `app_domain` is unset. |
+| `PAPERLESS_MCP_OIDC_CONFIG_URL`    | OIDC discovery document URL (`https://auth.example.com/.well-known/openid-configuration`).                                                                         |
+| `PAPERLESS_MCP_OIDC_CLIENT_ID`     | OIDC client identifier registered with the provider.                                                                                                               |
+| `PAPERLESS_MCP_OIDC_CLIENT_SECRET` | OIDC client secret registered with the provider.                                                                                                                   |
+
+### Optional variables
+
+| Variable                                 | Default                 | Description                                                                                                                                                                                                                                                                                                                                                                   |
+| ---------------------------------------- | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PAPERLESS_MCP_OIDC_AUDIENCE`            | (none)                  | Expected `aud` claim; tokens issued for another audience are rejected.                                                                                                                                                                                                                                                                                                        |
+| `PAPERLESS_MCP_OIDC_REQUIRED_SCOPES`     | `openid`                | Scopes a caller must present, space- or comma-separated. Defaults to `openid` in oidc-proxy mode.                                                                                                                                                                                                                                                                             |
+| `PAPERLESS_MCP_OIDC_ADVERTISED_SCOPES`   | `openid offline_access` | Scopes advertised to MCP clients in protected-resource metadata, space- or comma-separated. Overrides the default `openid offline_access`; `oidc_required_scopes` is always added on top. Set this when the registered client is not permitted `offline_access`, or to have clients request extra claim scopes (such as `groups`) without also requiring them in every token. |
+| `PAPERLESS_MCP_OIDC_JWT_SIGNING_KEY`     | `derived`               | Signing key for issued tokens; used in oidc-proxy mode only. When unset, the key is derived deterministically from `oidc_client_secret`, so tokens survive a restart. Rotating that secret then invalidates every issued token. Set this explicitly to decouple token validity from secret rotation. Generate with `openssl rand -hex 32`.                                    |
+| `PAPERLESS_MCP_OIDC_VERIFY_ACCESS_TOKEN` | `false`                 | Validate the access token instead of the id token.                                                                                                                                                                                                                                                                                                                            |
+
+JWT signing key and secret rotation
+
+When `PAPERLESS_MCP_OIDC_JWT_SIGNING_KEY` is unset, FastMCP derives the signing key from the OIDC client secret, so the key stays the same across restarts. Rotating the client secret changes the derived key and invalidates every token issued under the old one. Set an explicit key to decouple token validity from client-secret rotation:
+
+```
+openssl rand -hex 32
+```
+
+Long-running sessions
+
+Current MCP clients do not reliably refresh tokens; see [Known Limitations](#known-limitations-mcp-oauth-token-refresh). Configure **all** token lifetimes (access, id, refresh) on your identity provider to cover a full workday (8 hours or more). For simpler deployments, bearer token auth is unaffected by these limitations.
+
+For the full OIDC reference (env vars, Docker Compose, subpath deployments, architecture):
+
+- [OIDC Authentication reference](https://pvliesdonk.github.io/paperless-mcp/2.1/deployment/oidc/index.md)
+
+______________________________________________________________________
+
+## Troubleshooting
+
+### "invalid client" error
+
+The `client_id` and/or `redirect_uris` in your OIDC provider config don't match the values in your `.env` file. Verify both sides match exactly.
+
+### Tokens invalidated after a client-secret rotation
+
+You're missing `PAPERLESS_MCP_OIDC_JWT_SIGNING_KEY`. Without it, FastMCP derives the signing key from the OIDC client secret, so rotating that secret changes the derived key and invalidates every token issued under the old one. Generate and set a stable key to decouple token validity from secret rotation:
+
+```
+openssl rand -hex 32
+```
+
+### Auth has no effect
+
+Authentication only works with HTTP transport. If you're using `--transport stdio`, auth is silently ignored. Switch to `--transport http`.
+
+### Bearer token not working
+
+- Verify the env var is set and non-empty (whitespace-only values are ignored)
+- Check that clients send `Authorization: Bearer <token>` (not `Basic` or other schemes)
+- If OIDC is also configured, multi-auth is active: both bearer and OIDC are accepted simultaneously
+
+### OIDC redirect fails
+
+- Verify `BASE_URL` matches your public URL exactly (including any subpath prefix)
+- For subpath deployments, see the [subpath deployment guide](https://pvliesdonk.github.io/paperless-mcp/2.1/deployment/oidc/#subpath-deployments); `BASE_URL` must include the prefix, `HTTP_PATH` must not
+- Check that `redirect_uris` in your provider config includes your callback URL (such as `https://mcp.example.com/auth/callback`)
+
+### Session drops after token expiry
+
+**Symptom:** the MCP client works for a period (often ~1 hour), then starts returning 401 errors or stops responding. Restarting the client fixes it temporarily.
+
+**Root cause:** this is almost always a token lifetime issue, not a server bug. Check three things:
+
+1. **id_token lifetime** (most common): When using `verify_id_token` mode (the default for Authelia), the server re-validates the upstream `id_token` on every request. If your provider's `id_token` lifetime is shorter than the `access_token` lifetime, the session dies at the `id_token` expiry, even though the access token is still valid. Authelia defaults `id_token` to 1 hour. **Fix: set `id_token` lifetime to match `access_token`** in your provider config.
+1. **access_token lifetime**: If both `id_token` and `access_token` are set correctly but sessions still drop, check that the provider's `expires_in` response matches your configured lifetime.
+1. **No refresh token**: See [Known Limitations](#known-limitations-mcp-oauth-token-refresh) below; current MCP clients cannot refresh tokens, so sessions are limited to the token lifetime.
+
+**Workaround:** configure **all** token lifetimes on your identity provider to cover a full workday:
+
+```
+# Authelia example
+lifespans:
+  custom:
+    mcp_long_lived:
+      access_token: '8h'
+      id_token: '8h'        # must match access_token for verify_id_token mode
+      refresh_token: '30d'
+```
+
+### Opaque access tokens (Authelia)
+
+Authelia issues opaque (non-JWT) access tokens. This is handled automatically: the server verifies the `id_token` instead. No extra configuration needed.
+
+______________________________________________________________________
+
+## Known Limitations: MCP OAuth token refresh
+
+Ecosystem-wide issue
+
+The limitations below affect **all** OAuth-protected MCP servers, not just this one. They are caused by issues in the MCP client implementations (Claude Code, Claude.ai, Claude Desktop) and the MCP Python SDK. Check the linked tracking issues for current status.
+
+### The problem
+
+MCP clients cannot maintain sessions beyond the token lifetime because token refresh does not work. When tokens expire, the session drops and requires manual re-authentication. This affects every provider: Authelia, Keycloak, Google, and others.
+
+### Why refresh doesn't work
+
+Three independent issues prevent token refresh:
+
+| Layer              | Issue                                                                                                                          | Impact                                                                                                                                                                                                                                                                    |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Claude Code**    | Stores refresh tokens but never uses them ([claude-code#21333](https://github.com/anthropics/claude-code/issues/21333))        | Refresh tokens are obtained and saved but never sent back to refresh expired access tokens                                                                                                                                                                                |
+| **Claude Code**    | Does not ask for `offline_access` on its own ([claude-code#7744](https://github.com/anthropics/claude-code/issues/7744))       | Most OIDC providers issue no refresh token without this scope. The server advertises `openid offline_access` in its protected-resource metadata, so a client that requests the advertised set gets a refresh-capable grant; one that ignores the metadata still does not. |
+| **MCP Python SDK** | Token refresh deadlocks inside SSE streams ([python-sdk#1326](https://github.com/modelcontextprotocol/python-sdk/issues/1326)) | Even with a valid refresh token, the SDK hangs when attempting refresh during an active stream                                                                                                                                                                            |
+
+The server-side refresh architecture (FastMCP's `OAuthProxy.exchange_refresh_token()`) is correctly implemented and would work, but it requires the client to initiate the refresh, which none of the current clients do reliably.
+
+### What works today
+
+**Bearer token auth** is unaffected by all of the above. If your deployment allows it (such as Claude Code with env vars, or API clients), bearer tokens are the simplest and most reliable option.
+
+**Long token lifetimes** are the only viable workaround for OIDC. Set all three lifetimes (access, id, refresh) to cover your typical session duration:
+
+- `access_token: '8h'`: covers a workday
+- `id_token: '8h'`: **must match access_token** when using `verify_id_token` mode (critical for Authelia)
+- `refresh_token: '30d'`: ready for when clients support refresh
+- Permit `offline_access` for the registered client; the server advertises it by default, so a client that honours the advertised scopes requests it. Where the client may not hold that scope, narrow what the server advertises with `PAPERLESS_MCP_OIDC_ADVERTISED_SCOPES` rather than letting the authorization request fail
+
+### Tracking
+
+These upstream issues are actively tracked:
+
+- [anthropics/claude-code#21333](https://github.com/anthropics/claude-code/issues/21333): refresh tokens stored but never used
+- [anthropics/claude-code#7744](https://github.com/anthropics/claude-code/issues/7744): `offline_access` scope never requested
+- [modelcontextprotocol/python-sdk#1326](https://github.com/modelcontextprotocol/python-sdk/issues/1326): SSE refresh deadlock
+
+When these are resolved, OIDC sessions should persist indefinitely via automatic token refresh with no changes needed server-side.
+# MCP Interface
+
+# Tools
+
+The tools registered in this server are listed below.
+
+Every tool also carries a human-readable title, which clients that support titles show in place of the machine name. A few titles say what the tool does rather than restating its name: `get_remote_version` is titled **Check for Paperless Updates**, and `get_document_metadata` is titled **Get Document File Details**. The tables below list machine names, which is what you pass when calling a tool.
+
+## Document tools
+
+| Tool                       | Description                                                                                                                                                                                                                                                                                                                                    |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `list_documents`           | List documents with optional filters; OCR `content` stripped by default (`include_content=True` to opt in). `notes[].note` and `custom_fields[].value` are always stripped. Fetch them via single-document endpoints.                                                                                                                          |
+| `search_documents`         | Full-text and filtered document search; OCR `content` stripped by default (`include_content=True` to opt in). `notes[].note` and `custom_fields[].value` are always stripped on hits.                                                                                                                                                          |
+| `get_document`             | Retrieve document metadata by ID; OCR `content` stripped by default (`include_content=True` to opt in)                                                                                                                                                                                                                                         |
+| `get_document_content`     | Retrieve the plain-text content of a document; capped at 50,000 characters by default (`max_chars=None` for the full text). A capped result names the range returned and the `offset` to pass to read the next section.                                                                                                                        |
+| `upload_document`          | Upload a new document for ingestion                                                                                                                                                                                                                                                                                                            |
+| `update_document`          | Patch document metadata (title, tags, correspondent, etc.)                                                                                                                                                                                                                                                                                     |
+| `delete_document`          | Permanently delete a document                                                                                                                                                                                                                                                                                                                  |
+| `bulk_edit_documents`      | Apply a bulk operation to multiple documents. The change lands before the call returns, but Paperless queues the search-index rebuild, so `search_documents` may miss the edited documents for seconds to minutes while `list_documents` and `get_document` see them at once. Track the queued task with `list_tasks(task_type="bulk_update")` |
+| `get_document_metadata`    | Retrieve file metadata: original filename, checksums, MIME type                                                                                                                                                                                                                                                                                |
+| `get_document_thumbnail`   | Retrieve the thumbnail image of a document                                                                                                                                                                                                                                                                                                     |
+| `get_document_suggestions` | Retrieve the tags, correspondent and type Paperless suggests for a document                                                                                                                                                                                                                                                                    |
+| `get_document_notes`       | List notes attached to a document                                                                                                                                                                                                                                                                                                              |
+| `add_document_note`        | Add a note to a document                                                                                                                                                                                                                                                                                                                       |
+| `delete_document_note`     | Delete a note from a document                                                                                                                                                                                                                                                                                                                  |
+| `get_document_history`     | Retrieve audit log for a document                                                                                                                                                                                                                                                                                                              |
+
+`get_document`, `list_documents`, `search_documents`, and `update_document` include a `web_url` field pointing to the document in the Paperless UI, such as `https://paperless.example.com/documents/42/`. Set `PAPERLESS_MCP_PAPERLESS_PUBLIC_URL` if the public URL differs from the API URL; otherwise the API URL is used.
+
+### Pagination
+
+All paginated tools return `next`/`previous` as bare `page=N` markers (or `None`). Upstream Paperless URLs are normalised away so the internal hostname never leaks into MCP responses. Both server-paginated (documents, tags, and similar endpoints) and client-paginated (tasks) endpoints now share a single shape. Callers pass `page=N` explicitly to fetch subsequent pages.
+
+## Tag tools
+
+| Tool             | Description                              |
+| ---------------- | ---------------------------------------- |
+| `list_tags`      | List all tags                            |
+| `get_tag`        | Get a tag by ID                          |
+| `create_tag`     | Create a new tag                         |
+| `update_tag`     | Update a tag                             |
+| `delete_tag`     | Delete a tag                             |
+| `bulk_edit_tags` | Bulk-add or remove tags across documents |
+
+## Correspondent tools
+
+| Tool                       | Description                                  |
+| -------------------------- | -------------------------------------------- |
+| `list_correspondents`      | List all correspondents                      |
+| `get_correspondent`        | Get a correspondent by ID                    |
+| `create_correspondent`     | Create a new correspondent                   |
+| `update_correspondent`     | Update a correspondent                       |
+| `delete_correspondent`     | Delete a correspondent                       |
+| `bulk_edit_correspondents` | Apply a bulk operation across correspondents |
+
+## Document type tools
+
+| Tool                       | Description                                  |
+| -------------------------- | -------------------------------------------- |
+| `list_document_types`      | List all document types                      |
+| `get_document_type`        | Get a document type by ID                    |
+| `create_document_type`     | Create a new document type                   |
+| `update_document_type`     | Update a document type                       |
+| `delete_document_type`     | Delete a document type                       |
+| `bulk_edit_document_types` | Apply a bulk operation across document types |
+
+## Custom field tools
+
+| Tool                  | Description               |
+| --------------------- | ------------------------- |
+| `list_custom_fields`  | List all custom fields    |
+| `get_custom_field`    | Get a custom field by ID  |
+| `create_custom_field` | Create a new custom field |
+| `update_custom_field` | Update a custom field     |
+| `delete_custom_field` | Delete a custom field     |
+
+### Additional data by type
+
+The additional-data field shape depends on the custom field type. Refer to these shapes when using `create_custom_field` and `update_custom_field`:
+
+| Type                                                                               | Additional-data shape / example                               | Notes                                                                                                                                                |
+| ---------------------------------------------------------------------------------- | ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `string`, `longtext`, `integer`, `boolean`, `float`, `date`, `url`, `documentlink` | (unused)                                                      | Omit or pass `null`                                                                                                                                  |
+| `monetary`                                                                         | `{"default_currency": "USD"}`                                 | Optional ISO-4217 currency code; Paperless accepts `null`/absent                                                                                     |
+| `select`                                                                           | `{"select_options": [{"label": "Low"}, {"label": "Medium"}]}` | **Required** on create. Paperless assigns each option a stable `id` on creation. On update, re-use existing `id` values to preserve document values. |
+
+Unknown shapes are rejected by Paperless with a 400 error.
+
+## Storage path tools
+
+| Tool                 | Description              |
+| -------------------- | ------------------------ |
+| `list_storage_paths` | List all storage paths   |
+| `get_storage_path`   | Get a storage path by ID |
+
+## Saved view tools
+
+| Tool               | Description            |
+| ------------------ | ---------------------- |
+| `list_saved_views` | List all saved views   |
+| `get_saved_view`   | Get a saved view by ID |
+
+## Share link tools
+
+| Tool               | Description                                        |
+| ------------------ | -------------------------------------------------- |
+| `list_share_links` | List share links (optionally filtered by document) |
+| `get_share_link`   | Fetch a share link by ID                           |
+
+Both tools include a `share_url` field of the form `<PAPERLESS_MCP_PAPERLESS_PUBLIC_URL>/share/<slug>`. `PAPERLESS_MCP_PAPERLESS_PUBLIC_URL` is used when set; otherwise it defaults to `PAPERLESS_MCP_PAPERLESS_URL` via the config layer (see [Configuration](https://pvliesdonk.github.io/paperless-mcp/2.1/configuration/index.md) for the variable).
+
+## Task tools
+
+| Tool            | Description                                                                                                                                                                                                                                                                                                                                                                                  |
+| --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `list_tasks`    | List background Celery tasks, newest first. Paginates (`page`, `page_size` up to 100). Defaults to unacknowledged tasks only. Pass `include_acknowledged=True` to include acknowledged tasks, or `acknowledged=True` to return only acknowledged ones. Filter by kind of work with `task_type`, such as `task_type="bulk_update"` for the search-index rebuild `bulk_edit_documents` queues. |
+| `get_task`      | Get a task by UUID                                                                                                                                                                                                                                                                                                                                                                           |
+| `wait_for_task` | Poll until a task reaches a terminal state or times out                                                                                                                                                                                                                                                                                                                                      |
+
+## System tools
+
+| Tool                 | Description                                                                                                                                                                                                 |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `get_statistics`     | Retrieve Paperless system statistics                                                                                                                                                                        |
+| `get_remote_version` | Check whether a newer Paperless-NGX release exists upstream: the newest release published on GitHub, and whether it is newer than the connected instance. Not the installed version (see `get_server_info`) |
+| `get_server_info`    | Report this server's own build and the version installed on the Paperless instance it talks to                                                                                                              |
+
+`get_server_info` answers "is the deployed build the one I expect, and against which Paperless?" in one call. It returns `server_name`, `server_version`, `core_version` (the `fastmcp-pvl-core` version), and a `paperless` block carrying the version **installed on the instance this server is connected to**:
+
+```
+{
+  "server_name": "paperless-mcp",
+  "server_version": "1.0.2",
+  "core_version": "7.2.0",
+  "paperless": {"version": "2.14.7"}
+}
+```
+
+An instance running 2.14.7 reports `2.14.7` here whether or not a newer release exists. For the newer release, call `get_remote_version`. The same instance can report different numbers from the two tools:
+
+| Question                                  | Tool                 | Answer for the instance above       |
+| ----------------------------------------- | -------------------- | ----------------------------------- |
+| Which Paperless am I connected to?        | `get_server_info`    | `2.14.7`                            |
+| Is there a newer Paperless to upgrade to? | `get_remote_version` | `2.20.14`, `update_available: true` |
+
+When Paperless cannot answer, the `paperless` block is `{"version": null}` and the rest of the response is unaffected. The version is extra information about a call whose job is reporting this server's build, so it never fails that call. Paperless cannot answer when it is down, when the URL is wrong, when the token is rejected, and also when the token's Paperless user lacks permission to view UI settings, which is where this version is published. Grant that user the "view" permission on UI settings if you want the version reported; everything else the server does is unaffected either way.
+
+# Resources
+
+The MCP resources this server registers are listed below. Collection resources return the full set as JSON; document resources take a document ID.
+
+## Collection resources
+
+| URI                          | Description                                                                                                                               |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `config://paperless`         | Server configuration snapshot: the Paperless API URL, the public UI URL and the default page size for list tools                          |
+| `stats://paperless`          | Paperless-NGX document statistics                                                                                                         |
+| `remote-version://paperless` | The newest Paperless-NGX release published upstream, and whether it is newer than the connected instance. Not the version installed on it |
+| `tags://paperless`           | All tags                                                                                                                                  |
+| `correspondents://paperless` | All correspondents                                                                                                                        |
+| `document-types://paperless` | All document types                                                                                                                        |
+| `custom-fields://paperless`  | All custom fields                                                                                                                         |
+| `storage-paths://paperless`  | All storage paths                                                                                                                         |
+| `saved-views://paperless`    | All saved views                                                                                                                           |
+| `tasks://paperless`          | All background tasks                                                                                                                      |
+
+## Document resources
+
+| URI                                             | Description                                                                                                                                            |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `paperless://documents/{document_id}`           | Document metadata by ID                                                                                                                                |
+| `paperless://documents/{document_id}/content`   | Extracted text content, in full. Resources take no arguments, so the character cap that `get_document_content` applies by default does not apply here. |
+| `paperless://documents/{document_id}/metadata`  | File metadata: original filename, checksums, MIME type                                                                                                 |
+| `paperless://documents/{document_id}/notes`     | Notes attached to the document                                                                                                                         |
+| `paperless://documents/{document_id}/history`   | Audit history                                                                                                                                          |
+| `paperless://documents/{document_id}/thumbnail` | Thumbnail image                                                                                                                                        |
+| `paperless://documents/{document_id}/preview`   | PDF preview                                                                                                                                            |
+| `paperless://documents/{document_id}/download`  | Original file download                                                                                                                                 |
+
+# Prompts
+
+MCP prompts are reusable prompt templates exposed to clients; the ones this server provides are listed below.
+
+## Built-in prompts
+
+*None yet.*
+# Deployment
+
+# Claude Desktop
+
+Paperless MCP integrates with [Claude Desktop](https://claude.ai/download) via the stdio transport.
+
+## Setup
+
+### 1. Install
+
+From PyPI:
+
+```
+pip install pvliesdonk-paperless-mcp
+```
+
+Or with uv (installs `paperless-mcp` as a global command on your PATH):
+
+```
+uv tool install pvliesdonk-paperless-mcp
+```
+
+Or download the `.mcpb` bundle from the [GitHub Releases](https://github.com/pvliesdonk/paperless-mcp/releases) page and double-click to install; Claude Desktop prompts for required env vars via a GUI wizard, no manual JSON editing needed.
+
+The bundle does not carry the code. It pins `pvliesdonk-paperless-mcp[all]` at its own version and `uvx` fetches that from PyPI on first launch, so the machine needs network access the first time it starts. Release candidates publish to PyPI for exactly this reason, which makes a `vX.Y.Z-rc.N` bundle installable the same way a stable one is.
+
+### 2. Configure Claude Desktop
+
+If you installed via `.mcpb`, skip this step. Claude Desktop was configured automatically by the wizard.
+
+Otherwise, add the server to your Claude Desktop configuration file. The path varies by operating system:
+
+- **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
+- **Linux:** `~/.config/Claude/claude_desktop_config.json`
+
+```
+{
+  "mcpServers": {
+    "paperless-mcp": {
+      "command": "paperless-mcp",
+      "args": ["serve"],
+      "env": {}
+    }
+  }
+}
+```
+
+### 3. Restart Claude Desktop
+
+Restart the application to pick up the new configuration. If the server connects successfully, `Paperless MCP` tools appear in Claude's tool list. If not, see [Troubleshooting](#troubleshooting) below.
+
+## Configuration examples
+
+## Troubleshooting
+
+### Server not appearing in Claude Desktop
+
+1. Check the config file path is correct for your OS
+1. Ensure the JSON is valid (no trailing commas)
+1. Restart Claude Desktop completely (quit and reopen)
+1. Check Claude Desktop logs for error messages
+
+### "Command not found"
+
+Ensure `paperless-mcp` is on your PATH. If installed in a virtualenv, use the full path to the binary. Replace only the `"command"` value in your existing config and keep `"args"` and `"env"` as-is.
+
+macOS/Linux:
+
+```
+{
+  "mcpServers": {
+    "paperless-mcp": {
+      "command": "/Users/me/.venvs/mcp/bin/paperless-mcp",
+      "args": ["serve"],
+      "env": {}
+    }
+  }
+}
+```
+
+Windows (`Scripts\` not `bin\`, `.exe` suffix):
+
+```
+{
+  "mcpServers": {
+    "paperless-mcp": {
+      "command": "C:\\Users\\me\\.venvs\\mcp\\Scripts\\paperless-mcp.exe",
+      "args": ["serve"],
+      "env": {}
+    }
+  }
+}
+```
+
+# Docker Deployment
+
+## Quick start
+
+```
+cp .env.example .env
+docker compose up -d
+```
+
+The server listens on port 8000 with HTTP transport, published on the host as `8000:8000`. No reverse proxy, TLS terminator, or external network is assumed.
+
+Copying `.env.example` first is the step to keep. Every variable in it arrives commented out, so the server starts on its defaults and the copy changes no behaviour by itself. It is the file you edit next, and `compose.yml` names it.
+
+Apply a later edit with `docker compose up -d`, which recreates the container with the new values. `docker compose restart` does not pick them up: an env file is read when a container is created, so a restarted container keeps the values it was created with and the edit is ignored without any message.
+
+## Docker Compose
+
+`compose.yml` is a working deployment, not an illustration. It is re-rendered on every `copier update`, so fixes and new defaults reach it; edit it inside the sentinel blocks described below and your changes survive.
+
+### Where configuration goes
+
+The split matters, because two files can set the same variable:
+
+- **`.env` holds the server's configuration.** `compose.yml` reads it with `env_file:`. `.env.example` is generated from the server's own config surface and lists every variable with its default and a one-line description, so it is both the checklist and the place to edit. [Configuration](https://pvliesdonk.github.io/paperless-mcp/2.1/configuration/index.md) carries the full reference.
+- **`compose.yml`'s `environment:` block holds only what the file itself determines.** Currently that is `FASTMCP_HOME`, which points at the state volume the file mounts. Values here override `.env`, so a knob set in both places takes the value from `compose.yml`, which is rarely what an operator editing `.env` expects.
+
+The `env_file:` entry is marked `required: false`, so a checkout with no `.env` still starts on defaults. That form needs Compose 2.24.0 or newer; on an older engine, either upgrade or replace the entry with plain `env_file: .env` and make sure the file exists.
+
+### Ports
+
+The image pins its own listener: `CMD` passes `--host 0.0.0.0 --port 8000`, so `PAPERLESS_MCP_HOST` and `PAPERLESS_MCP_PORT` in a `.env` do not move it. To serve on a different host port, change the left-hand side of the mapping (`"9000:8000"`) rather than the server's port.
+
+### Domain content and `copier update`
+
+Four sentinel blocks mark the parts of `compose.yml` a project owns. Content inside them survives a template update; content outside them does not, and will conflict.
+
+| Block                         | For                                                     |
+| ----------------------------- | ------------------------------------------------------- |
+| `DOMAIN-COMPOSE-VOLUMES`      | Extra mounts on the service                             |
+| `DOMAIN-COMPOSE-ENVIRONMENT`  | Extra environment this file determines                  |
+| `DOMAIN-COMPOSE-SERVICES`     | Sidecars, such as a task backend or a cache             |
+| `DOMAIN-COMPOSE-VOLUME-NAMES` | Top-level declarations for any named volume added above |
+
+A named volume needs an entry in two of those: the mount in `DOMAIN-COMPOSE-VOLUMES`, and its declaration in `DOMAIN-COMPOSE-VOLUME-NAMES`. A bind mount needs only the first.
+
+### Behind a reverse proxy
+
+Proxy configuration is deployment-specific, so `compose.yml` ships none. Add it in a second file rather than by editing `compose.yml`, which is template-owned and re-rendered: save this as `compose.override.yml`, which Compose loads automatically alongside `compose.yml`.
+
+```
+services:
+  paperless-mcp:
+    # `!reset` drops the published port: the proxy reaches the container over
+    # the shared network, so nothing needs to be on the host. Plain merging
+    # appends to sequences, so without this the port stays published.
+    ports: !reset []
+    networks:
+      - traefik
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.paperless-mcp.rule=Host(`mcp.example.com`)"
+      - "traefik.http.routers.paperless-mcp.tls.certresolver=letsencrypt"
+      - "traefik.http.services.paperless-mcp.loadbalancer.server.port=8000"
+
+networks:
+  traefik:
+    external: true
+```
+
+`!reset` needs Compose 2.24.4 or newer. On an older engine, drop that line and remove the port mapping from `compose.yml` directly, accepting that the edit conflicts on the next template update.
+
+Check the result before starting anything, since a merge that silently kept the port mapping looks identical until the port clashes:
+
+```
+docker compose config
+```
+
+Substitute your own hostname for `mcp.example.com`. Set `PAPERLESS_MCP_BASE_URL` to the public URL as well: the server needs it to advertise its own address, and it is required once OIDC is enabled. Do not reach for `PAPERLESS_MCP_HOST` here. That variable is the interface the server binds to, which is not the name the proxy routes.
+
+The network must already exist and be the one the proxy watches. For the same overlay with OIDC, see [OIDC](https://pvliesdonk.github.io/paperless-mcp/2.1/deployment/oidc/index.md).
+
+### Building the image yourself
+
+`compose.yml` pulls a published image rather than building one, so `docker compose up -d` never rebuilds from a stale checkout. To run your own build, build and tag it first:
+
+```
+docker build -t ghcr.io/pvliesdonk/paperless-mcp:dev .
+```
+
+then point the `image:` line at that tag.
+
+### Health
+
+The server serves two unauthenticated routes for an orchestrator to probe. They sit outside the MCP mount and outside auth, so they answer normally while the MCP endpoint still answers `401`.
+
+| Route           | Question                | Answer                                                                                              |
+| --------------- | ----------------------- | --------------------------------------------------------------------------------------------------- |
+| `/health`       | Is the process serving? | Static `200` for as long as it does. A failure means restart it.                                    |
+| `/health/ready` | Can it do its job?      | Runs every readiness check and answers `503` if any fails. A failure means take it out of rotation. |
+
+`compose.yml` probes `/health`, so `docker compose ps` reports `healthy` once the server answers and `docker compose up --wait` returns. The image carries the same probe as its `HEALTHCHECK`, so a bare `docker run` reports health too. Compose only reports the verdict: it gates `depends_on: condition: service_healthy` on it but restarts nothing. An orchestrator that does act on liveness, such as Swarm or a Kubernetes `livenessProbe`, restarts the container, so the probe is deliberately not `/health/ready`. A restart does not fix an unreachable backing store, and a readiness verdict here would hold up every dependent service for one. Point a load balancer or a Kubernetes `readinessProbe` at `/health/ready` instead.
+
+Readiness ships with one check, `kv_store`, which writes a short-lived key so a state volume that has silently vanished is detected. A project adds its own checks, such as whether an upstream API key is still valid, in the `health_checks` dict beside the `DOMAIN-WIRING` block in `src/paperless_mcp/server.py`.
+
+The paths follow the mount. The server strips a conventional trailing `mcp` segment from `PAPERLESS_MCP_HTTP_PATH`, so the default `/mcp` publishes `/health` and a mount at `/paperless-mcp/mcp` publishes `/paperless-mcp/health`. The shipped probe assumes the default, so a `.env` that changes the mount path must move the probe with it.
+
+Check the readiness verdict through the published port; `curl` prints the body on a `503` as well, which is where the failing check is named:
+
+```
+curl -s http://localhost:8000/health/ready
+```
+
+`PAPERLESS_MCP_HEALTH_DETAIL` decides how much the bodies say, because anyone who can reach the port can read them. `status` returns the status alone. The default, `standard`, adds the server name and version on `/health` and a verdict per check on `/health/ready`. `full` adds the exception type and a redacted reason for each check that raised, and belongs only where the port is reachable from a trusted network.
+
+### Logs
+
+The image sets `FASTMCP_ENABLE_RICH_LOGGING=false`, so `docker logs` gets one line per record: a JSON object for every MCP request the logging middleware sees, `LEVEL: message` from the rest of FastMCP. Both grep cleanly and both survive a log collector. The server's own loggers print one line either way.
+
+The reason is that a container has no terminal. Rich falls back to 80 columns, its time, level and source columns claim most of them, and a structured record then wraps across three space-padded lines that no reader and no parser puts back together. Rich's time column goes with the setting, and Docker timestamps every line it captures anyway, so `docker logs -t` prints them.
+
+This is an image default like any other, so `.env` or the compose `environment:` block overrides it. Turning Rich back on for a human reading `docker logs` needs `COLUMNS` set as well, since that is what Rich reads in place of asking a terminal it does not have. In `.env`:
+
+```
+FASTMCP_ENABLE_RICH_LOGGING=true
+COLUMNS=200
+```
+
+Records then render one line each, in color, padded out to the full width. The packaged Debian and RPM installs make the same trade for `journalctl`: the systemd unit sets `FASTMCP_ENABLE_RICH_LOGGING=false`, and `/etc/paperless-mcp/env` overrides it.
+
+`FASTMCP_LOG_LEVEL` sets how much is logged; see [Configuration](https://pvliesdonk.github.io/paperless-mcp/2.1/configuration/#logging).
+
+## Image tags
+
+| Tag          | Contents                                                     | Updated by                                           |
+| ------------ | ------------------------------------------------------------ | ---------------------------------------------------- |
+| `latest`     | Newest stable release                                        | Each stable release that is newest across all series |
+| `vX.Y.Z`     | That exact release (pre-releases included, as `vX.Y.Z-rc.N`) | Never (immutable)                                    |
+| `vX.Y`, `vX` | Newest stable release in that series                         | Each stable release that is newest in its series     |
+| `rc`         | Newest release candidate                                     | Each pre-release still ahead of `latest`             |
+| `edge`       | Newest commit on `main`                                      | Every merge to `main`                                |
+
+Rolling tags are ordering-aware: a patch release cut from an old `release/X.Y` branch after a newer stable has shipped updates its own series tags but never `latest`. The same rule governs `rc`: a candidate only moves the tag while its version is still ahead of the newest stable, so a candidate for an already-released version never pulls `rc` behind `latest`.
+
+The three rolling tags answer different questions. Use `latest` to run released code, `rc` to test the candidate for the next release, and `edge` to run the newest merged commit. Note that `rc` is not cleared when its release ships: it keeps pointing at the last candidate until the next one is cut, so `latest` is the tag to follow in production. To find the commit behind an `edge` image, read its `org.opencontainers.image.revision` label:
+
+```
+docker inspect --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}' \
+  ghcr.io/pvliesdonk/paperless-mcp:edge
+```
+
+## Environment variables
+
+| Variable                             | Default               | Description                                                                                                   |
+| ------------------------------------ | --------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `PAPERLESS_MCP_BEARER_TOKEN`         | n/a                   | Enable bearer token auth                                                                                      |
+| `FASTMCP_LOG_LEVEL`                  | `INFO`                | Log level (`DEBUG` / `INFO` / `WARNING` / `ERROR`)                                                            |
+| `FASTMCP_ENABLE_RICH_LOGGING`        | `false` in the image  | Rich output; off means one plain or JSON line per record (see [Logs](#logs))                                  |
+| `PAPERLESS_MCP_INSTANCE_DESCRIPTION` | n/a                   | Routing context that distinguishes this deployment                                                            |
+| `PAPERLESS_MCP_INSTRUCTIONS_EXTRA`   | n/a                   | Deployment-specific behavioral policy added to the generated MCP instructions                                 |
+| `PAPERLESS_MCP_INSTRUCTIONS`         | (computed at startup) | Legacy full replacement of the generated instructions (deprecated)                                            |
+| `PAPERLESS_MCP_DEBUG_PORT`           | n/a                   | Remote-debugger TCP port (see [Remote debugging](#remote-debugging); requires `--build-arg DEBUG=true` image) |
+| `PAPERLESS_MCP_DEBUG_WAIT`           | `false`               | Block startup until IDE attaches (see [Remote debugging](#remote-debugging))                                  |
+
+For OIDC auth variables, see [Authentication](https://pvliesdonk.github.io/paperless-mcp/2.1/guides/authentication/index.md).
+
+Running behind a reverse proxy on a path prefix (`https://mcp.example.com/myservice/mcp`) rather than its own hostname needs two routing rules, one of which sits outside the prefix: see [Subpath Deployments](https://pvliesdonk.github.io/paperless-mcp/2.1/deployment/oidc/#subpath-deployments).
+
+## Volumes
+
+| Path            | Purpose                                        |
+| --------------- | ---------------------------------------------- |
+| `/data/service` | Your service data (bind-mount or named volume) |
+| `/data/state`   | State files (FastMCP OIDC state, etc.)         |
+
+## UID/GID
+
+Set `PUID` and `PGID` in your `.env` file to match the owner of bind-mounted directories (default 1000/1000).
+
+## Remote debugging
+
+Production images ship without `debugpy` to keep the image lean. To attach a remote Python debugger from VS Code or PyCharm:
+
+1. **Build with the debug extra:**
+
+   ```
+   docker build --build-arg DEBUG=true -t paperless-mcp:debug .
+   ```
+
+   This installs the `[debug]` optional-dependency group (which pulls `debugpy` transitively from `fastmcp-pvl-core`). Default builds (`DEBUG=false`) skip it.
+
+1. **Run with the debug env vars set and the port mapped:**
+
+   ```
+   docker run --rm \
+     -e PAPERLESS_MCP_DEBUG_PORT=5678 \
+     -e PAPERLESS_MCP_DEBUG_WAIT=true \
+     -p 127.0.0.1:5678:5678 \
+     -p 8000:8000 \
+     paperless-mcp:debug
+   ```
+
+   | Env var                    | Effect                                                                                                                                            |
+   | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+   | `PAPERLESS_MCP_DEBUG_PORT` | TCP port the debugger listens on (any value parsing to `0` disables; non-numeric or out-of-range values log a WARNING and the listener stays off) |
+   | `PAPERLESS_MCP_DEBUG_WAIT` | When truthy (`1`/`true`/`yes`/`on`), block startup until the IDE attaches. Default is non-blocking.                                               |
+
+1. **Attach from VS Code**, adding a launch config:
+
+   ```
+   {
+     "name": "Attach to paperless-mcp",
+     "type": "debugpy",
+     "request": "attach",
+     "connect": { "host": "localhost", "port": 5678 }
+   }
+   ```
+
+   PyCharm uses *Run → Edit Configurations → Python Debug Server* with the same host/port.
+
+Never publish the debug port on a public network
+
+The debug listener binds `0.0.0.0` inside the container so the IDE can reach it from the host, but **debugpy's DAP protocol is unauthenticated**: any peer that can reach the port has arbitrary code execution as the server process. Always bind the port mapping to localhost (`-p 127.0.0.1:5678:5678`) or tunnel via `kubectl port-forward` / SSH. Production images should be built with default `DEBUG=false`.
+
+When the helper is invoked but `debugpy` isn't installed (say, someone sets `DEBUG_PORT` on a non-debug image), it logs a WARNING and continues; this is the safe failure mode.
+
+# OIDC Authentication
+
+Optional token-based authentication for HTTP deployments. OIDC activates automatically based on which environment variables are set. For an overview of all authentication modes (bearer token, OIDC, no auth), see the [Authentication guide](https://pvliesdonk.github.io/paperless-mcp/2.1/guides/authentication/index.md).
+
+Transport requirement
+
+OIDC requires `--transport http` (or `sse`). It has no effect with `--transport stdio`.
+
+## Auth Modes
+
+| Mode           | Required Variables                                                    | Description                                          |
+| -------------- | --------------------------------------------------------------------- | ---------------------------------------------------- |
+| **remote**     | `BASE_URL`, `OIDC_CONFIG_URL`                                         | Local JWKS validation. No client credentials needed. |
+| **oidc-proxy** | `BASE_URL`, `OIDC_CONFIG_URL`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET` | Full OAuth proxy with session management.            |
+
+Set `PAPERLESS_MCP_AUTH_MODE` to state the mode, or let the server auto-detect it from which variables are set.
+
+## Remote Mode Variables
+
+| Variable                        | Description                   |
+| ------------------------------- | ----------------------------- |
+| `PAPERLESS_MCP_BASE_URL`        | Public base URL of the server |
+| `PAPERLESS_MCP_OIDC_CONFIG_URL` | OIDC discovery endpoint       |
+
+Optional: `OIDC_AUDIENCE`, `OIDC_REQUIRED_SCOPES` (same as OIDCProxy mode).
+
+No `CLIENT_ID` or `CLIENT_SECRET` needed. Tokens are validated locally via JWKS.
+
+## OIDCProxy Required Variables
+
+| Variable                           | Description                                                                                                                                                        |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `PAPERLESS_MCP_BASE_URL`           | Public base URL of the deployed server (`https://mcp.example.com`). Required for OIDC. Also the fallback source of the MCP Apps domain when `app_domain` is unset. |
+| `PAPERLESS_MCP_OIDC_CONFIG_URL`    | OIDC discovery document URL (`https://auth.example.com/.well-known/openid-configuration`).                                                                         |
+| `PAPERLESS_MCP_OIDC_CLIENT_ID`     | OIDC client identifier registered with the provider.                                                                                                               |
+| `PAPERLESS_MCP_OIDC_CLIENT_SECRET` | OIDC client secret registered with the provider.                                                                                                                   |
+
+## Optional Variables
+
+| Variable                                 | Default                 | Description                                                                                                                                                                                                                                                                                                                                                                   |
+| ---------------------------------------- | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PAPERLESS_MCP_OIDC_AUDIENCE`            | (none)                  | Expected `aud` claim; tokens issued for another audience are rejected.                                                                                                                                                                                                                                                                                                        |
+| `PAPERLESS_MCP_OIDC_REQUIRED_SCOPES`     | `openid`                | Scopes a caller must present, space- or comma-separated. Defaults to `openid` in oidc-proxy mode.                                                                                                                                                                                                                                                                             |
+| `PAPERLESS_MCP_OIDC_ADVERTISED_SCOPES`   | `openid offline_access` | Scopes advertised to MCP clients in protected-resource metadata, space- or comma-separated. Overrides the default `openid offline_access`; `oidc_required_scopes` is always added on top. Set this when the registered client is not permitted `offline_access`, or to have clients request extra claim scopes (such as `groups`) without also requiring them in every token. |
+| `PAPERLESS_MCP_OIDC_JWT_SIGNING_KEY`     | `derived`               | Signing key for issued tokens; used in oidc-proxy mode only. When unset, the key is derived deterministically from `oidc_client_secret`, so tokens survive a restart. Rotating that secret then invalidates every issued token. Set this explicitly to decouple token validity from secret rotation. Generate with `openssl rand -hex 32`.                                    |
+| `PAPERLESS_MCP_OIDC_VERIFY_ACCESS_TOKEN` | `false`                 | Validate the access token instead of the id token.                                                                                                                                                                                                                                                                                                                            |
+
+## JWT Signing Key
+
+The signing key applies to oidc-proxy mode; remote mode does not use it. When `PAPERLESS_MCP_OIDC_JWT_SIGNING_KEY` is unset, FastMCP derives the signing key from the OIDC client secret using deterministic key derivation, so the key stays the same across restarts and tokens keep validating.
+
+The real reason to set an explicit key is secret rotation: because the default key is derived from the client secret, rotating that secret changes the derived key and invalidates every token issued under the old one. Setting an explicit signing key decouples token validity from client-secret rotation:
+
+```
+# Generate once, store in your .env file
+openssl rand -hex 32
+```
+
+## Setup with Authelia
+
+This section configures oidc-proxy mode. Remote mode needs no client registration, since the client authenticates with the provider itself.
+
+Note
+
+Authelia does not support Dynamic Client Registration (RFC 7591). Clients must be registered manually in `configuration.yml`.
+
+Opaque access tokens
+
+Authelia issues opaque (non-JWT) access tokens. This is handled automatically: the server verifies the `id_token` (always a standard JWT) instead. No extra configuration is needed.
+
+### 1. Register the client in Authelia
+
+```
+identity_providers:
+  oidc:
+    clients:
+      - client_id: my-mcp-server
+        client_secret: '$pbkdf2-sha512$...'   # authelia crypto hash generate
+        redirect_uris:
+          - https://mcp.example.com/auth/callback
+        grant_types: [authorization_code]
+        response_types: [code]
+        pkce_challenge_method: S256
+        scopes: [openid, profile, email]
+```
+
+### 2. Set environment variables
+
+```
+PAPERLESS_MCP_BASE_URL=https://mcp.example.com
+PAPERLESS_MCP_OIDC_CONFIG_URL=https://auth.example.com/.well-known/openid-configuration
+PAPERLESS_MCP_OIDC_CLIENT_ID=my-mcp-server
+PAPERLESS_MCP_OIDC_CLIENT_SECRET=your-client-secret
+PAPERLESS_MCP_OIDC_JWT_SIGNING_KEY=$(openssl rand -hex 32)
+```
+
+### 3. Start with HTTP transport
+
+```
+paperless-mcp serve --transport http --port 8000
+```
+
+## Architecture
+
+### Remote mode
+
+The server validates tokens locally using JWKS, with no upstream token calls after startup:
+
+```
+Client → IdP (authenticate + get JWT)
+Client → paperless-mcp (present JWT → validate via JWKS)
+```
+
+1. Client authenticates directly with the OIDC provider
+1. Client presents the JWT access token to the MCP server
+1. Server validates the token locally using the provider's JWKS keys
+1. No upstream calls. Token refresh is between client and IdP.
+
+### OIDCProxy mode
+
+The server uses FastMCP's built-in `OIDCProxy` auth provider (not the external `mcp-auth-proxy` sidecar). The authentication flow:
+
+```
+Client → paperless-mcp (with OIDCProxy) → OIDC Provider (Authelia/Keycloak)
+```
+
+1. Client connects to the MCP server
+1. Server redirects to the OIDC provider for authentication
+1. Provider authenticates the user and returns a code
+1. Server exchanges the code for tokens
+1. Subsequent requests include the JWT token
+
+## Docker Compose with OIDC
+
+This is the shipped `compose.yml` with a reverse proxy added. The service joins an external `traefik` network and carries router labels. It publishes no host port, because the proxy reaches it over that network instead. See [Docker](https://pvliesdonk.github.io/paperless-mcp/2.1/deployment/docker/index.md) for the base file and the same overlay without OIDC.
+
+```
+services:
+  paperless-mcp:
+    image: ghcr.io/pvliesdonk/paperless-mcp:latest
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false
+    volumes:
+      - service-data:/data/service
+      - state-data:/data/state
+    environment:
+      FASTMCP_HOME: /data/state/fastmcp
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2).close()"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.paperless-mcp.rule=Host(`mcp.example.com`)"
+      - "traefik.http.routers.paperless-mcp.tls.certresolver=letsencrypt"
+      - "traefik.http.services.paperless-mcp.loadbalancer.server.port=8000"
+    networks:
+      - traefik
+
+volumes:
+  service-data:
+  state-data:
+
+networks:
+  traefik:
+    external: true
+```
+
+With the corresponding `.env`:
+
+```
+PAPERLESS_MCP_BASE_URL=https://mcp.example.com
+PAPERLESS_MCP_OIDC_CONFIG_URL=https://auth.example.com/.well-known/openid-configuration
+PAPERLESS_MCP_OIDC_CLIENT_ID=my-mcp-server
+PAPERLESS_MCP_OIDC_CLIENT_SECRET=your-client-secret
+PAPERLESS_MCP_OIDC_JWT_SIGNING_KEY=your-stable-hex-key
+```
+
+For a prefixed deployment (such as `https://mcp.example.com/myservice/mcp`), see [Subpath Deployments](#subpath-deployments) below.
+
+## Subpath Deployments
+
+When OIDC is enabled behind a reverse-proxy subpath, `BASE_URL` and `HTTP_PATH` serve different roles:
+
+| Variable    | Purpose                                                    | Example                             |
+| ----------- | ---------------------------------------------------------- | ----------------------------------- |
+| `BASE_URL`  | Public URL of the server, **including the subpath prefix** | `https://mcp.example.com/myservice` |
+| `HTTP_PATH` | Internal MCP endpoint mount point (**no subpath prefix**)  | `/mcp`                              |
+
+The reverse proxy strips the subpath prefix before forwarding to the application. FastMCP concatenates `BASE_URL + HTTP_PATH` to build the public resource URL, so including the prefix in both produces broken URLs with duplicated path segments.
+
+Do not duplicate the subpath
+
+Setting `BASE_URL=https://mcp.example.com/myservice` together with `HTTP_PATH=/myservice/mcp` produces a duplicated resource URL: `https://mcp.example.com/myservice/myservice/mcp`. The subpath belongs in `BASE_URL` only.
+
+### Configuration
+
+Environment variables:
+
+```
+PAPERLESS_MCP_BASE_URL=https://mcp.example.com/myservice
+PAPERLESS_MCP_HTTP_PATH=/mcp
+```
+
+Register this callback URI in your OIDC provider:
+
+```
+https://mcp.example.com/myservice/auth/callback
+```
+
+### What the server serves, and where
+
+The MCP endpoint and the OAuth discovery documents sit on opposite sides of the prefix, which is what makes subpath routing more than one strip rule. With `BASE_URL=https://mcp.example.com/myservice` and `HTTP_PATH=/mcp`:
+
+| Public URL                                                                  | Path the container listens on        | Served when                                         |
+| --------------------------------------------------------------------------- | ------------------------------------ | --------------------------------------------------- |
+| `/myservice/mcp`                                                            | `/mcp`                               | always                                              |
+| `/myservice/authorize`, `/token`, `/register`, `/auth/callback`, `/consent` | the same path without the prefix     | the server proxies OAuth (client ID and secret set) |
+| `/.well-known/oauth-protected-resource/myservice/mcp`                       | the identical path, prefix included  | OIDC is enabled, in every mode                      |
+| `/.well-known/oauth-authorization-server`                                   | the identical path, at the host root | the server proxies OAuth (client ID and secret set) |
+
+Two properties of that table drive every routing rule below:
+
+1. The MCP endpoint and the OAuth endpoints listen **without** the prefix, so the proxy has to strip it.
+1. The protected-resource document's path **contains** the prefix, because RFC 9728 §3.1 appends the resource path after the well-known segment. The server registers that full path verbatim, so stripping the prefix from this request returns 404.
+
+A server holding no client ID and secret verifies tokens the provider issued directly. It serves protected-resource metadata only and answers `/.well-known/oauth-authorization-server` with 404. That is the correct answer, because the provider is the authorization server, so do not route that path to a server configured this way.
+
+### Reverse proxy routing
+
+The reverse proxy needs two routers pointing at the same service, because a prefix rule cannot express both halves:
+
+1. **Operational routes** match the prefix and strip it: `/myservice/mcp` and, in proxy mode, the OAuth endpoints.
+1. **Discovery routes** match their own well-known paths and pass through untouched. Their URLs do not begin with `/myservice`, so a `PathPrefix(/myservice)` rule never sees them.
+
+```
+labels:
+  # Operational routes: strip the /myservice prefix before forwarding
+  - "traefik.http.routers.mcp-app.rule=Host(`mcp.example.com`) && PathPrefix(`/myservice`)"
+  - "traefik.http.middlewares.strip-myservice.stripprefix.prefixes=/myservice"
+  - "traefik.http.routers.mcp-app.middlewares=strip-myservice"
+  - "traefik.http.services.mcp-app.loadbalancer.server.port=8000"
+  # Discovery routes: same service, no strip middleware
+  - "traefik.http.routers.mcp-wellknown.rule=Host(`mcp.example.com`) && (PathPrefix(`/.well-known/oauth-protected-resource/myservice/mcp`) || PathPrefix(`/.well-known/oauth-authorization-server`))"
+  - "traefik.http.routers.mcp-wellknown.service=mcp-app"
+```
+
+Drop the `oauth-authorization-server` clause when the server holds no client ID and secret. That path returns 404 in such a configuration, and claiming it on a shared hostname takes the document away from whichever service does answer.
+
+Two routers rather than one is deliberate. A single router carrying the strip rule would apply it to the discovery request as well. Nothing here relies on how a given proxy treats a strip prefix that fails to match: separate routers state the untouched route outright, in any proxy that has the concept.
+
+### Sharing a hostname
+
+The failure that follows from point 2 above is worth spelling out, because its symptom points somewhere else entirely.
+
+The discovery URL sits outside the prefix, so on a hostname shared with other services, prefix-based routing cannot claim it. Without a router that matches it explicitly, the request falls through to whatever else holds the host, such as an SSO portal or another MCP server mounted at the root. That service answers with **its** metadata, the client builds an authorization URL from another service's endpoints, and the visible symptom is an authorization URL 404ing at a path nobody configured. It reads as a client bug or an auth bug; it is a routing rule one path too narrow.
+
+The `mcp-wellknown` router above is the fix. In Traefik it also wins by default: routers sort by rule length, so a rule naming the full well-known path outranks a bare `Host(...)` catch-all. Where the competing service sets an explicit `priority`, set a higher one here, because Traefik ignores its rule-length default for any router that carries one.
+
+One document still collides: `oauth-authorization-server`
+
+In proxy mode the server serves authorization-server metadata at `/.well-known/oauth-authorization-server`, at the **host root**, whatever prefix `BASE_URL` carries. FastMCP does contain an RFC 8414 path-aware override, `OAuthProvider.get_well_known_routes()`, which would serve it at `/.well-known/oauth-authorization-server/myservice`. Nothing reaches it: the HTTP app mounts `get_routes()` instead, leaving the path-aware form unreachable. (Verified against FastMCP 3.4.7.)
+
+Only this one document collides. Protected-resource metadata is path-namespaced, so several servers can share a hostname without contending for it.
+
+Where another OAuth service already owns the root path, either give this server its own hostname, or run it without client ID and secret so it never serves the document. An authorization-server metadata request then belongs to the provider, where the `authorization_servers` entry in this server's protected-resource metadata sends the client anyway.
+
+### Verifying the routing
+
+Probe the container first, to separate what the server serves from what the proxy does with it. The image ships no HTTP client, so borrow one. Passing `--network container:` puts the throwaway container inside the server's network namespace, which makes `localhost:8000` the server itself:
+
+```
+NS="container:$(docker compose ps -q paperless-mcp)"
+docker run --rm --network "$NS" curlimages/curl -s -o /dev/null \
+  -w '%{http_code}\n' localhost:8000/mcp
+docker run --rm --network "$NS" curlimages/curl -s \
+  localhost:8000/.well-known/oauth-protected-resource/myservice/mcp
+```
+
+Expect `401` for the first, meaning the endpoint is there and authentication is on, and the metadata JSON for the second. A `404` instead of the `401` means `HTTP_PATH` carries the prefix it should not. Then repeat from outside, through the proxy:
+
+```
+curl -s -o /dev/null -w '%{http_code}\n' https://mcp.example.com/myservice/mcp
+curl -s https://mcp.example.com/.well-known/oauth-protected-resource/myservice/mcp
+```
+
+Both must reach this server, and the `resource` field in the JSON must read `https://mcp.example.com/myservice/mcp`. A `resource` naming a different service is the shared-hostname problem above, not an incorrect `BASE_URL`.
+
+# Release Process
+
+`main` is trunk: every change merges there, and merging a feature is not releasing. A merge feeds the rolling `edge` channel and nothing else. A release is a separate, deliberate event: a maintainer dispatches the **Release Prepare** workflow, reviews the release pull request it opens, and merges it. The merge is what tags and publishes. This page describes that flow, what each kind of release publishes, and where releases come from.
+
+## Cutting a release, step by step
+
+The checklist a maintainer follows; each step links the section that explains it.
+
+1. **Draft the release notes.** Invoke the `writing-release-notes` skill with your coding agent (it lives at `.agents/skills/writing-release-notes/SKILL.md`). It researches the range through the GitHub API, writes `docs/releases/next.md`, runs Vale and a strict MkDocs build, and opens an ordinary pull request. Review and merge that pull request first; Release Prepare refuses to run when reviewed notes are missing. When user-visible behaviour lands after a first release candidate, invoke the skill's `refresh-known-target` mode and merge its pull request before the next dispatch. See [How the notes pages are produced](#how-the-notes-pages-are-produced).
+1. **Dispatch Release Prepare.** In the Actions tab, run **Release Prepare** on `main` (or on a `release/X.Y` branch for a stabilisation release). Leave `channel` on `auto` unless you are promoting a candidate to stable. See [The release pull request](#the-release-pull-request).
+1. **Review the release pull request.** Check the computed version against the breaking-change policy in `AGENTS.md`, read the changelog section, confirm the promoted notes page is the one you merged in step 1, and compare its `notes-range-end` with the release delta so the notes cover every commit being released. Never press GitHub's "Update branch" on it; dispatch Release Prepare again instead.
+1. **Merge it.** The merge is the release: the **Release** workflow tags the commit, creates the GitHub release and publishes every channel.
+1. **Verify the fan-out.** Each publish runs as its own job in the Release workflow: `publish-pypi`, `publish-docker`, `publish-linux-packages` and `publish-mcpb` on every release; `publish-plugin-zip` when the project ships the Claude Code plugin channel; `publish-claude-plugin` and `publish-registry` only for a stable release that is the newest one (a release candidate, or a patch to an older series, skips both by design). The documentation site deploys for the new version. A failed publish job can be re-run from the workflow run; the tag and release already exist, and every job derives from the reviewed version string, so a re-run publishes the same artefacts.
+1. **If the release was cut from a `release/X.Y` branch**, expect the automated pull request that ports the release back to `main`, and merge it with a merge commit. See [Stabilisation branches](#stabilisation-branches).
+
+## Channels
+
+| Channel     | Version identity                                                 | What it promises                                                                                                                                                                                                                                                                                                                                                                           |
+| ----------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `edge`      | None; the commit is the identity                                 | The newest merged code. Every merge to `main` rebuilds the rolling Docker tag plus an `.mcpb` bundle and a Claude Code plugin `.zip` as workflow artifacts, and the rolling `unstable` docs version deploys from the same trigger. It leaves no git tag, GitHub release, or PyPI entry behind.                                                                                             |
+| Pre-release | `vX.Y.Z-rc.N`, computed and reviewed in its release pull request | A stabilisation step toward exactly that version, normally cut from a `release/X.Y` branch. Publishes a GitHub release with wheels, `sdist`, `.deb`/`.rpm` packages, `.mcpb` bundle, plugin `.zip`, and SBOM attached, plus the wheel on PyPI and a Docker image under its immutable version tag and the rolling `rc` tag. Skips the marketplace and registry entries and the docs deploy. |
+| Stable      | `vX.Y.Z`                                                         | The full artifact set: PyPI, Docker, Linux packages, GitHub release assets (wheels, `sdist`, `.mcpb` bundle, SBOM), marketplace and registry entries, versioned docs.                                                                                                                                                                                                                      |
+
+Pre-releases do reach PyPI, and that does not put them in front of ordinary installers. A PEP 440 resolver skips pre-releases unless the requirement pins one or you pass `--pre`, so `pip install pvliesdonk-paperless-mcp` and `uv add pvliesdonk-paperless-mcp` still resolve to the newest stable. Ask for a candidate by name to get one:
+
+```
+pip install pvliesdonk-paperless-mcp==X.Y.ZrcN
+```
+
+Note the spelling. Tags and the changelog use SemVer (`vX.Y.Z-rc.N`); PyPI uses the PEP 440 canonical form (`X.Y.ZrcN`).
+
+Candidates need PyPI because the `.mcpb` bundle points there rather than carrying the code. Its manifest launches `uvx --from pvliesdonk-paperless-mcp[all]==<version>`, so a candidate absent from PyPI ships a bundle that fails on the tester's machine at install time. `edge` still publishes nothing to PyPI: it has no version identity to publish under.
+
+Rolling pointers are ordering-aware. The Docker `latest`, `vX`, and `vX.Y` tags, the GitHub latest-release pointer, the docs `latest` alias, and the marketplace and registry entries follow a release only when it is the newest in the relevant series, so a patch release cut from an old `release/X.Y` branch never moves them back to older content. The Docker `rc` tag follows the same rule on the pre-release side: it moves only while the candidate's version is still ahead of the newest stable. This holds even when two releases overlap: each rolling channel checks the tag ordering again inside its own publish job. See [Image tags](https://pvliesdonk.github.io/paperless-mcp/2.1/deployment/docker/#image-tags) for the Docker tag list.
+
+## Testing a candidate's Claude Code plugin
+
+Every release attaches `paperless-mcp-plugin-<version>.zip`, and every merge to `main` produces the same archive as the `plugin-zip-edge` workflow artifact. Load one without installing anything:
+
+```
+claude --plugin-url https://github.com/pvliesdonk/paperless-mcp/releases/download/vX.Y.Z-rc.N/paperless-mcp-plugin-X.Y.Z-rc.N.zip
+```
+
+The plugin loads for that session only and leaves no install record, so this is the way to try a candidate without disturbing the installed copy. Check it came up with `/plugin`, or from the shell:
+
+```
+claude --plugin-url <url> plugin details paperless-mcp
+```
+
+The zip carries its own wheel and launches it from `${CLAUDE_PLUGIN_ROOT}`, so it works at versions no index serves: every candidate, and the `edge` build, whose constant `0.0.0-dev` could never be published. Its dependencies still resolve normally at launch, so the machine needs network access the first time the server starts.
+
+The marketplace entry is the other half of the channel and works differently: it is a thin pointer that installs `pvliesdonk-paperless-mcp` from PyPI, it is what `/plugin install` reads, and it follows stable releases only. Claude Code has no marketplace-free way to install a plugin permanently, so a candidate is something you load per session rather than install.
+
+## The release pull request
+
+Dispatching **Release Prepare** on the branch to release from has the release tool, [knope](https://knope.tech/), compute the next version from the conventional commits since the last release in that branch's history. It stamps the version-coupled files (`pyproject.toml` and `CHANGELOG.md` natively; `uv.lock`'s self-version entry on every prepare and the install-channel manifests on stable prepares, both through `scripts/stamp_manifests.py`) and opens a release pull request against the dispatched branch. The dispatch's `channel` input picks the release kind: `auto` prepares a release candidate on `release/X.Y` branches and a stable elsewhere, and an explicit `rc` or `stable` choice overrides that. The optional `override_version` input replaces the computed version with an explicit one, for the rare range whose commits the tool counts nothing in; the workflow refuses a dispatch on any branch other than the default branch or `release/X.Y`, and refuses a computed version whose tag already exists, or a release candidate whose stable version is already tagged.
+
+The release pull request is an ordinary pull request: full CI runs on it, and the reviewer checks the computed version against the breaking-change policy and reads the changelog section in the diff. Merging it is the release decision. On merge, the **Release** workflow tags the merge commit and creates the GitHub release, then hands off to the publish fan-out; every publish gate derives from the reviewed version string.
+
+Two rules keep the flow sound:
+
+- Never press GitHub's "Update branch" button on a release pull request. If the base branch moves while the pull request is open, dispatch Release Prepare again: it recreates the preparation branch from the base and refreshes the same pull request in place.
+- A release candidate promotes through a plain `channel: stable` dispatch over the same commits. A guard verifies that nothing but release stamps and release-notes pages changed since the last candidate, first when the promotion is prepared (a drifted promotion refuses before its pull request even opens) and again before any tag is created; any other change forces a new candidate instead of a silently different stable.
+
+## Releasing from trunk
+
+The default release path is trunk. When trunk is quiescent (no epic that must ship whole is mid-flight), dispatch Release Prepare on `main` and merge the release pull request: no branch, no ceremony. The prepare workflow prints an advisory warning when a release-named milestone still has open issues, or when an open `ships-atomically` epic shows work in flight. It counts the epic's native sub-issues even when they live in another repository, which keeps a cross-repo epic visible. The warning never blocks: the cut may still be intentional.
+
+## Stabilisation branches
+
+A short-lived `release/X.Y` branch is the exception tool, for two cases:
+
+1. **Trunk carries unfinished work** that the release must exclude. The branch is cut from the last quiescent commit behind the head, release candidates are cut there while fixes land, and a plain `channel: stable` dispatch promotes the final `X.Y.Z`.
+1. **A shipped release needs a patch** while `main` has moved on. The branch can be created retroactively from the release tag, so no branch needs to exist in advance of the need.
+
+Fixes flow from trunk to the branch: they land on `main` first and are cherry-picked over. After a stable release cut from a `release/X.Y` branch, an automated job opens an ordinary pull request back to `main`, reviewed and CI-gated like any other change, with no direct pushes to protected branches. When that release is the newest stable, the pull request is a merge of the release commit together with its version stamps, because the next release on `main` computes its version and its changelog range from the last stable in its own history. Merge it with a merge commit; the other merge methods discard that history, and the next Release Prepare on `main` refuses until the port has landed. If the merge hits a conflict outside the release's own files (its version stamps, its notes page, the notes index and the staging notes), the job opens the files-only pull request instead and its description names the conflicting files: merge the release commit by hand, with a merge commit, before the next release from `main`. When the release patches an older series, or a higher release has merged but not yet tagged, the pull request carries only the changelog section, the notes page and the index entry, and merges any way you like. Release candidates port nothing: the stable's changelog section covers the whole cycle.
+
+Release branches carry shipped releases, so they get the same protection as `main`: pull requests plus green CI, applied by the shipped rulesets. See [Repository Protection](https://pvliesdonk.github.io/paperless-mcp/2.1/deployment/repository-protection/index.md).
+
+## Template updates
+
+Releases of this project and updates from its template are separate events; the weekly template update pull request is covered in [Working Through a Template Update](https://pvliesdonk.github.io/paperless-mcp/2.1/deployment/template-updates/index.md).
+
+## Where to read about a release
+
+Each release is described in three places with distinct jobs:
+
+- **The GitHub release body** carries the release's notes summary, its machine-written changelog section, and pointers: the versioned docs, the compare view, and a deep link to the notes page.
+- **The release notes pages on this docs site** are the canonical human-facing narrative of what changed and why it matters.
+- **`CHANGELOG.md`** in the repository is the machine-written audit trail, generated from conventional commits into each release pull request.
+
+### How the notes pages are produced
+
+The pages under [Release Notes](https://pvliesdonk.github.io/paperless-mcp/2.1/releases/index.md) cover one minor series each; patch releases add undated version headings to their series page. Humans prepare the narrative before release automation starts, as steps 1 to 4 of [Cutting a release, step by step](#cutting-a-release-step-by-step) describe.
+
+The first release candidate for a stable identity consumes `next.md` into the canonical minor page. Later candidates and stable promotion reuse the same `vX.Y.Z` entry. When user-visible behavior lands after the first candidate, invoke `refresh-known-target` and merge the normal notes pull request before re-dispatching Release Prepare. Corrections and redrafts use the same ordinary pull-request path for shipped pages.
+
+No notes bypass exists. Missing or ambiguous staging makes deterministic promotion refuse the prepare. Every causal claim must cite a linked issue or pull request, and the skill runs Vale and strict MkDocs before opening its pull request. Later canonical-page edits redeploy that minor through the deterministic **Release Notes Publish** workflow.
+
+# Repository Protection
+
+The template ships GitHub repository rulesets that gate the branches a release can ship from. The rules live as JSON files in `.github/rulesets/` and the `bootstrap.yml` workflow applies them, so the effective protection state is checked in, reviewed, and re-applied rather than clicked together in the UI and forgotten.
+
+## What ships
+
+Three rulesets, one file each:
+
+| Ruleset                    | Targets              | Rules                                                                                                  |
+| -------------------------- | -------------------- | ------------------------------------------------------------------------------------------------------ |
+| `protect-main`             | the default branch   | pull request required (zero approvals), `CI Success` status check (strict), no deletion, no force push |
+| `protect-release-branches` | `release/*` branches | same gates as the default branch                                                                       |
+| `protect-release-tags`     | `v*` tags            | no deletion, no force move (creation stays open)                                                       |
+
+The reasoning per branch class:
+
+- **`main`** requires a pull request and the aggregate `CI Success` check. Zero required approvals is deliberate: a solo-maintainer account has no second reviewer, and requiring one would deadlock the Renovate patch/minor auto-merge. The pull request requirement still routes every change through CI and the review tooling; the check requirement is what holds an auto-merge until CI is green.
+- **`release/*`** stabilisation branches carry a shipped release for their lifetime, so backports get the same gate class as `main`: pull request plus `CI Success`, with the CI structural gate measuring the diff against the release branch itself rather than `main`. The generated `ci.yml` runs on pull requests targeting `release/*` for exactly this reason. Status checks are not enforced on branch creation, so cutting `release/X.Y` is a plain push.
+- **`v*` tags** are the identity of every shipped release: package registries, Docker tags, and install instructions all point at them. The ruleset blocks deleting or force-moving them. Creating tags stays unrestricted because the release workflow creates one per release.
+
+## Who bypasses, and how
+
+Ruleset bypass lists name roles, teams, apps, or deploy keys, not user accounts. The shipped entry grants bypass to the **repository admin role** (`actor_id` 5, the one actor a template can name without knowing your account), with `bypass_mode: always`.
+
+The release flow depends on this. `RELEASE_TOKEN` is a personal access token, and a personal access token (classic or fine-grained) acts as its owner and holds the repository role of that owner. The release-PR flow shrank what the token does: version bumps reach `main` through reviewed pull requests now, so no release commit or merge-back is ever pushed directly to a protected branch. Its remaining operations still rely on the admin bypass:
+
+- the `vX.Y.Z` tag and GitHub release that knope creates after a release pull request merges (tag creation is open, but the token must satisfy the `v*` tag ruleset's other rules),
+- the owner's own hotfix pushes, preserving the escape hatch the previous classic protection provided via its disabled admin enforcement.
+
+The token's other release-flow duties (pushing the `knope/prepare/*` preparation branches, and opening the release, notes, and port pull requests) need no bypass at all. They use a personal token rather than `GITHUB_TOKEN` only so the resulting pull requests trigger CI, which a `GITHUB_TOKEN`-created pull request never does.
+
+Two clean-up operations the release model implies depend on this bypass too. `protect-release-branches` blocks deleting a `release/X.Y` branch, and `protect-release-tags` blocks deleting a `v*` tag, yet a stabilisation branch is short-lived, and the `Pre-release check` workflow describes its `v<version>-rc` pre-release as safe to delete. Both deletions are available only to the admin role, through the same bypass. A `RELEASE_TOKEN` that is not owned by a repository admin cannot perform them, and those spent branches and pre-release tags then accumulate until an admin removes them.
+
+Everyone below admin, including outside collaborators, write-role contributors, and any workflow using the default `GITHUB_TOKEN`, goes through a pull request with green CI.
+
+If your release credential is a GitHub App installation token rather than a personal access token, the role-based entry does not cover it: add a bypass actor with `actor_type: Integration` and the app id to each ruleset file.
+
+## The files own the state
+
+`bootstrap.yml` upserts each ruleset by name: a ruleset whose name matches is replaced wholesale with the checked-in state, and a missing one is created. Edits made by hand in the GitHub UI are reset on the next run, so change the JSON files instead. A push that touches `.github/rulesets/` or the bootstrap workflow re-applies automatically; `workflow_dispatch` re-applies on demand. Rulesets with other names are never touched, so you can add your own alongside.
+
+The apply step needs `administration: write`, a permission the default `GITHUB_TOKEN` cannot be granted, so it runs with `RELEASE_TOKEN`, matching the permission set the README already asks for.
+
+## Requiring a check the template does not own
+
+`CI Success` is the only context the shipped rulesets require, and it is an aggregate: it passes when every job in the generated `ci.yml` passed, so adding a job there needs no ruleset change. A check that lives outside that workflow is a different matter. A workflow cannot list another workflow's job in its own `needs:`, so a domain workflow the project added itself cannot join the aggregate: it runs, it shows red on the pull request, and nothing stops the merge.
+
+List its context in the `extra_required_checks` copier answer instead:
+
+```
+# .copier-answers.yml
+extra_required_checks:
+  - SPA sources
+```
+
+Each name renders into the `required_status_checks` array of both branch rulesets, alongside `CI Success`, and applies to `main` and `release/*` alike. The answer is the project's own, so the rulesets stay template-owned and a `copier update` re-renders them with the project's checks intact. An empty answer, the default, renders exactly the single-context form every project already had.
+
+Write each name as the check appears on the pull request. That is the job's `name:` when it has one and the job id otherwise, not the workflow's name, and not the file it lives in.
+
+The rendered files reach GitHub the same way as any other ruleset change: commit them and push, and the `.github/rulesets/` path filter starts `bootstrap.yml`; a `workflow_dispatch` run applies them on demand.
+
+A required check must report on every pull request
+
+A required context that never reports blocks the merge forever. The pull request waits for a check that is not coming, and there is no timeout. This is easy to trigger by accident, because the natural way to write a domain workflow is to scope it:
+
+- a `paths:` filter means the check reports on the pull requests that touch those files and no others,
+- a job-level `if:` that evaluates false skips the job, which reports nothing,
+- a workflow that runs only on `push` never reports on a pull request at all.
+
+Let the workflow run on every pull request to a protected branch and decide inside the job whether there is work to do, exiting zero when there is not. Verify on a pull request that touches nothing the check cares about: the context must still appear, and pass.
+
+### `codecov/patch`, if you require it
+
+`codecov/patch` is the one context this rule applies to that the template itself ships, and it is worth knowing how it reaches a pull request before you add it to `extra_required_checks`.
+
+Two workflows post it. `ci.yml` posts it directly for a pull request from a branch in this repository. A pull request from a fork gets a read-only token, so `ci.yml` cannot write the status there; `coverage-status.yml` posts it instead, from a `workflow_run` that executes in this repository's context after CI finishes.
+
+Both post under every outcome, including an `error` state when the coverage result is missing. That is deliberate: an `error` is recoverable, because a maintainer can re-run the workflow, while a missing status is not. If you require this context and a fork pull request stalls on it, check the **Post Coverage Status** workflow's runs rather than the CI run: the status comes from there.
+
+## Applying by hand
+
+Without the bootstrap workflow (or when importing into another repository):
+
+```
+gh api -X POST "repos/OWNER/REPO/rulesets" \
+  --input .github/rulesets/protect-main.json
+```
+
+or import each file in the UI under **Settings → Rules → Rulesets → New ruleset → Import a ruleset**. The JSON files use the same schema the UI exports.
+
+## Plan limits
+
+GitHub enforces rulesets on public repositories on every plan; private repositories need a paid plan. On a Free-plan private repository the ruleset API rejects the apply and the `settings` job fails; the labels job still runs, and the rulesets take effect once the repository is public or the plan allows enforcement.
+
+# Working Through a Template Update
+
+This project is generated from [fastmcp-server-template](https://github.com/pvliesdonk/fastmcp-server-template) and tracks it. Once a week the `copier-update` workflow runs `copier update --trust` and opens a pull request on the `copier/update` branch. Automated runs advance one template major at a time, so a project several majors behind sees one pull request per major, each with its own upgrade notes; a manual dispatch with an explicit `vcs_ref` jumps straight to a chosen release. This page is the procedure for that pull request, whether you work through it yourself or hand it to a coding agent (the `applying-template-updates` skill under `.agents/skills/` is the same procedure in agent-invocable form).
+
+## What the pull request carries
+
+- The version delta (`vA.B.C` → `vX.Y.Z`) and a compare link on the template repository.
+- The template's release notes for the target version, collapsed.
+- The `UPGRADING.md` sections that apply to the jump, collapsed, with a link to the full file at the target ref. This is the template's record of the work `copier update` cannot do.
+- The list of files that carry conflict markers, if any.
+- The resolution policy: the template side wins everywhere outside the regions this project owns.
+
+## The order of work
+
+1. **Read the upgrade notes first.** Every `UPGRADING.md` section in the body names something a person must do: rename a variable, add a secret, rewrite a seeded test, add a `.gitignore` line. Do those steps on the `copier/update` branch before touching anything else; a note that is skipped now is a failure later, on a run nobody connects to this update.
+1. **Resolve conflict markers.** `copier update` runs a three-way merge and leaves diff3-style markers where a template change and a local change collide: `<<<<<<< before updating` (the local side), `||||||| last update` (the common base), `=======`, and `>>>>>>> after updating` (the template side). Resolving a hunk means keeping one side and deleting all four marker lines and the base block between `|||||||` and `=======`. Which side wins turns on whether the hunk is inside a sentinel block, and on what kind of block it is:
+1. **Inside a sentinel block that invites your content, the local side is yours and stays.** These are the `DOMAIN-*`, `CONFIG-*`, `PROJECT-*` and `DOCKERFILE-*` families. Some of them wrap template-shipped content you extend rather than replace (`PROJECT-EXTRAS`, `DOCKERFILE-UV-EXTRAS`), so a template change inside one is possible: read both sides and keep your additions.
+1. **Inside a `GENERATED-*` region the template side wins**, and you do not resolve it by hand. Those regions are written by `scripts/gen_config_surface.py`, which re-runs at the end of the update and rewrites them from your own config.
+1. **Outside every sentinel block the template side is correct by policy**: a local edit to a template-owned region is drift, and the fix is to move that content into a sentinel block or upstream it.
+1. **Check the seeded-once files.** Copier's `_skip_if_exists` list names files that are written on the first `copier copy` and never touched again by `copier update`. They are absent from the diff even when the template changed them. The update writes `.copier-seeded-changes.md` at the repository root (the pull request body embeds it): a diff of every seeded path between the previous and target template versions, or an explicit statement that no seeded file changed. Work through that file and apply what applies by hand, keeping your local content. When the report says it could not be computed, fall back to the compare link and the "Before every upgrade" recipe in the template's `UPGRADING.md`. The seeded paths, for reference:
+
+`.claude-plugin/**`, `src/paperless_mcp/tools.py`, `src/paperless_mcp/resources.py`, `src/paperless_mcp/prompts.py`, `src/paperless_mcp/domain.py`, `tests/conftest.py`, `tests/test_smoke.py`, `tests/test_cli.py`, `tests/public_import_surface.txt`, `CHANGELOG.md`, `docs/releases/**`, `LICENSE`, `packaging/mcpb/manifest.json.in`, `packaging/mcpb/pyproject.toml.in`, `packaging/mcpb/src/server.py`, `packaging/mcpb/build.sh`, `.gitignore`, `.vale.ini`, `.vale/styles/config/vocabularies/Base/accept.txt`, `config-presentation.domain.yml`, `tests/test_config_wizard_domain.py`, `src/paperless_mcp/static/app.src.html`.
+
+Four more skip-listed paths are generated, not seeded: `.env.example`, `packaging/env.example`, `examples/*.env` and `docs/javascripts/config-wizard/wizard-spec.json`. The update regenerates them from the config surface at its end, so never edit them by hand; `scripts/gen_config_surface.py --check` in CI catches a stale copy.
+
+The list above is a snapshot; the authoritative one is `_skip_if_exists` in the template's `copier.yml` at the target ref. Treat a template change to a seeded file as a change to apply, never as noise to ignore: the template ships these files as complete starting points, and corrections to them reach this project only this way. 4. **Refresh the lock file.** `uv lock` after any floor change (the upgrade notes say when), then `uv sync --all-extras --all-groups --locked`. 5. **Run the update gate.** This is wider than the everyday gate, because an update can leave drift that only these checks see:
+
+```
+git diff --check
+git grep -nE '^(<<<<<<<|=======|>>>>>>>)'
+uv lock --check
+uv sync --all-extras --all-groups --locked
+uv run python scripts/gen_config_surface.py --check
+uv run ruff check .
+uv run ruff format --check .
+uv run mypy src/ tests/
+uv run pytest -x -q
+uv run mkdocs build --strict
+uv run pre-commit run --all-files
+```
+
+An MCP Apps project also runs `uv run python scripts/vendor_spa.py --check`. CI runs the same checks on the pull request. 6. **Merge.** The branch is recreated on the next weekly run, so leave nothing uncommitted on it.
+
+## Working with a coding agent
+
+Give the agent the pull request number and ask it to invoke the `applying-template-updates` skill. The skill walks the six steps above and stops where a decision is yours: a conflict inside a sentinel block, an upgrade note it cannot perform (a secret to add, a repository setting), and any seeded-file change it is not certain applies to this project. It reports what it applied, what it skipped and why. Review that report against the pull request body before merging.
+
+## When the update is not wanted
+
+A template change can be wrong for this project. Do not resolve that by editing a template-owned region; the next update reverts it. Either move the divergence into a sentinel block the template preserves, or open an issue on the template repository so the change gains a switch or a sentinel. `FORKING.md` covers the last resort of detaching from the template altogether.
+# Release Notes
+
+# 1.0
+
+v1.0.2 modernizes the server on the latest shared `fastmcp-pvl-core` runtime and adds two new ways to get the server configured and installed: a browser-based guided configuration wizard and a Claude Code plugin distribution channel. It also removes `create_download_link`, a tool that had silently never worked on any transport.
+
+## Two new ways to get set up
+
+Paperless MCP carried its shared server runtime forward from `fastmcp-pvl-core` 1.0.0 to 4.11.3, adopting the underlying project template from v1.2.0 to v5.6.3 across four staged upgrades ([#77](https://github.com/pvliesdonk/paperless-mcp/pull/77), [#83](https://github.com/pvliesdonk/paperless-mcp/pull/83), [#85](https://github.com/pvliesdonk/paperless-mcp/pull/85), [#87](https://github.com/pvliesdonk/paperless-mcp/pull/87)). Two of the new capabilities that upgrade unlocked are directly useful for anyone setting the server up for the first time.
+
+**The [configuration generator](https://pvliesdonk.github.io/paperless-mcp/latest/configuration-generator/)** is a browser page that asks a few questions about your deployment and produces a ready-to-use configuration. Everything runs client-side, and nothing typed into it is sent anywhere. Secret fields such as your Paperless API token are excluded from any shareable link ([#76](https://github.com/pvliesdonk/paperless-mcp/issues/76)).
+
+**A Claude Code plugin channel** lets Claude Code install and run the server directly. Every stable release publishes a marketplace entry that installs the released PyPI package via `uvx`, and every release (plus every merge to `main`) also attaches a standalone `paperless-mcp-plugin-<version>.zip` that can be loaded for a single session with `claude --plugin-url <url>`, a way to try a release candidate without installing anything ([#82](https://github.com/pvliesdonk/paperless-mcp/issues/82); see [Testing a candidate's Claude Code plugin](https://pvliesdonk.github.io/paperless-mcp/2.1/deployment/release-process/#testing-a-candidates-claude-code-plugin)). The plugin's install screen collects your Paperless URL and API token, plus optional HTTP timeout, retry count, default page size, and public URL overrides.
+
+Both additions are new distribution/setup surfaces; as of this release [the installation guide](https://pvliesdonk.github.io/paperless-mcp/2.1/installation/index.md) still documents only the PyPI, Docker, and from-source paths.
+
+## Operator tool visibility controls
+
+The same runtime upgrade adds `PAPERLESS_MCP_TOOLS_ALLOW` and `PAPERLESS_MCP_TOOLS_DENY`, letting an operator expose only a chosen set of tools or hide specific ones from a given instance, useful for running a read-heavy or narrowly scoped deployment without a custom build. See [Configuration](https://pvliesdonk.github.io/paperless-mcp/2.1/configuration/#server) for both variables.
+
+## Retiring `create_download_link`
+
+`create_download_link` is gone from this release. It was never actually reachable: `ToolContext` was built before the artifact store it depended on existed, so `ctx.artifact_store` was always `None` and the tool's own registration step returned early on every transport ([#74](https://github.com/pvliesdonk/paperless-mcp/issues/74)). Its underlying dependency, `fastmcp-pvl-core`'s `ArtifactStore`, has itself been replaced upstream by a Transfer API (`register_transfer_routes`/`TransferSink`); a rebuild on the new API landed and was reverted in the same release ([#75](https://github.com/pvliesdonk/paperless-mcp/pull/75), [#79](https://github.com/pvliesdonk/paperless-mcp/pull/79)) because it arrived out of sequence with the staged template upgrade, not because the approach was wrong. A supported replacement remains tracked in [#43](https://github.com/pvliesdonk/paperless-mcp/issues/43).
+
+Because the tool never worked in any released version, no working capability is lost by its removal.
+
+## Upgrading
+
+No operator action is required. `create_download_link`'s removal is not classified as breaking: the tool never functioned in any prior release, so there is no reachable behavior for an upgrade to take away. The `fastmcp-pvl-core` upgrade broadens the general server configuration surface inherited from the shared runtime. See `.env.example` and [Configuration](https://pvliesdonk.github.io/paperless-mcp/2.1/configuration/index.md) for the current reference.
+
+# 2.0
+
+Paperless MCP moves onto the current shared platform, three template majors and three library majors ahead of where it was. Operators get unauthenticated liveness and readiness routes, a `compose.yml` that runs as shipped, container logs a machine can parse, and two new variables for shaping the server's instructions without replacing them wholesale. `get_server_info` now also reports the Paperless-NGX version installed on the instance it is connected to. Several deployment defaults changed in ways that need action, so read [Upgrading](#upgrading) before you deploy this one.
+
+## A current platform underneath
+
+The server carried its shared runtime from `fastmcp-pvl-core` 4.11.3 to 7.2.0 and its project template from v5.6.3 to v8.2.0, in one step rather than in stages ([#102](https://github.com/pvliesdonk/paperless-mcp/issues/102), [#108](https://github.com/pvliesdonk/paperless-mcp/pull/108)). The motivation was not the dependency itself. As [#102](https://github.com/pvliesdonk/paperless-mcp/issues/102) put it, the weekly update bot "advances one major at a time and opens a v6 pull request first, and the same `server.py` and README hunks re-conflict at each step." Taking the jump whole produced "one conflicted file instead of seven."
+
+Three things that upgrade unlocks are visible to anyone running the server.
+
+### Liveness and readiness routes
+
+Under the HTTP transport the server now answers `GET /health` (a static 200 for as long as the process serves) and `GET /health/ready` (503 when a backing check fails). One check ships today, covering the key-value store.
+
+Both routes sit outside the MCP mount, which is also what makes them unauthenticated: they answer normally while the MCP endpoint still returns `401`. Treat that as a posture change. A deployment that was fully authenticated on its published port now serves two endpoints that are not, and at the default detail level their bodies disclose the server name and version.
+
+`PAPERLESS_MCP_HEALTH_DETAIL` controls how much they say. `status` returns the status alone; the default `standard` adds the server name and version on `/health` and a verdict per check on `/health/ready`; `full` adds a redacted reason for each check that raised and belongs only where the port is reachable from a trusted network. The shipped `compose.yml` and the image's own `HEALTHCHECK` both probe `/health` rather than `/health/ready`, deliberately, because restarting a container does not fix an unreachable backing store.
+
+The route prefix follows the mount: `PAPERLESS_MCP_HTTP_PATH` has a trailing `mcp` segment stripped, so the default `/mcp` gives `/health`, and a mount at `/paperless-mcp/mcp` gives `/paperless-mcp/health`. The shipped probes assume the default, so a non-default mount means moving both by hand. See [Docker deployment](https://pvliesdonk.github.io/paperless-mcp/2.1/deployment/docker/index.md) for the probe configuration.
+
+### Instructions you can shape instead of replace
+
+Two new variables let an operator add to the generated MCP instructions rather than overwrite them. `PAPERLESS_MCP_INSTANCE_DESCRIPTION` carries concise routing context that distinguishes this deployment from another one a client may also have mounted. `PAPERLESS_MCP_INSTRUCTIONS_EXTRA` carries deployment-specific behavioural policy, appended to the generated text. Neither has a default; both are documented in [Configuration](https://pvliesdonk.github.io/paperless-mcp/2.1/configuration/index.md).
+
+The older `PAPERLESS_MCP_INSTRUCTIONS` still works and still replaces all generated text, but it is now deprecated, logs a warning at startup, and silently ignores both additive variables when it is set. If you set it only to append a sentence, the two variables above are what you actually wanted.
+
+Generated guidance targets 1,536 UTF-16 units, reserving 512 units for operator routing and policy inside Claude Code's 2,048-unit limit. Going over warns; it never truncates and never fails startup.
+
+### A compose file that runs
+
+The shipped `compose.yml` used to be a reverse-proxy stub that built from the checkout. It now pulls the published image and starts as a quick start: copy `.env.example` to `.env` and run `docker compose up -d`. It publishes port 8000, tolerates a missing `.env`, and carries a health probe.
+
+The Traefik labels it used to ship are gone, and that is a breaking change for anyone who built on them. See [Upgrading](#upgrading).
+
+## Knowing which Paperless you are talking to
+
+`get_server_info` already reported this server's own build. It now also reports the Paperless-NGX version installed on the instance it is connected to, in the same call ([#117](https://github.com/pvliesdonk/paperless-mcp/issues/117), [#121](https://github.com/pvliesdonk/paperless-mcp/pull/121)). The motivating report, quoted in [#40](https://github.com/pvliesdonk/paperless-mcp/issues/40) from a client validation write-up, describes the situation exactly:
+
+> When debugging "is the latest fix deployed?" (exactly the situation we hit ten minutes ago when a pull-without-rebuild left v0.x running), having a one-call sanity check would help.
+
+The response gains a `paperless` block:
+
+```
+{
+  "server_name": "paperless-mcp",
+  "server_version": "1.0.2",
+  "core_version": "7.2.0",
+  "paperless": {"version": "2.14.7"}
+}
+```
+
+That block carries identity only, and deliberately holds no `update_available` key: mixing identity with an update check into one field is what produced the labelling bug described below, so the update question stays with `get_remote_version`.
+
+Nothing needs enabling. The version is read from the Paperless UI settings endpoint, reusing the connection the server already holds, and costs one extra request per call.
+
+**It does cost one permission.** The endpoint that publishes the installed version is gated on a model permission, so the token's Paperless user needs the view permission on UI settings. A narrow service account without it gets a `403`. That degrades to `{"version": null}` rather than failing the call, because the version is optional enrichment of a tool whose real job is reporting this server's build. Note that `{"version": null}` is also what you get when Paperless is down, when the URL is wrong, and when the token is rejected, so a null here means "could not ask," not "no version." Granting the permission is the fix if you want it populated; everything else the server does is unaffected either way. [Tools](https://pvliesdonk.github.io/paperless-mcp/2.1/tools/index.md) documents the full shape.
+
+### `get_remote_version` now says which question it answers
+
+`get_remote_version` reports the newest Paperless-NGX release published on GitHub, and whether that is newer than the connected instance. It never reported the version the instance runs. Its description said "Fetch Paperless version info," and the matching resource said it returned "the remote Paperless-NGX version," which reads as the identity of the instance you are connected to ([#123](https://github.com/pvliesdonk/paperless-mcp/issues/123), [#127](https://github.com/pvliesdonk/paperless-mcp/pull/127)).
+
+The wording was wrong in a way that hid itself: the two answers coincide while an instance is up to date, and diverge exactly when an update is pending. The tool, the `remote-version://paperless` resource and both documentation tables now say which question each answers and point at `get_server_info` for the installed version.
+
+The behaviour did not change. The tool calls the same endpoint and returns the same fields; only the descriptions changed, so no client needs updating. A dated reference recording what each of the three Paperless version endpoints reports, and what each costs in permissions, now ships in the repository for whoever next has to reason about this.
+
+## A read-only switch that never worked is gone
+
+`PAPERLESS_MCP_READ_ONLY` was documented in the README and in the example compose file as a way to disable every mutating tool at startup. No code ever read it, in any released version. As [#101](https://github.com/pvliesdonk/paperless-mcp/issues/101) puts it, "an operator who sets `PAPERLESS_MCP_READ_ONLY=true` today gets a fully writable server and no warning."
+
+The documentation for it is gone ([#104](https://github.com/pvliesdonk/paperless-mcp/pull/104)), and the `config://paperless` resource no longer reports a `read_only` key that was always false.
+
+Nothing stops working, because nothing ever worked. But if you set that variable believing it protected your archive, it did not, and it has not in any version you could have installed. `PAPERLESS_MCP_TOOLS_ALLOW` and `PAPERLESS_MCP_TOOLS_DENY` are the supported way to restrict the tool surface, and they do work.
+
+## The tool reference now matches the server
+
+The published tool reference documented 38 of the 49 registered tools. Eleven that the server had always exposed, including `upload_document`, `get_document_thumbnail`, `get_document_suggestions` and both remaining bulk-edit tools, were missing from it. The table also listed a `create_document` tool that has never existed; the real tool for that job is `upload_document`, and it was one of the undocumented eleven.
+
+All 49 are now listed, the invented row is gone, and the MCP resources have a reference page of their own for the first time. No tool or resource was added, removed or renamed in this release: the server's surface is the same 49 tools and 18 resources it was before, and only the description of it changed.
+
+## Upgrading
+
+This release changes deployment defaults. The MCP tool and resource surface is unchanged, and nothing importable from `paperless_mcp` changed, so clients and any downstream Python consumer are unaffected.
+
+**Refresh the lock file before you build.** A stale lock file builds an image that fails at import time, because the image installs from the lock with `--frozen`.
+
+**If you used the shipped Traefik labels.** `compose.yml` no longer carries them and no longer builds from the checkout. The reverse-proxy configuration moved to an overlay you copy from [Docker deployment](https://pvliesdonk.github.io/paperless-mcp/2.1/deployment/docker/index.md). Worth knowing while you migrate: the labels never routed as shipped, because the file declared no network for Traefik to join.
+
+**If you set `PAPERLESS_MCP_PORT` for a container.** The image now pins `--port 8000`, so that variable no longer moves the listener and no error is raised. A container started with `-e PAPERLESS_MCP_PORT=9000 -p 9000:9000` serves on 8000 behind a mapping pointing at a closed port. Change the host side instead, as in `-p 9000:8000`. Outside a container the variable still works.
+
+**If you put a hostname in `PAPERLESS_MCP_HOST`.** It used to be interpolated into the Traefik router rule as a public name as well as being the bind address. Only the bind address remains, so a public FQDN left there now fails to start when it does not resolve to a local interface. This cannot affect the container, which pins its own host, but it does affect systemd and bare `serve` deployments.
+
+**If you parse the logs.** The container image and the packaged systemd unit now disable Rich output, because neither stream is a terminal and Rich was wrapping each structured record across three lines at an assumed 80 columns. Anything matching the old layout, with its leading timestamp and trailing source location, matches nothing now. This is not a blanket switch to JSON: request-logging records become one JSON object per line, other library loggers become `LEVEL: message`, and this project's own log lines were always one line. To keep the old output in a container, set `FASTMCP_ENABLE_RICH_LOGGING=true` and `COLUMNS=200`.
+
+One asymmetry is worth knowing: an existing `.deb` or `.rpm` install keeps the old Rich output. The package only creates `/etc/paperless-mcp/env` when it is absent, that file overrides the unit's own setting, and the older example enabled Rich. Fresh package installs and all container deployments get the new behaviour.
+
+**If you run Docker Compose.** The shipped file needs Compose 2.24.0 or newer, and the reverse-proxy overlay needs 2.24.4 or newer. An older Compose fails to parse them.
+
+**If you read the package description.** The text in `server.json`, on PyPI, in the MCP registry entry and on the Claude Code plugin manifest was shortened from 148 to 96 characters to fit a registry limit. The server behaves identically; only the advertised description changed.
+
+# 2.1
+
+This release makes the server describe itself accurately to the model it serves. Every tool now carries a human-readable title, the generated instructions name the Paperless instance the server fronts, and `bulk_edit_documents` states that the search-index rebuild it triggers runs after the call returns. `get_document_content` caps its text at 50,000 characters by default and can page through the rest, so a book-length document no longer arrives whole in a single tool result. That cap is the only changed default: see [Upgrading](#upgrading) if something you run depends on the full text.
+
+## A long document no longer arrives whole
+
+`get_document_content` returns at most 50,000 characters by default. A capped result opens with a marker naming the character range returned, the document's full length, and the `offset` to pass to read on from there; text that fits under the cap is returned unchanged, with no marker.
+
+The tool had no cap at all before, which is what [#35](https://github.com/pvliesdonk/paperless-mcp/issues/35) reported: "`get_document_content(document_id)` returns the full OCR text with no cap. For a book-length document (hundreds of pages) this floods the LLM's context in a single tool call."
+
+The size measurement behind the number comes from one deployed archive of 244 documents. The median document there holds 88,080 characters, and the largest (a 1,009-page specification) holds 2,407,894. At 50,000 characters, 36.5% of that archive is returned complete. Paging ships in the same release rather than later, because for the other 63.5% the `offset` is the only route to the text past the cap. What generalises from that archive is the shape of the distribution rather than its median, since an archive of receipts and letters would rarely reach any cap.
+
+Two ways to read past the cap:
+
+- `max_chars=None` returns the entire text however long it is.
+- `offset=<value from the marker>` continues from where the previous call stopped.
+
+`max_chars` must be greater than zero and `offset` cannot be negative, so a caller cannot construct a call that returns nothing and asks to continue.
+
+Two paths deliberately stay uncapped. The `paperless://documents/{document_id}/content` resource takes no arguments, so there is nowhere to pass a cap, and it still returns the full text. `get_document(include_content=True)` is also still uncapped, tracked as [#149](https://github.com/pvliesdonk/paperless-mcp/issues/149). [Tools](https://pvliesdonk.github.io/paperless-mcp/2.1/tools/index.md) and [Resources](https://pvliesdonk.github.io/paperless-mcp/2.1/resources/index.md) document both.
+
+## Every tool carries a title
+
+Each registered tool now has an `annotations.title`: a human-readable label that clients supporting titles display in place of the machine name. The tables in [Tools](https://pvliesdonk.github.io/paperless-mcp/2.1/tools/index.md) still list machine names, which is what you pass when calling a tool.
+
+Most titles restate the name in prose. A few say what the tool does instead: `get_remote_version` is titled **Check for Paperless Updates**, and `get_document_metadata` is titled **Get Document File Details**. No tool was renamed, and no title replaces a name a caller uses.
+
+[#107](https://github.com/pvliesdonk/paperless-mcp/issues/107) filed the gap as structural debt: "No registered tool carries an `annotations.title`, so title-aware MCP clients label all 49 of them with their raw machine names." Its argument for fixing the whole surface at once was that a title is per-tool, so "every new tool lands untitled too, and the gap grows with the tool surface." An enforcement test now fails the build when a tool arrives without one.
+
+Titles need no configuration. They are attached when the tools register, so they are part of every `tools/list` response; a client that ignores titles keeps showing machine names.
+
+## The instructions name the instance
+
+The generated instructions now state which Paperless the server is connected to, and how a link to it maps onto the document tools. With `https://paperless.example.org` configured, the text reads: "This server fronts the Paperless-NGX instance at https://paperless.example.org. A link of the form https://paperless.example.org/documents/<id>/ names a document by its id; pass that id to the document tools."
+
+[#114](https://github.com/pvliesdonk/paperless-mcp/issues/114) asked for this because the server knew the URL and never said it: "A model given a link such as `https://paperless.example.org/documents/42/` in conversation has no stated basis for recognising it as this server's instance, or for mapping it to `get_document(42)`." What the release adds is that stated basis. How much a given model uses it is not measured here.
+
+The URL comes from `PAPERLESS_MCP_PAPERLESS_PUBLIC_URL`, or from `PAPERLESS_MCP_PAPERLESS_URL` when the public variable is unset. That is the same value the `web_url` and `share_url` fields in tool results are built from, so the instructions and those links always name one host. Both variables already existed; nothing new is required to configure.
+
+The instructions deliberately say nothing about the `paperless://` resource URIs. The issue asked for those too, and its author withdrew that half before any of it shipped, on the grounds that `resources/read` is "a client-to-server request" ([correction on #114](https://github.com/pvliesdonk/paperless-mcp/issues/114#issuecomment-5718846776)): a model cannot fetch a resource on its own initiative, and almost every resource has a tool twin it can call instead. Naming the URI family would have described an action the model cannot take. [Configuration](https://pvliesdonk.github.io/paperless-mcp/2.1/configuration/index.md) covers the instruction variables.
+
+## A bulk edit says that indexing is deferred
+
+`bulk_edit_documents` now states what happens after it answers `OK`. Paperless writes the field change inside the request and then queues the search-index rebuild as a background task, so `search_documents` can miss the edited documents for seconds to minutes, while `list_documents` and `get_document` reflect the change at once. Single-document edits through `update_document` are unaffected: that path updates the search index inside the request.
+
+[#141](https://github.com/pvliesdonk/paperless-mcp/issues/141) reported the silence rather than the delay: "`bulk_edit_documents` answers `{"result": "OK"}` while the work its call queued is still running, and nothing in the response says so." On the instance measured there, 15 of those queued rebuilds ran to a median of 49.3 seconds, and to 420.8 seconds at the ninety-fifth percentile. That is long enough for a model to search and find nothing.
+
+`list_tasks` gained a `task_type` filter so the queued work can be found: `list_tasks(task_type="bulk_update")` returns the rebuild tasks, newest first, and `wait_for_task` waits for one to finish. Records carry no link back to the documents an individual edit touched, so the most recent task is the available handle rather than an exact match.
+
+The `bulk_edit_tags`, `bulk_edit_correspondents` and `bulk_edit_document_types` tools are unchanged, because the endpoint behind them applies its work inline and queues nothing. [Tools](https://pvliesdonk.github.io/paperless-mcp/2.1/tools/index.md) documents both descriptions.
+
+## Upgrading
+
+Nothing in this release requires an operator to change configuration. No environment variable changed, and no deployment layout changed.
+
+One default behaviour changed: `get_document_content` used to return a document's whole text and now stops at 50,000 characters. Anything that depended on receiving the full text in one call should pass `max_chars=None`, or follow the `offset` the truncation marker names. Automation that reads short documents sees no difference, since text under the cap is returned unchanged and carries no marker.
+
+The tool surface grew: titles on every tool, `max_chars` and `offset` on `get_document_content`, and `task_type` on `list_tasks`. MCP clients discover this on connect, so a client holding a cached tool list needs a reconnect to see it. For Python consumers, `TaskType` is a new export from `paperless_mcp.models`; nothing was removed or renamed.
