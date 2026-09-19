@@ -5,6 +5,18 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 <!-- version list -->
 
+## 2.1.0-rc.0 (2026-09-19)
+
+### Features
+
+- name the Paperless instance the server fronts (#147)
+- give every tool a human-readable title (#148)
+- cap inline document content and page through it (#150)
+
+### Bug Fixes
+
+- declare the deferred reindex a bulk edit queues (#151)
+
 ## 2.0.0 (2026-09-17)
 
 ### Breaking Changes
