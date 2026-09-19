@@ -1,5 +1,15 @@
 # Reference research log
 
+## 2026-09-19
+
+- Added [Core transfer links and Paperless text ingestion](core-transfer-links.md)
+  for #111 and #112, checked against core 7.2.0 and Paperless 3.1.3 release
+  sources. The refute pass found two material differences from informal
+  descriptions: successful uploads are replayable during grace, and the
+  download handler enforces no byte cap. Markdown acceptance follows detected
+  MIME and installed parsers; frontmatter is not ingestion metadata. No live
+  archive mutations were performed. Next review: 2027-03-19.
+
 ## 2026-09-18
 
 - Added [Paperless-NGX bulk edit and deferred search indexing](paperless-bulk-edit-indexing.md),

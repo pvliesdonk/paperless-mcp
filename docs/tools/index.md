@@ -20,6 +20,8 @@ calling a tool.
 | `get_document` | Retrieve document metadata by ID; OCR `content` stripped by default (`include_content=True` to opt in) |
 | `get_document_content` | Retrieve the plain-text content of a document; capped at 50,000 characters by default (`max_chars=None` for the full text). A capped result names the range returned and the `offset` to pass to read the next section. |
 | `upload_document` | Upload a new document for ingestion |
+| `create_document_download_link` | Get an expiring HTTP link for an original file, archived PDF, preview or full OCR Markdown file |
+| `create_document_upload_link` | Get an expiring HTTP link to upload a file, including Markdown, with optional metadata |
 | `update_document` | Patch document metadata (title, tags, correspondent, etc.) |
 | `delete_document` | Permanently delete a document |
 | `bulk_edit_documents` | Apply a bulk operation to multiple documents. The change lands before the call returns, but Paperless queues the search-index rebuild, so `search_documents` may miss the edited documents for seconds to minutes while `list_documents` and `get_document` see them at once. Track the queued task with `list_tasks(task_type="bulk_update")` |
@@ -32,6 +34,41 @@ calling a tool.
 | `get_document_history` | Retrieve audit log for a document |
 
 `get_document`, `list_documents`, `search_documents`, and `update_document` include a `web_url` field pointing to the document in the Paperless UI, such as `https://paperless.example.com/documents/42/`. Set `PAPERLESS_MCP_PAPERLESS_PUBLIC_URL` if the public URL differs from the API URL; otherwise the API URL is used.
+
+### File transfer links
+
+The two link tools require HTTP or SSE transport and `PAPERLESS_MCP_BASE_URL`.
+See [transfer configuration](../configuration.md#document-transfer-links).
+
+Call `create_document_download_link(document_id=42, variant="content")` for
+full OCR text as a UTF-8 Markdown file. Other variants are `original` (the
+default), `archive` and `preview`. An archive request fails if no archived PDF
+exists. The tool returns `url` and `expires_in_s`; GET the URL from a file
+client or pass it to the intended recipient. Downloading reads the current
+file, so changes after link creation are reflected in the response.
+
+Content exports have a YAML front-matter block with document ID, title, created
+timestamp, correspondent ID, document type ID and tag IDs. The OCR text follows
+unchanged. Short text remains available through `get_document_content`.
+
+Call `create_document_upload_link(filename="notes.md", metadata={"title":
+"Meeting notes", "tags": [2]})`, then PUT the raw file bytes to its URL. Do not
+wrap the bytes in JSON or multipart data. The response contains `task_id`; use
+`get_task(task_id=...)` to check whether Paperless has finished ingestion.
+
+The upload tool also accepts PDF files and other file types your Paperless instance
+supports. Markdown bytes and filenames are preserved. Paperless detects the
+format from bytes; ordinary Markdown recognized as plain text is accepted.
+Front matter stays in the file: set Paperless metadata through the tool's
+`metadata` argument. Available fields are `title`, `correspondent`,
+`document_type`, `tags`, `created`, `archive_serial_number` and `custom_fields`.
+
+Links expire and allow a short retry window after success. An identical upload
+retry returns the original task ID. HTTP 409 means an upload is in progress,
+the bytes differ, or the earlier result is uncertain. Inspect Paperless tasks
+before creating another link. An oversized upload returns 413; the default
+limit is 100 MiB. Link lifetime defaults to one hour; `ttl_s` requests a
+lifetime up to the configured maximum of 24 hours.
 
 ### Pagination
 
