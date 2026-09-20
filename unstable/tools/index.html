@@ -1500,11 +1500,11 @@ calling a tool.</p>
 <td>Upload a new document for ingestion</td>
 </tr>
 <tr>
-<td><code>create_document_download_link</code></td>
+<td><code>create_download_link</code></td>
 <td>Get an expiring HTTP link for an original file, archived PDF, preview or full OCR Markdown file</td>
 </tr>
 <tr>
-<td><code>create_document_upload_link</code></td>
+<td><code>create_upload_link</code></td>
 <td>Get an expiring HTTP link to upload a file, including Markdown, with optional metadata</td>
 </tr>
 <tr>
@@ -1553,7 +1553,7 @@ calling a tool.</p>
 <h3 id="file-transfer-links">File transfer links<a class="headerlink" href="#file-transfer-links" title="Permanent link">&para;</a></h3>
 <p>The two link tools require HTTP or SSE transport and <code>PAPERLESS_MCP_BASE_URL</code>.
 See <a href="../configuration/#document-transfer-links">transfer configuration</a>.</p>
-<p>Call <code>create_document_download_link(document_id=42, variant="content")</code> for
+<p>Call <code>create_download_link(ref='{"document_id":42,"variant":"content"}')</code> for
 full OCR text as a UTF-8 Markdown file. Other variants are <code>original</code> (the
 default), <code>archive</code> and <code>preview</code>. An archive request fails if no archived PDF
 exists. The tool returns <code>url</code> and <code>expires_in_s</code>; GET the URL from a file
@@ -1562,15 +1562,15 @@ file, so changes after link creation are reflected in the response.</p>
 <p>Content exports have a YAML front-matter block with document ID, title, created
 timestamp, correspondent ID, document type ID and tag IDs. The OCR text follows
 unchanged. Short text remains available through <code>get_document_content</code>.</p>
-<p>Call <code>create_document_upload_link(filename="notes.md", metadata={"title":
-"Meeting notes", "tags": [2]})</code>, then PUT the raw file bytes to its URL. Do not
+<p>Call <code>create_upload_link(ref='{"filename":"notes.md","metadata":{"title":"Meeting notes","tags":[2]}}')</code>,
+then PUT the raw file bytes to its URL. Do not
 wrap the bytes in JSON or multipart data. The response contains <code>task_id</code>; use
 <code>get_task(task_id=...)</code> to check whether Paperless has finished ingestion.</p>
 <p>The upload tool also accepts PDF files and other file types your Paperless instance
 supports. Markdown bytes and filenames are preserved. Paperless detects the
 format from bytes; ordinary Markdown recognized as plain text is accepted.
 Front matter stays in the file: set Paperless metadata through the tool's
-<code>metadata</code> argument. Available fields are <code>title</code>, <code>correspondent</code>,
+<code>metadata</code> object in the JSON reference. Available fields are <code>title</code>, <code>correspondent</code>,
 <code>document_type</code>, <code>tags</code>, <code>created</code>, <code>archive_serial_number</code> and <code>custom_fields</code>.</p>
 <p>Links expire and allow a short retry window after success. An identical upload
 retry returns the original task ID. HTTP 409 means an upload is in progress,
