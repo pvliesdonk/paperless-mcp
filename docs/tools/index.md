@@ -15,14 +15,14 @@ calling a tool.
 
 | Tool | Description |
 |---|---|
-| `list_documents` | List documents with optional filters; OCR `content` stripped by default (`include_content=True` to opt in). `notes[].note` and `custom_fields[].value` are always stripped. Fetch them via single-document endpoints. |
-| `search_documents` | Full-text and filtered document search; OCR `content` stripped by default (`include_content=True` to opt in). `notes[].note` and `custom_fields[].value` are always stripped on hits. |
-| `get_document` | Retrieve document metadata by ID; OCR `content` stripped by default (`include_content=True` to opt in) |
-| `get_document_content` | Retrieve the plain-text content of a document; capped at 50,000 characters by default (`max_chars=None` for the full text). A capped result names the range returned and the `offset` to pass to read the next section. |
+| `list_documents` | List documents with optional filters. OCR `content`, `notes[].note`, and `custom_fields[].value` are stripped; fetch text through a single-document endpoint. |
+| `search_documents` | Full-text and filtered document search. OCR `content`, `notes[].note`, and `custom_fields[].value` are stripped from hits. |
+| `get_document` | Retrieve document metadata by ID without OCR content |
+| `get_document_content` | Retrieve up to 20,000 characters of plain-text OCR content. A partial result names the range, the next `offset`, and the transfer-link route when available. |
 | `upload_document` | Upload a new document for ingestion |
 | `create_download_link` | Get an expiring HTTP link for an original file, archived PDF, preview or full OCR Markdown file |
 | `create_upload_link` | Get an expiring HTTP link to upload a file, including Markdown, with optional metadata |
-| `update_document` | Patch document metadata (title, tags, correspondent, etc.) |
+| `update_document` | Patch document metadata; the response omits OCR content |
 | `delete_document` | Permanently delete a document |
 | `bulk_edit_documents` | Apply a bulk operation to multiple documents. The change lands before the call returns, but Paperless queues the search-index rebuild, so `search_documents` may miss the edited documents for seconds to minutes while `list_documents` and `get_document` see them at once. Track the queued task with `list_tasks(task_type="bulk_update")` |
 | `get_document_metadata` | Retrieve file metadata: original filename, checksums, MIME type |

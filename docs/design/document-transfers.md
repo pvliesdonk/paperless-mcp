@@ -3,7 +3,9 @@
 Issues #111 and #112 share one Paperless transfer sink. The HTTP deployment
 registers `create_download_link` and `create_upload_link`
 when `PAPERLESS_MCP_BASE_URL` is set. Existing inline tools and resources remain
-available, including under stdio and HTTP without a public base URL.
+available for metadata and bounded OCR reads, including under stdio and HTTP
+without a public base URL. Whole originals, archived files and previews use the
+HTTP transfer route instead of inline resources.
 
 ## Wiring decision
 
@@ -48,13 +50,15 @@ without letting a title inject fields. Related-object names would add API
 requests and a second set of access failures, so the export uses IDs. No OCR
 layout or Markdown structure is invented.
 
-The current 50,000-character inline default and paging remain available.
-A smaller default is a separate behavioral decision; the transfer tools remove
-the need to page merely to copy a whole document. Downloads fetch current data
-at redemption rather than pinning a snapshot at mint time. Core and the
-existing Paperless client materialize file bytes in server memory; these links
-avoid model-context costs, not server-memory costs. No archive file-size
-measurement was made as part of this implementation.
+Inline reads have a 20,000-character maximum, and offset paging remains
+available.
+Structured tool and resource responses omit OCR content. The content resource
+returns the same bounded preview, while full files and OCR Markdown use this
+transfer route. Downloads fetch current data at redemption rather than pinning
+a snapshot at mint time. Core and the existing Paperless client materialize
+file bytes in server memory; these links avoid model-context costs, not
+server-memory costs. No archive file-size measurement was made as part of this
+implementation.
 
 ## Uploads and retry receipts
 

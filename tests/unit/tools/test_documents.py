@@ -11,6 +11,7 @@ import pytest
 from fastmcp import Client, FastMCP
 from fastmcp.exceptions import ToolError
 
+from paperless_mcp._content import CONTENT_CHAR_CAP
 from paperless_mcp.models.common import Paginated
 from paperless_mcp.models.document import Document
 from paperless_mcp.tools import documents as documents_mod
@@ -90,15 +91,21 @@ def test_bulk_edit_documents_declares_deferred_indexing(mock_client: Any) -> Non
     assert "bulk_update" in description
 
 
-def test_list_and_search_expose_include_content(mock_client: Any) -> None:
+def test_structured_document_tools_do_not_expose_include_content(
+    mock_client: Any,
+) -> None:
     mcp = FastMCP("test")
     ctx = ToolContext(client=mock_client, default_page_size=25, public_url="")
     documents_mod.register(mcp, ctx)
     tools = {t.name: t for t in asyncio.run(mcp.list_tools())}
-    for name in ("list_documents", "search_documents"):
+    for name in (
+        "list_documents",
+        "search_documents",
+        "get_document",
+        "update_document",
+    ):
         schema = tools[name].parameters
-        assert "include_content" in schema["properties"]
-        assert schema["properties"]["include_content"].get("default") is False
+        assert "include_content" not in schema["properties"]
 
 
 @pytest.mark.asyncio
@@ -123,21 +130,8 @@ async def test_get_document_populates_web_url(mock_client: Any) -> None:
     assert data["web_url"] == "https://docs.example.com/documents/42/"
 
 
-def test_get_document_and_update_document_expose_include_content(
-    mock_client: Any,
-) -> None:
-    mcp = FastMCP("test")
-    ctx = ToolContext(client=mock_client, default_page_size=25, public_url="")
-    documents_mod.register(mcp, ctx)
-    tools = {t.name: t for t in asyncio.run(mcp.list_tools())}
-    for name in ("get_document", "update_document"):
-        schema = tools[name].parameters
-        assert "include_content" in schema["properties"], name
-        assert schema["properties"]["include_content"].get("default") is False
-
-
 @pytest.mark.asyncio
-async def test_get_document_strips_content_by_default(mock_client: Any) -> None:
+async def test_get_document_strips_content(mock_client: Any) -> None:
     mcp = FastMCP("t")
     ctx = ToolContext(client=mock_client, default_page_size=25, public_url="")
     documents_mod.register(mcp, ctx)
@@ -157,31 +151,7 @@ async def test_get_document_strips_content_by_default(mock_client: Any) -> None:
 
 
 @pytest.mark.asyncio
-async def test_get_document_keeps_content_when_include_content_true(
-    mock_client: Any,
-) -> None:
-    mcp = FastMCP("t")
-    ctx = ToolContext(client=mock_client, default_page_size=25, public_url="")
-    documents_mod.register(mcp, ctx)
-    mock_client.documents.get.return_value = Document(
-        id=42,
-        title="X",
-        created=datetime(2026, 1, 1, tzinfo=UTC),
-        content="OCR text",
-    )
-
-    async with Client(mcp) as c:
-        result = await c.call_tool(
-            "get_document", {"document_id": 42, "include_content": True}
-        )
-
-    data = result.structured_content
-    assert data is not None
-    assert data["content"] == "OCR text"
-
-
-@pytest.mark.asyncio
-async def test_update_document_strips_content_by_default(mock_client: Any) -> None:
+async def test_update_document_strips_content(mock_client: Any) -> None:
     mcp = FastMCP("t")
     ctx = ToolContext(client=mock_client, default_page_size=25, public_url="")
     documents_mod.register(mcp, ctx)
@@ -200,31 +170,6 @@ async def test_update_document_strips_content_by_default(mock_client: Any) -> No
     data = result.structured_content
     assert data is not None
     assert data["content"] is None
-
-
-@pytest.mark.asyncio
-async def test_update_document_keeps_content_when_include_content_true(
-    mock_client: Any,
-) -> None:
-    mcp = FastMCP("t")
-    ctx = ToolContext(client=mock_client, default_page_size=25, public_url="")
-    documents_mod.register(mcp, ctx)
-    mock_client.documents.update.return_value = Document(
-        id=42,
-        title="X",
-        created=datetime(2026, 1, 1, tzinfo=UTC),
-        content="OCR text",
-    )
-
-    async with Client(mcp) as c:
-        result = await c.call_tool(
-            "update_document",
-            {"document_id": 42, "patch": {"title": "Y"}, "include_content": True},
-        )
-
-    data = result.structured_content
-    assert data is not None
-    assert data["content"] == "OCR text"
 
 
 @pytest.mark.asyncio
@@ -253,6 +198,17 @@ async def test_list_documents_populates_web_url(mock_client: Any) -> None:
     data = result.structured_content
     assert data is not None
     assert data["results"][0]["web_url"] == "https://docs.example.com/documents/42/"
+    mock_client.documents.list.assert_awaited_once_with(
+        page=1,
+        page_size=25,
+        ordering=None,
+        tags=None,
+        correspondent=None,
+        document_type=None,
+        storage_path=None,
+        custom_field=None,
+        include_content=False,
+    )
 
 
 @pytest.mark.asyncio
@@ -281,6 +237,9 @@ async def test_search_documents_populates_web_url(mock_client: Any) -> None:
     data = result.structured_content
     assert data is not None
     assert data["results"][0]["web_url"] == "https://docs.example.com/documents/99/"
+    mock_client.documents.search.assert_awaited_once_with(
+        "foo", page=1, page_size=25, more_like=None, include_content=False
+    )
 
 
 @pytest.mark.asyncio
@@ -338,7 +297,7 @@ def _content_mcp(mock_client: Any) -> FastMCP:
 def test_get_document_content_exposes_cap_and_offset(mock_client: Any) -> None:
     tools = {t.name: t for t in asyncio.run(_content_mcp(mock_client).list_tools())}
     props = tools["get_document_content"].parameters["properties"]
-    assert props["max_chars"]["default"] == documents_mod.CONTENT_CHAR_CAP
+    assert props["max_chars"]["default"] == CONTENT_CHAR_CAP
     assert props["offset"]["default"] == 0
 
 
@@ -353,9 +312,9 @@ async def test_get_document_content_caps_by_default(mock_client: Any) -> None:
 
     out = result.data
     marker, _, body = out.partition("\n\n")
-    assert body == text[: documents_mod.CONTENT_CHAR_CAP]
+    assert body == text[:CONTENT_CHAR_CAP]
     assert "of 250,000" in marker
-    assert f"offset={documents_mod.CONTENT_CHAR_CAP}" in marker
+    assert f"offset={CONTENT_CHAR_CAP}" in marker
 
 
 @pytest.mark.asyncio
@@ -373,17 +332,17 @@ async def test_get_document_content_returns_short_text_unchanged(
 
 @pytest.mark.asyncio
 async def test_get_document_content_offset_continues(mock_client: Any) -> None:
-    text = "A" * 60_000 + "B" * 60_000
+    text = "A" * 10_000 + "B" * 10_000
     mock_client.documents.get_content.return_value = text
 
     async with Client(_content_mcp(mock_client)) as c:
         result = await c.call_tool(
             "get_document_content",
-            {"document_id": 1, "max_chars": 60_000, "offset": 60_000},
+            {"document_id": 1, "max_chars": 10_000, "offset": 10_000},
         )
 
     marker, _, body = result.data.partition("\n\n")
-    assert body == "B" * 60_000
+    assert body == "B" * 10_000
     assert "final section" in marker
 
 
@@ -416,22 +375,9 @@ async def test_get_document_content_rejects_non_advancing_bounds(
         for args in (
             {"document_id": 1, "max_chars": 0},
             {"document_id": 1, "max_chars": -5},
+            {"document_id": 1, "max_chars": CONTENT_CHAR_CAP + 1},
+            {"document_id": 1, "max_chars": None},
             {"document_id": 1, "offset": -1},
         ):
             with pytest.raises(ToolError):
                 await c.call_tool("get_document_content", args)
-
-
-@pytest.mark.asyncio
-async def test_get_document_content_unlimited_when_max_chars_none(
-    mock_client: Any,
-) -> None:
-    text = "A" * 250_000
-    mock_client.documents.get_content.return_value = text
-
-    async with Client(_content_mcp(mock_client)) as c:
-        result = await c.call_tool(
-            "get_document_content", {"document_id": 1, "max_chars": None}
-        )
-
-    assert result.data == text

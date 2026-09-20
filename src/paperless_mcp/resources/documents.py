@@ -6,6 +6,7 @@ import json
 
 from fastmcp import FastMCP
 
+from paperless_mcp._content import slice_content
 from paperless_mcp.tools._context import ToolContext
 
 
@@ -17,16 +18,18 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
         uri="paperless://documents/{document_id}", mime_type="application/json"
     )
     async def document_resource(document_id: int) -> str:
-        """Return a single document by ID as JSON."""
+        """Return document metadata by ID, without OCR content."""
         doc = await client.documents.get(document_id)
+        doc.content = None
         return doc.model_dump_json()
 
     @mcp.resource(
         uri="paperless://documents/{document_id}/content", mime_type="text/plain"
     )
     async def document_content_resource(document_id: int) -> str:
-        """Return the plain-text content of a document."""
-        return await client.documents.get_content(document_id)
+        """Return a bounded plain-text preview of a document."""
+        text = await client.documents.get_content(document_id)
+        return slice_content(text)
 
     @mcp.resource(
         uri="paperless://documents/{document_id}/metadata",
@@ -59,21 +62,4 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
     async def document_thumbnail_resource(document_id: int) -> bytes:
         """Return the thumbnail image bytes for a document."""
         data, _ = await client.documents.get_thumbnail(document_id)
-        return data
-
-    @mcp.resource(
-        uri="paperless://documents/{document_id}/preview", mime_type="application/pdf"
-    )
-    async def document_preview_resource(document_id: int) -> bytes:
-        """Return the PDF preview bytes for a document."""
-        data, _ = await client.documents.get_preview(document_id)
-        return data
-
-    @mcp.resource(
-        uri="paperless://documents/{document_id}/download",
-        mime_type="application/octet-stream",
-    )
-    async def document_download_resource(document_id: int) -> bytes:
-        """Return the original file bytes for a document."""
-        data, _ = await client.documents.download(document_id)
         return data

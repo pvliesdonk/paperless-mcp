@@ -64,9 +64,9 @@ without ever becoming an epic.
   half and needs neither that subsystem nor that decision, which is why it
   could be committed to `020` on its own. `evidenced`, for the text half only:
   the *text* half of the size distribution this story wants now exists in
-  `inline-content-size.md` — 63.5% of the deployed archive's OCR text exceeds
-  the 50,000-character cap #35 ships and its top decile exceeds a whole context
-  window, measured while capping #35. That number prices inline text and
+  `inline-content-size.md` — 76.2% of the deployed archive's OCR text exceeds
+  the current 20,000-character preview and its top decile exceeds a whole
+  context window. That number prices inline text and
   nothing else: it says nothing about PDF bytes, so it is not evidence toward
   #111's file-size distribution. The wiring decision is recorded in
   [document transfers](document-transfers.md).
@@ -216,6 +216,23 @@ backlog that predates this index.
   documented in `config.md` beside this file.
 
 ## Revisions
+
+### 2026-09-20 (bounded document output)
+
+- `stated`: revisit context caps after payload v10 and transfer links shipped
+  (implementation session, 2026-09-20). `evidenced`: #155 supplies full files
+  and OCR Markdown outside model context, while offset paging remains available
+  without transfers. The earlier reason to hold the inline default at 50,000
+  characters no longer applies; [inline content size](inline-content-size.md)
+  now sets a hard 20,000-character per-call preview budget.
+- `evidenced`: #149 found uncapped OCR in four structured tool responses and
+  two document resources, plus whole binary preview/download resources. The MCP
+  surface now keeps structured responses free of OCR, bounds text resources,
+  and routes whole files through transfer links. Direct Python-client calls
+  retain their full-content option.
+- `evidenced`: a live payload-v10 page of 25 documents carried 2,094,953 OCR
+  characters before the client discarded them. That upstream request waste is
+  separate from model context and remains tracked by #164.
 
 ### 2026-09-20 (payload version 10)
 
