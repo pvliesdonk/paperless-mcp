@@ -1,7 +1,7 @@
 # Resources
 
 The MCP resources this server registers are listed below. Collection resources
-return the full set as JSON; document resources take a document ID.
+return JSON; document resources take a document ID.
 
 <!-- DOMAIN-RESOURCES-LIST-START -->
 
@@ -18,7 +18,11 @@ return the full set as JSON; document resources take a document ID.
 | `custom-fields://paperless` | All custom fields |
 | `storage-paths://paperless` | All storage paths |
 | `saved-views://paperless` | All saved views |
-| `tasks://paperless` | All background tasks |
+| `tasks://paperless` | First page of unacknowledged background tasks |
+
+The task resource returns a JSON array. Task timestamps are ISO 8601 strings;
+missing timestamps are `null`. Use the `list_tasks` tool to request further
+pages or filter tasks.
 
 ## Document resources
 
