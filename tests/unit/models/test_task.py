@@ -149,3 +149,27 @@ def test_v10_legacy_results(
     assert task.type == legacy
     assert task.related_document is None
     assert task.model_dump()["task_name"] == "llmindex_update"
+
+
+@pytest.mark.parametrize(
+    "trigger,legacy",
+    [
+        ("scheduled", "scheduled_task"),
+        ("system", "auto_task"),
+        ("email_consume", "auto_task"),
+        ("folder_consume", "auto_task"),
+        ("web_ui", "manual_task"),
+        ("api_upload", "manual_task"),
+        ("manual", "manual_task"),
+        ("future_trigger", "manual_task"),
+    ],
+)
+def test_v10_trigger_projects_legacy_type(
+    load_fixture: Callable[[str], Any], trigger: str, legacy: str
+) -> None:
+    """Match Paperless 3.1.3 TaskSerializerV9.get_type, including its fallback."""
+    payload = load_fixture("task_v10_success.json")
+    payload["trigger_source"] = trigger
+    task = Task.model_validate(payload)
+    assert task.type == legacy
+    assert task.trigger_source == trigger

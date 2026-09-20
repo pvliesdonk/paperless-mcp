@@ -2,6 +2,15 @@
 
 ## 2026-09-20
 
+- Rechecked the trigger-to-legacy-type mapping in Paperless 3.1.3
+  `TaskSerializerV9` for the #161 review follow-up. Email and folder consumes
+  explicitly map to `auto_task`; the mapping remains unchanged. Added the
+  exact mapping and a test pin to [API payload versions](paperless-api-versioning.md).
+  Tests cover every known trigger and the unknown-trigger fallback. A read-only
+  live check returned a v10 task envelope and valid MCP resource JSON for 25
+  tasks. No email-consume task was returned, so that mapping was not confirmed
+  against a live record.
+
 - Extended [API payload versions](paperless-api-versioning.md) for #139 after
   checking task serializers/models and both generations' filters. Task status
   query values are lowercase on 3.x; 2.x uses uppercase status and task_name.
