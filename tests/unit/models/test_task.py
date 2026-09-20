@@ -3,6 +3,8 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any
 
+import pytest
+
 from paperless_mcp.models.task import Task, TaskStatus
 
 
@@ -55,3 +57,95 @@ def test_task_status_values() -> None:
         "RETRY",
         "REVOKED",
     }
+
+
+def test_v10_fields_and_legacy_projection(load_fixture: Callable[[str], Any]) -> None:
+    task = Task.model_validate(load_fixture("task_v10_success.json"))
+    assert task.status is TaskStatus.SUCCESS
+    assert task.task_type == "consume_file"
+    assert task.trigger_source == "api_upload"
+    assert task.result_data == {"document_id": 42}
+    assert task.related_document_ids == [42]
+    assert task.duration_seconds == 3 and task.wait_time_seconds == 2
+    assert task.date_started is not None and task.date_started.tzinfo is not None
+    assert task.task_file_name == "invoice.pdf"
+    assert task.type == "manual_task"
+    assert task.result == "Success. New document id 42 created"
+    assert task.related_document == "42"
+    assert task.model_dump()["task_name"] == "consume_file"
+
+
+def test_v9_fields_do_not_invent_structured_results(
+    load_fixture: Callable[[str], Any],
+) -> None:
+    task = Task.model_validate(
+        {**load_fixture("task_success.json"), "task_name": "check_sanity"}
+    )
+    assert task.task_type == "sanity_check"
+    assert task.input_data == {"filename": "invoice.pdf"}
+    assert task.related_document_ids == [42]
+    assert task.result_data is None
+    assert task.trigger_source is None  # auto_task cannot identify the v10 source
+
+
+def test_v10_multiple_related_documents_are_preserved(
+    load_fixture: Callable[[str], Any],
+) -> None:
+    payload = load_fixture("task_v10_success.json")
+    payload.update(
+        related_document_ids=[42, 43], result_data={"document_ids": [42, 43]}
+    )
+    task = Task.model_validate(payload)
+    assert task.related_document_ids == [42, 43]
+    assert task.related_document == "42"
+    assert task.result is None
+
+
+def test_task_invalid_inputs_raise_validation_error() -> None:
+    import pytest
+    from pydantic import ValidationError
+
+    values: list[Any] = [[], {"status": 1}, {"status": "unknown"}]
+    for value in values:
+        with pytest.raises(ValidationError):
+            Task.model_validate(value)
+
+
+@pytest.mark.parametrize(
+    "data,expected",
+    [
+        (None, None),
+        ({}, None),
+        ({"reason": "Skipped"}, "Skipped"),
+        ({"duplicate_of": 7}, "Not consuming: It is a duplicate of document #7"),
+        ({"error_message": "Failed"}, "Failed"),
+    ],
+)
+@pytest.mark.parametrize(
+    "trigger,legacy",
+    [
+        ("system", "auto_task"),
+        ("scheduled", "scheduled_task"),
+        (None, None),
+    ],
+)
+def test_v10_legacy_results(
+    load_fixture: Callable[[str], Any],
+    data: dict[str, Any] | None,
+    expected: str | None,
+    trigger: str | None,
+    legacy: str | None,
+) -> None:
+    payload = load_fixture("task_v10_success.json")
+    payload.update(
+        result_data=data,
+        related_document_ids=[],
+        trigger_source=trigger,
+        input_data={},
+        task_type="llm_index",
+    )
+    task = Task.model_validate(payload)
+    assert task.result == expected
+    assert task.type == legacy
+    assert task.related_document is None
+    assert task.model_dump()["task_name"] == "llmindex_update"

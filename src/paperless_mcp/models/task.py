@@ -1,26 +1,22 @@
-"""Pydantic models for Paperless-NGX task resources.
+"""Task models exposing payload v10 data while preserving released v9 fields.
 
-These fields follow Paperless payload version 9, which ``client/_http.py``
-pins.  Version 10 renames ``result``, ``type`` and ``related_document`` and
-serves lowercase statuses that :class:`TaskStatus` would reject.  See
-``docs/design/reference/paperless-api-versioning.md``.
-
-:class:`TaskType` is the exception: it names query-filter values rather than
-response fields, and those Paperless accepts under their version 10 spellings
-at both versions.
+See docs/design/reference/paperless-api-versioning.md and
+docs/design/task-payloads.md for compatibility and pagination decisions.
 """
 
 from __future__ import annotations
 
 from enum import StrEnum
+from typing import Any
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from paperless_mcp.models._compat import (
     OptionalPaperlessDatetime,
     PaperlessDatetime,
     RelatedDocumentId,
 )
+from paperless_mcp.models._task_compat import normalize_task_payload
 
 
 class TaskStatus(StrEnum):
@@ -31,14 +27,20 @@ class TaskStatus(StrEnum):
     RETRY = "RETRY"
     REVOKED = "REVOKED"
 
+    @classmethod
+    def _missing_(cls, value: object) -> TaskStatus | None:
+        if isinstance(value, str):
+            return cls.__members__.get(value.upper())
+        return None
+
 
 class TaskType(StrEnum):
     """Kinds of background work Paperless records in ``/api/tasks/``.
 
-    These are the payload version 10 spellings, which the ``?task_type=``
-    query filter accepts at both payload versions.  Version 9 *responses*
-    still spell two of them differently — ``sanity_check`` arrives as
-    ``check_sanity`` and ``llm_index`` as ``llmindex_update``.  See
+    These are payload version 10 spellings. On version 9 fallback, the HTTP
+    boundary translates the filter to task_name and maps sanity_check to
+    check_sanity and llm_index to llmindex_update. Not every task kind exists
+    on Paperless 2.x. See
     ``docs/design/reference/paperless-bulk-edit-indexing.md``.
     """
 
@@ -58,6 +60,13 @@ class TaskType(StrEnum):
 
 
 class Task(BaseModel):
+    """Task details with structured results and compatible legacy projections."""
+
+    @model_validator(mode="before")
+    @classmethod
+    def _normalize_payload(cls, value: Any) -> Any:
+        return normalize_task_payload(value)
+
     model_config = ConfigDict(extra="allow")
     id: int
     task_id: str
@@ -69,3 +78,15 @@ class Task(BaseModel):
     result: str | None = None
     acknowledged: bool = False
     related_document: RelatedDocumentId = None
+
+    task_type: str | None = None
+    task_type_display: str | None = None
+    trigger_source: str | None = None
+    trigger_source_display: str | None = None
+    status_display: str | None = None
+    date_started: OptionalPaperlessDatetime = None
+    duration_seconds: float | None = None
+    wait_time_seconds: float | None = None
+    input_data: dict[str, Any] | None = None
+    result_data: dict[str, Any] | None = None
+    related_document_ids: list[int] = Field(default_factory=list)

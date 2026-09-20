@@ -12,6 +12,8 @@ status: stable
 verified:
   - by: process:researching-references
     at: 2026-09-17
+  - by: process:researching-references-refute
+    at: 2026-09-20
 sources:
   - id: pngx-settings
     title: paperless-ngx src/paperless/settings/__init__.py (v3.1.3)
@@ -41,6 +43,22 @@ sources:
     title: paperless-ngx src/paperless/settings.py (v2.20.15, the last 2.x release)
     resource: https://github.com/paperless-ngx/paperless-ngx/blob/v2.20.15/src/paperless/settings.py
     accessed: 2026-09-17
+  - id: pngx-filters
+    title: Paperless task filters (v3.1.3)
+    resource: https://github.com/paperless-ngx/paperless-ngx/blob/v3.1.3/src/documents/filters.py
+    accessed: 2026-09-20
+  - id: pngx-models
+    title: Paperless task model (v3.1.3)
+    resource: https://github.com/paperless-ngx/paperless-ngx/blob/v3.1.3/src/documents/models.py
+    accessed: 2026-09-20
+  - id: pngx-2x-filters
+    title: Paperless task filters (v2.20.15)
+    resource: https://github.com/paperless-ngx/paperless-ngx/blob/v2.20.15/src/documents/filters.py
+    accessed: 2026-09-20
+  - id: pngx-2x-views
+    title: Paperless task views (v2.20.15)
+    resource: https://github.com/paperless-ngx/paperless-ngx/blob/v2.20.15/src/documents/views.py
+    accessed: 2026-09-20
   - id: drf-versioning
     title: Django REST framework rest_framework/versioning.py (AcceptHeaderVersioning)
     resource: https://github.com/encode/django-rest-framework/blob/master/rest_framework/versioning.py
@@ -50,8 +68,8 @@ sources:
 # Paperless-NGX API payload versions 9 and 10
 
 Paperless-NGX negotiates a payload version through the `Accept` header. This
-client pins version 9; the instance it connects to defaults to version 10 and
-accepts both. The two versions are not interchangeable: one endpoint this
+client prefers version 10 and falls back to version 9 only on an explicit
+version rejection. The two versions are not interchangeable: one endpoint this
 client already parses changes shape completely between them, and the response
 header that looks like it reports the negotiated version does not. This page
 records which differences are real, so the pin is a decision rather than an
@@ -66,9 +84,9 @@ accident.
   would not.
 - Does not cover: the routes Paperless 3.x exposes that this client does not
   call — that is `paperless-3x-rest-surface.md` — or Paperless 2.x payloads
-  beyond which versions a 2.x instance accepts.
-- Depended on by: `src/paperless_mcp/client/_http.py` (the `_ACCEPT_HEADER`
-  pin), `src/paperless_mcp/client/tasks.py` (client-side task pagination),
+  beyond version acceptance and the task filters needed for fallback.
+- Depended on by: `src/paperless_mcp/client/_payload.py` (version negotiation),
+  `src/paperless_mcp/client/tasks.py` (task pagination),
   `src/paperless_mcp/models/task.py` (`Task`, `TaskStatus`), and
   `src/paperless_mcp/models/common.py` (`Paginated`).
 
@@ -223,7 +241,7 @@ against a populated instance would confirm them.
   appeared across 3.1.x under the same version number. Pinning a version fixes
   the breaking changes, not the additive ones. [source: pngx-api-md]
 
-### What version 10 would cost this client today
+### What version 10 cost this client on 2026-09-17
 
 - Moving the pin to 10 breaks task handling in four independent ways:
   `TasksClient.list` iterates the response as a bare list and would iterate
@@ -233,24 +251,52 @@ against a populated instance would confirm them.
   `Task.result` / `Task.related_document` / `Task.type` name members version
   10 no longer sends.
   [observed: the version 10 task payload above read against `src/paperless_mcp/client/tasks.py` and `src/paperless_mcp/models/task.py` on 2026-09-17]
-  [pins: tests/unit/client/test_tasks.py::test_list_all, tests/unit/models/test_task.py::test_task_status_values]
-- No other parsed model depends on a member version 10 changes, because the
-  only other difference this client meets is the ignored `all` array.
-  [observed: the comparison above, on 2026-09-17]
+  The migration under #139 supersedes that implementation assessment.
+- The original assessment missed SavedView's boolean defaults because the
+  live saved-view collection was empty. The migration under #139 corrects
+  that gap: omitted preferences must remain unknown. [source: pngx-serialisers]
+  [pins: tests/unit/client/test_readonly_resources.py::test_v10_saved_view_visibility_is_unknown]
+
+## Request filters and task details (checked 2026-09-20)
+
+- In 3.1.3, status is a MultipleChoiceFilter using the task model's lowercase
+  values, irrespective of response payload version. The v10 client sends
+  lowercase values; uppercase response compatibility is a downstream choice.
+  [source: pngx-filters] [source: pngx-models]
+  [pins: tests/unit/client/test_tasks.py::test_v10_page_and_filters]
+- In 2.20.15, task filtering exposes type, task_name and uppercase status.
+  Version 9 fallback for those instances must translate both the field names
+  and renamed task types. TasksViewSet returns the unpaginated queryset and
+  accepts task_id for UUID lookup. [source: pngx-2x-filters]
+  [source: pngx-2x-views]
+  [pins: tests/unit/client/test_tasks.py::test_v9_fallback_adapts_task_filters_and_paginates]
+- The v10 serializer includes nullable start/done times, durations and wait
+  times, input_data and nullable structured result_data, plus a list of all
+  related document IDs. The v9 serializer projects the first ID, filename,
+  trigger category and a result sentence from that data. [source: pngx-models]
+  [source: pngx-serialisers]
+  [pins: tests/unit/models/test_task.py::test_v10_fields_and_legacy_projection]
+  [pins: tests/unit/models/test_task.py::test_v10_multiple_related_documents_are_preserved]
+- V10 omits saved-view show_on_dashboard and show_in_sidebar. A consumer
+  cannot infer False from their absence. [source: pngx-serialisers]
+  [pins: tests/unit/client/test_readonly_resources.py::test_v10_saved_view_visibility_is_unknown]
 
 ## Where this project departs from the subject
 
-- **The pin stays at version 9.** The instance defaults to 10 and this client
-  asks for 9 deliberately: the only difference that reaches a parsed model is
-  the task payload, version 9 is the shape every task model, fixture and test
-  already encodes, and version 9 is the only value both 2.x and 3.x instances
-  accept. Moving to 10 is a rework of `client/tasks.py`, `models/task.py` and
-  their fixtures, tracked separately rather than smuggled into an unrelated
-  change.
-- The pin is asserted as a literal so the choice cannot drift silently.
-  Before this page, `test_accept_header_pins_version` checked only that *some*
-  `version=` was sent, so an edit from 9 to 10 would have passed the suite.
-  [pins: tests/unit/client/test_http.py::test_accept_header_pins_version]
+- Requests now prefer v10, with one retry at v9 only for the explicit invalid
+  Accept-version refusal. The choice is cached for the client session. This
+  includes writes because version negotiation precedes view execution; normal
+  write failures remain non-retryable. [source: drf-versioning]
+  [pins: tests/unit/client/test_http.py::test_version_rejection_falls_back_and_is_cached]
+  [pins: tests/unit/client/test_http.py::test_version_fallback_is_bounded]
+  [pins: tests/unit/client/test_http.py::test_multipart_version_fallback_preserves_upload]
+- Task status output stays uppercase for library compatibility, while v10
+  fields expose the full structured data. Version 9 responses are accepted
+  without inventing structured results from their prose.
+  [pins: tests/unit/models/test_task.py::test_v9_fields_do_not_invent_structured_results]
+  [pins: tests/unit/client/test_tasks.py::test_v10_wait_terminal_states]
+- Saved-view visibility flags are nullable when omitted, a deliberate library
+  break documented in [task payloads](../task-payloads.md).
 
 ## Not covered
 

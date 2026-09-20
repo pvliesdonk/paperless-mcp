@@ -177,10 +177,10 @@ backlog that predates this index.
   two-day appetite. The durable output is two reference pages,
   `docs/design/reference/paperless-api-versioning.md` and
   `paperless-3x-rest-surface.md`, not a spike document. Three things the
-  answer changed: the version pin **stays at 9**, now asserted as a literal in
-  the suite rather than only in prose, because version 10 reshapes
-  `/api/tasks/` beyond what the task model and client survive and is refused
-  outright by every 2.x instance; the AI surface is **additive, not
+  answer changed: the version pin initially stayed at 9 because version 10
+  reshapes tasks and every 2.x instance rejects it. The
+  [task payload design](task-payloads.md) under #139 now prefers version 10
+  with explicit version-rejection fallback for 2.x; the AI surface is **additive, not
   substitutive**, so nothing this client already parses is affected by it; and
   the gap is 63 unwrapped routes out of 93, which is a menu to choose from
   rather than a debt to repay. The condition that made this a research issue
@@ -216,6 +216,16 @@ backlog that predates this index.
   documented in `config.md` beside this file.
 
 ## Revisions
+
+### 2026-09-20 (payload version 10)
+
+- `stated`: implement #139. `derived`: retain 2.x support through a bounded
+  version-rejection fallback while using v10 pagination and structured task
+  results on 3.x. [Task payloads](task-payloads.md) records the compatibility
+  boundary and its tests. `evidenced`: the source-backed API reference also
+  identifies two saved-view preferences omitted by v10; their absence now
+  means unknown, requiring Python consumers to handle nullable fields.
+
 
 ### 2026-09-20 (shared registration)
 

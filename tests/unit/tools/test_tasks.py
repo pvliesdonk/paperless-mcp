@@ -120,3 +120,43 @@ async def test_list_tasks_result_carries_task_name(mock_client: Any) -> None:
     task = result.structured_content["results"][0]
     assert task["task_name"] == "bulk_update"
     assert task["type"] == "auto_task"
+
+
+@pytest.mark.asyncio
+async def test_v10_task_details_reach_mcp(mock_client: Any) -> None:
+    task = Task.model_validate(
+        {
+            "id": 1,
+            "task_id": "task",
+            "date_created": "2026-09-20T00:00:00Z",
+            "task_type": "bulk_update",
+            "trigger_source": "system",
+            "status": "success",
+            "result_data": {"document_ids": [1, 2]},
+            "related_document_ids": [1, 2],
+            "duration_seconds": 2.0,
+        }
+    )
+    mock_client.tasks.list.return_value = Paginated[Task](count=1, results=[task])
+    mock_client.tasks.get.return_value = task
+    mock_client.tasks.wait_for.return_value = task
+    mcp = FastMCP("test")
+    tasks_mod.register(
+        mcp, ToolContext(client=mock_client, default_page_size=25, public_url="")
+    )
+    async with Client(mcp) as client:
+        for name, args in (
+            ("list_tasks", {}),
+            ("get_task", {"task_uuid": "task"}),
+            ("wait_for_task", {"task_uuid": "task"}),
+        ):
+            result = await client.call_tool(name, args)
+            payload = result.structured_content
+            assert payload is not None
+            if name == "list_tasks":
+                payload = payload["results"][0]
+            elif name == "get_task":
+                payload = payload["result"]
+            assert payload["result_data"] == {"document_ids": [1, 2]}
+            assert payload["related_document_ids"] == [1, 2]
+            assert payload["status"] == "SUCCESS"

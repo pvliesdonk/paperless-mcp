@@ -115,9 +115,9 @@ async def test_list_tasks_paginated_defaults_to_unacknowledged(
     assert route.called
     call = route.calls[0].request
     assert call.url.params.get("acknowledged") == "false"
-    # page/page_size are NOT sent to the server; pagination is client-side.
-    assert "page" not in call.url.params
-    assert "page_size" not in call.url.params
+    # The default request asks v10 for one page; bare v9 fixtures still parse.
+    assert call.url.params["page"] == "1"
+    assert call.url.params["page_size"] == "25"
     assert isinstance(result, Paginated)
     # count == total tasks in the bare list returned by /api/tasks/
     assert result.count == 2
@@ -265,3 +265,111 @@ async def test_list_tasks_next_previous_single_page(
 
     assert page.previous is None
     assert page.next is None
+
+
+@pytest.mark.asyncio
+async def test_v10_page_and_filters(
+    tasks: TasksClient, load_fixture: Callable[[str], Any]
+) -> None:
+    payload = load_fixture("task_v10_success.json")
+    async with respx.mock(base_url="http://paperless.test") as mock:
+        route = mock.get("/api/tasks/").mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "count": 50,
+                    "next": "http://internal/api/tasks/?page=3",
+                    "previous": "http://internal/api/tasks/?page=1",
+                    "results": [payload],
+                },
+            )
+        )
+        page = await tasks.list(
+            page=2,
+            page_size=10,
+            status=TaskStatus.SUCCESS,
+            task_type=TaskType.CONSUME_FILE,
+        )
+    assert page.count == 50 and len(page.results) == 1
+    assert page.next == "page=3" and page.previous == "page=1"
+    assert dict(route.calls.last.request.url.params) == {
+        "page": "2",
+        "page_size": "10",
+        "status": "success",
+        "task_type": "consume_file",
+        "acknowledged": "false",
+    }
+    assert page.results[0].result_data == {"document_id": 42}
+
+
+@pytest.mark.asyncio
+async def test_v9_fallback_adapts_task_filters_and_paginates(
+    tasks: TasksClient, load_fixture: Callable[[str], Any]
+) -> None:
+    bare = [load_fixture("task_success.json")] * 3
+    async with respx.mock(base_url="http://paperless.test") as mock:
+        route = mock.get("/api/tasks/").mock(
+            side_effect=[
+                httpx.Response(
+                    406, json={"detail": 'Invalid version in "Accept" header.'}
+                ),
+                httpx.Response(200, json=bare),
+            ]
+        )
+        page = await tasks.list(
+            page=2,
+            page_size=1,
+            status=TaskStatus.SUCCESS,
+            task_type=TaskType.SANITY_CHECK,
+        )
+    assert page.count == 3 and len(page.results) == 1
+    assert page.next == "page=3" and page.previous == "page=1"
+    assert dict(route.calls.last.request.url.params) == {
+        "status": "SUCCESS",
+        "task_name": "check_sanity",
+        "acknowledged": "false",
+    }
+    assert route.calls.last.request.headers["accept"].endswith("version=9")
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("terminal", ["success", "failure", "revoked"])
+async def test_v10_wait_terminal_states(
+    tasks: TasksClient, load_fixture: Callable[[str], Any], terminal: str
+) -> None:
+    finished = load_fixture("task_v10_success.json")
+    finished["status"] = terminal
+    pending = {**finished, "status": "pending", "result_data": None}
+    async with respx.mock(base_url="http://paperless.test") as mock:
+        route = mock.get("/api/tasks/").mock(
+            side_effect=[
+                httpx.Response(200, json={"count": 0, "results": []}),
+                httpx.Response(200, json={"count": 1, "results": [pending]}),
+                httpx.Response(200, json={"count": 1, "results": [finished]}),
+            ]
+        )
+        task = await tasks.wait_for(finished["task_id"], poll_seconds=0.001)
+    assert task.status is TaskStatus(terminal)
+    assert all(
+        call.request.url.params["task_id"] == finished["task_id"]
+        for call in route.calls
+    )
+
+
+@pytest.mark.asyncio
+async def test_v9_fallback_uuid_lookup_has_no_extra_filters(
+    tasks: TasksClient, load_fixture: Callable[[str], Any]
+) -> None:
+    payload = load_fixture("task_success.json")
+    async with respx.mock(base_url="http://paperless.test") as mock:
+        route = mock.get("/api/tasks/").mock(
+            side_effect=[
+                httpx.Response(
+                    406, json={"detail": 'Invalid version in "Accept" header.'}
+                ),
+                httpx.Response(200, json=[payload]),
+            ]
+        )
+        task = await tasks.get(payload["task_id"])
+    assert task is not None and task.status is TaskStatus.SUCCESS
+    assert dict(route.calls.last.request.url.params) == {"task_id": payload["task_id"]}

@@ -2,6 +2,13 @@
 
 ## 2026-09-20
 
+- Extended [API payload versions](paperless-api-versioning.md) for #139 after
+  checking task serializers/models and both generations' filters. Task status
+  query values are lowercase on 3.x; 2.x uses uppercase status and task_name.
+  V10 saved-view visibility is absent rather than false. Fixtures and HTTP/MCP
+  tests cover negotiation, pagination, compatibility projections and waiting;
+  no fresh live instance capture was made.
+
 - Added [Core tool registration composition](core-tool-registration.md) and
   extended [transfer links](core-transfer-links.md) for #158. Checked core
   7.2.0 registrars and execution boundaries; real-registrar tests refute the

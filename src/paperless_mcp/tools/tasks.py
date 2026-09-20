@@ -42,8 +42,10 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
         Pass ``task_type`` to filter by the kind of work — ``"bulk_update"``
         is the search-index rebuild that ``bulk_edit_documents`` queues, so
         that tool's deferred indexing can be waited on with ``wait_for_task``.
-        Each returned task carries that value as ``task_name``; the ``type``
-        field is what triggered the task, not the kind of work it does.
+        Version 10 adds task_type, trigger_source, structured result_data,
+        related_document_ids and timing fields. Statuses retain their uppercase
+        spelling. Legacy task_name, type, result and related_document remain
+        compatibility projections; use the v10 fields for full detail.
         """
         return await client.tasks.list(
             page=page,
