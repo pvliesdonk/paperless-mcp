@@ -39,3 +39,10 @@ The [external reference](reference/paperless-api-versioning.md) records the
 source behavior and pins the relevant tests. The v10 fixture is constructed
 from the 3.1.3 serializer/model fields, not claimed as a fresh live capture.
 No live upstream documents or tasks are changed by validation.
+
+The `tasks://paperless` resource returns the first page of unacknowledged
+tasks as a JSON array. Each Task uses Pydantic JSON-mode serialization before
+the array is encoded, so timestamps become ISO 8601 strings and absent optional
+values remain null. Resource tests read through an in-memory MCP client with
+empty, v9 and v10 task pages, including all three timestamp fields and structured
+results. This covers the serialization failure tracked in #160.
