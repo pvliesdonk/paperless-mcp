@@ -22,6 +22,9 @@ access_token
 id_token
 
 # --- Python / runtime ecosystem ---
+PDFs
+Pydantic
+serializer
 dataclass
 debugpy
 lockfile
