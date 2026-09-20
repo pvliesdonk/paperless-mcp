@@ -28,13 +28,16 @@ pages or filter tasks.
 
 | URI | Description |
 |---|---|
-| `paperless://documents/{document_id}` | Document metadata by ID |
-| `paperless://documents/{document_id}/content` | Extracted text content, in full. Resources take no arguments, so the character cap that `get_document_content` applies by default does not apply here. |
+| `paperless://documents/{document_id}` | Document metadata by ID, without OCR content |
+| `paperless://documents/{document_id}/content` | First 20,000 characters of extracted text. A partial result points to `get_document_content` for paging and to transfer links when available. |
 | `paperless://documents/{document_id}/metadata` | File metadata: original filename, checksums, MIME type |
 | `paperless://documents/{document_id}/notes` | Notes attached to the document |
 | `paperless://documents/{document_id}/history` | Audit history |
 | `paperless://documents/{document_id}/thumbnail` | Thumbnail image |
-| `paperless://documents/{document_id}/preview` | PDF preview |
-| `paperless://documents/{document_id}/download` | Original file download |
+
+On HTTP deployments with `PAPERLESS_MCP_BASE_URL`, original files, archived PDF
+files, and previews are available through `create_download_link`. Returning
+whole files as resources puts their bytes in model context, so the inline
+preview and download resources are not registered.
 
 <!-- DOMAIN-RESOURCES-LIST-END -->

@@ -11,19 +11,21 @@ out to sit in the wrong place.
 
 ## Verdict
 
-**Cap at 50,000 characters, and ship paging with it.**
+**Cap every inline preview at 20,000 characters, and keep paging.**
 
-50,000 characters is roughly **6,900 tokens** of real OCR text — a per-call
-context budget one tool result can spend without crowding out a conversation,
-and still under 13,000 tokens even at a pessimistic 4:1 ratio.
+The first implementation shipped 50,000 characters before transfer links
+existed. PR #155 added full OCR Markdown downloads outside model context. That
+removed the earlier lower bound, so #149 sets a hard 20,000-character
+characters, roughly 2,700 tokens at the measured median and 5,000 at a
+pessimistic 4:1 ratio.
 
 The number is chosen as a *token budget*, not to fit any particular document.
 That distinction is the point of this note: no cap that a context window can
 afford also fits the documents in this archive, so a cap cannot be justified by
 the fraction of documents it returns whole. What it is for is the tail.
 
-**A cap that fires often is the intended behaviour, not a defect — given
-paging.** At 50,000 characters about a third of this archive arrives whole and
+**A cap that fires often is the intended behaviour, given paging.** At 20,000
+characters about a quarter of this archive arrives whole and
 the rest arrives in sections. An earlier draft of this note argued for 100,000
 on the grounds that a default firing on half the archive "is not a safety rail,
 it is the normal path". That objection holds only in a world without `offset`:
@@ -75,7 +77,7 @@ Coverage at candidate caps, as a share of documents returned *complete*:
 ## Why paging is not optional
 
 #35 filed `offset` as a deferred extension. The distribution says otherwise: at
-the 50,000-character cap this change ships, 63.5% of this archive is returned
+the original 50,000-character cap, 63.5% of this archive was returned
 partially, and without `offset` that content is **unreachable** — the caller
 can see that text was cut and has no way to read the rest. A cap alone
 therefore replaces one failure (context flooded) with a worse one (document
@@ -97,20 +99,11 @@ continuation only has to be affordable.
   over 25 real OCR samples under `cl100k_base`, ranging 3.66–9.21. That is not
   Claude's tokenizer; treat the ratio as an order-of-magnitude check, which is
   all the cap needs.
-- **The cap is a rail, not the answer.**
-  [#112](https://github.com/pvliesdonk/paperless-mcp/issues/112) — content out
-  as a downloadable Markdown file — is the real escape for a long document,
-  routing it to a vault or a user without it entering context at all. It is not
-  built. Until it is, the cap plus `offset` is what stands in front of the
-  tail, and model-facing text deliberately does not advertise #112.
-
-  This sets the ceiling on how defensive the cap may be. 50,000 characters has
-  to stay *usable on its own*, because paging through a 2.4M-character document
-  in 50k sections is the only route to its tail that exists today. Once #112
-  offers that text as a file the model never reads into context, the cap is
-  free to go seriously low — the full text would then have a route that costs
-  no context at all, and truncation would stop being a loss. Tightening it is
-  therefore #112's business, not a number to revisit before then.
+- **The cap is a rail, not the answer.** PR #155 closed
+  [#112](https://github.com/pvliesdonk/paperless-mcp/issues/112) with a full OCR
+  Markdown transfer. On deployments without transfer links, offset paging still
+  reaches every part of the document. Inline resources and structured document
+  responses cannot override or bypass the preview boundary.
 
 ## Beyond #35
 
@@ -118,6 +111,6 @@ The roadmap's bytes theme says the
 [#111](https://github.com/pvliesdonk/paperless-mcp/issues/111)/#112 story is
 promoted by "a size distribution from the deployed archive that says how much of
 it is actually unreachable". For the text half, that distribution is the table
-above: **63.5% of documents exceed the 50,000-character cap this change ships,
+above: **76.2% of documents exceed the 20,000-character cap now used,
 and the top decile exceeds a whole context window.** This note does not re-open the
 sequencing argument; it records the evidence that was missing.

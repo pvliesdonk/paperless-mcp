@@ -21,7 +21,7 @@ Paperless-NGX over MCP: search, read, upload and tag documents; manage correspon
 - **Document lifecycle** supports uploads, field changes, notes, audit history, and AI-suggested tags/correspondents/types.
 - **Operational introspection** covers saved views, storage paths, share links, background tasks (with `wait_for_task`), statistics, and an upstream release check for Paperless-NGX.
 - **MCP tools:** 49 LLM-visible tools with `Lucide` icons; see `src/paperless_mcp/tools/`.
-- **MCP resources:** 18 URIs exposing documents and domain collections; see `src/paperless_mcp/resources/`.
+- **MCP resources:** 16 URIs exposing bounded document previews and domain collections; see `src/paperless_mcp/resources/`.
 <!-- DOMAIN-END -->
 
 ## What you can do with it
@@ -29,7 +29,7 @@ Paperless-NGX over MCP: search, read, upload and tag documents; manage correspon
 <!-- DOMAIN-START -->
 With this server mounted in an MCP client (Claude, etc.), you can:
 
-- **"Find last quarter's invoices from ACME."** Composes `search_documents` with a correspondent filter, then streams matches via `paperless://documents/{id}/content`.
+- **"Find last quarter's invoices from ACME."** Composes `search_documents` with a correspondent filter, then reads bounded previews with `get_document_content`.
 - **"Tag these three documents as 'reviewed' and move them to the Accounting correspondent."** Uses `bulk_edit_documents` in a single call.
 - **"Upload this PDF and wait until OCR finishes."** Composes `upload_document` + `wait_for_task` so the assistant only reports back once the document is indexed.
 - **"What changed on document 4213 in the last week?"** Reads `paperless://documents/4213/history` and summarises the audit trail.

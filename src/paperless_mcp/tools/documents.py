@@ -9,6 +9,7 @@ from fastmcp import FastMCP
 from mcp.types import ImageContent
 from pydantic import Field
 
+from paperless_mcp._content import CONTENT_CHAR_CAP, slice_content
 from paperless_mcp.models.common import (
     BulkEditOperation,
     BulkEditResult,
@@ -26,60 +27,6 @@ from paperless_mcp.models.document import (
 from paperless_mcp.tools._context import ToolContext
 from paperless_mcp.tools._errors import paperless_errors
 from paperless_mcp.tools._metadata import tool_metadata
-
-#: Default ceiling on inline OCR text returned by ``get_document_content``.
-#:
-#: Chosen as a per-call context budget rather than to fit any particular
-#: document: ~7k tokens of real OCR text, which one tool result can spend
-#: without crowding out the rest of a conversation.  Deliberately defensive —
-#: most documents in a text-heavy archive arrive in sections rather than whole,
-#: which ``offset`` makes cheap.  See ``docs/design/inline-content-size.md``
-#: for the measured distribution the number is drawn from.
-CONTENT_CHAR_CAP = 50_000
-
-
-def _content_marker(*, offset: int, end: int, total: int) -> str:
-    """Build the header line that precedes a partial document slice.
-
-    Args:
-        offset: First character index of the returned slice.
-        end: One past the last character index of the returned slice.
-        total: Full length of the document's text.
-
-    Returns:
-        A one-line marker ending in a blank line, naming the range returned
-        and — when text remains — the exact ``offset`` to pass next.
-    """
-    if offset >= total:
-        return f"[offset {offset:,} is past the end of this document ({total:,} chars)]\n\n"
-    if end >= total:
-        return f"[chars {offset:,}-{total:,} of {total:,} - final section]\n\n"
-    return (
-        f"[chars {offset:,}-{end:,} of {total:,} - truncated; call "
-        f"get_document_content again with offset={end} to continue]\n\n"
-    )
-
-
-def _slice_content(text: str, *, max_chars: int | None, offset: int) -> str:
-    """Return *text* from *offset*, capped at *max_chars*.
-
-    Text returned whole — the common case of a short document read from the
-    start — comes back byte-identical with no marker, so callers that never
-    hit the cap see exactly what they saw before the cap existed.
-
-    Args:
-        text: The document's full OCR text.
-        max_chars: Maximum characters to return, or ``None`` for no cap.
-        offset: Character position to start from.
-
-    Returns:
-        The requested slice, prefixed by a marker when it is not the whole text.
-    """
-    total = len(text)
-    end = total if max_chars is None else min(total, offset + max_chars)
-    if offset == 0 and end >= total:
-        return text
-    return _content_marker(offset=offset, end=end, total=total) + text[offset:end]
 
 
 def register(mcp: FastMCP, ctx: ToolContext) -> None:
@@ -107,18 +54,17 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
         document_type: int | None = None,
         storage_path: int | None = None,
         custom_field: int | None = None,
-        include_content: bool = False,
     ) -> Paginated[Document]:
         """List documents with optional filters.  Returns one page.
 
-        By default, per-document OCR ``content`` is stripped to keep results
-        small.  Pass ``include_content=True`` for the full text on each hit.
+        Per-document OCR ``content`` is stripped to keep results small. Use
+        ``get_document_content`` for a bounded preview of one result.
 
         ``notes[].note`` and ``custom_fields[].value`` are **always** stripped
-        from listings regardless of ``include_content`` — the metadata refs
+        from listings. The metadata refs
         (note ids, timestamps, custom-field ids) are retained so callers can
-        detect presence, but to read the actual text use ``get_document``
-        (with ``include_content=True`` if needed) or ``get_document_notes``.
+        detect presence; use ``get_document`` or ``get_document_notes`` to read
+        those values.
         """
         result = await client.documents.list(
             page=page,
@@ -129,7 +75,7 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
             document_type=document_type,
             storage_path=storage_path,
             custom_field=custom_field,
-            include_content=include_content,
+            include_content=False,
         )
         for doc in result.results:
             _with_web_url(doc)
@@ -142,24 +88,22 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
         page: Annotated[int, Field(ge=1)] = 1,
         page_size: Annotated[int, Field(ge=1, le=100)] = ctx.default_page_size,
         more_like: int | None = None,
-        include_content: bool = False,
     ) -> Paginated[Document]:
         """Full-text search documents.
 
-        By default per-hit OCR ``content`` is stripped; pass
-        ``include_content=True`` to get full OCR text per hit.
-        Use *more_like* for similarity search.
+        Per-hit OCR ``content`` is stripped. Use ``get_document_content`` for a
+        bounded preview of one hit. Use *more_like* for similarity search.
 
         ``notes[].note`` and ``custom_fields[].value`` are **always** stripped
-        from search hits regardless of ``include_content`` — fetch them via
-        ``get_document`` or ``get_document_notes`` when needed.
+        from search hits; fetch them via ``get_document`` or
+        ``get_document_notes`` when needed.
         """
         result = await client.documents.search(
             query,
             page=page,
             page_size=page_size,
             more_like=more_like,
-            include_content=include_content,
+            include_content=False,
         )
         for doc in result.results:
             _with_web_url(doc)
@@ -167,20 +111,15 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
 
     @mcp.tool(**tool_metadata("get_document"))
     @paperless_errors
-    async def get_document(
-        document_id: int,
-        include_content: bool = False,
-    ) -> Document:
+    async def get_document(document_id: int) -> Document:
         """Fetch one document by ID.
 
-        By default, the OCR ``content`` is stripped to keep responses small.
-        Pass ``include_content=True`` for the full text however long it is, or
-        call ``get_document_content`` for the text alone, which caps its length
-        by default and can page through a long document.
+        OCR ``content`` is stripped to keep responses small. Call
+        ``get_document_content`` for a bounded preview, or use
+        ``create_download_link`` with the content variant when available.
         """
         doc = await client.documents.get(document_id)
-        if not include_content:
-            doc.content = None
+        doc.content = None
         _with_web_url(doc)
         return doc
 
@@ -188,21 +127,20 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
     @paperless_errors
     async def get_document_content(
         document_id: int,
-        max_chars: Annotated[int | None, Field(gt=0)] = CONTENT_CHAR_CAP,
+        max_chars: Annotated[int, Field(gt=0, le=CONTENT_CHAR_CAP)] = CONTENT_CHAR_CAP,
         offset: Annotated[int, Field(ge=0)] = 0,
     ) -> str:
         """Return the OCR'd text content of a document.
 
         Documents such as books and technical standards can run to millions of
-        characters, so the text is capped by default.  A capped result opens
+        characters, so each call is capped at 20,000. A partial result opens
         with a marker naming the character range returned, the document's full
         length, and the ``offset`` to pass to read the next section; text that
         fits under the cap is returned whole with no marker.
 
         Args:
             document_id: ID of the document to read.
-            max_chars: Maximum number of characters to return.  Pass ``None``
-                for the entire text however long it is.
+            max_chars: Maximum number of characters to return, up to 20,000.
             offset: Character position to start reading from.  Pass the value
                 named in a truncation marker to continue from where it stopped.
 
@@ -211,7 +149,7 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
             section is not the whole document.
         """
         text = await client.documents.get_content(document_id)
-        return _slice_content(text, max_chars=max_chars, offset=offset)
+        return slice_content(text, max_chars=max_chars, offset=offset)
 
     @mcp.tool(**tool_metadata("get_document_thumbnail"))
     @paperless_errors
@@ -253,16 +191,14 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
     async def update_document(
         document_id: int,
         patch: DocumentPatch,
-        include_content: bool = False,
     ) -> Document:
         """Patch selected fields on a document.
 
-        The response strips OCR ``content`` by default; pass
-        ``include_content=True`` to get the full text back.
+        The response strips OCR ``content``. Use ``get_document_content`` or a
+        transfer link when the updated text is needed.
         """
         doc = await client.documents.update(document_id, patch)
-        if not include_content:
-            doc.content = None
+        doc.content = None
         _with_web_url(doc)
         return doc
 
