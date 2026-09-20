@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import time
 from collections.abc import Callable
 from dataclasses import replace
@@ -32,8 +33,8 @@ from paperless_mcp.server import make_server
 from paperless_mcp.tools._context import ToolContext
 from paperless_mcp.transfers import PaperlessTransferSink, register_transfers
 
-DOWNLOAD = "create_document_download_link"
-UPLOAD = "create_document_upload_link"
+DOWNLOAD = "create_download_link"
+UPLOAD = "create_upload_link"
 
 
 @pytest.fixture
@@ -82,8 +83,10 @@ def mcp(ctx: ToolContext, config: ProjectConfig) -> FastMCP:
 
 
 async def _mint(mcp: FastMCP, name: str, arguments: dict[str, Any]) -> dict[str, Any]:
+    arguments = dict(arguments)
+    ttl = {"ttl_s": arguments.pop("ttl_s")} if "ttl_s" in arguments else {}
     async with Client(mcp) as client:
-        result = await client.call_tool(name, arguments)
+        result = await client.call_tool(name, {"ref": json.dumps(arguments), **ttl})
     assert result.structured_content is not None
     assert set(result.structured_content) == {"url", "expires_in_s"}
     return dict(result.structured_content)
@@ -354,3 +357,38 @@ async def test_expired_link(mcp: FastMCP) -> None:
     transport = httpx.ASGITransport(app=mcp.http_app())
     async with httpx.AsyncClient(transport=transport) as client:
         assert (await client.put(link["url"], content=b"file")).status_code == 404
+
+
+async def test_core_transfer_surface(mcp: FastMCP) -> None:
+    """Core owns generic tool shape; domain notes describe validated refs."""
+    async with Client(mcp) as client:
+        tools = {tool.name: tool for tool in await client.list_tools()}
+        assert set(tools) == {DOWNLOAD, UPLOAD}
+        for name, example in (
+            (DOWNLOAD, '{"document_id":42,"variant":"content"}'),
+            (UPLOAD, '{"filename":"notes.md","metadata":{"tags":[2]}}'),
+        ):
+            tool = tools[name]
+            assert set(tool.input_schema["properties"]) == {"ref", "ttl_s"}
+            assert tool.annotations and tool.annotations.title
+            assert tool.icons
+            assert "Paperless ref is a JSON string" in (tool.description or "")
+            result = await client.call_tool(name, {"ref": example})
+            assert result.structured_content
+
+
+@pytest.mark.parametrize(
+    "name,ref",
+    [
+        (DOWNLOAD, "42"),
+        (DOWNLOAD, "not json"),
+        (DOWNLOAD, '{"document_id":1,"extra":true}'),
+        (UPLOAD, '{"filename":"notes.md","operation_id":"caller-chosen"}'),
+        (UPLOAD, '{"filename":"notes.md","expires_at":99999999999}'),
+        (UPLOAD, '{"filename":"notes.md","metadata":{"tags":[-1]}}'),
+    ],
+)
+async def test_invalid_core_refs(mcp: FastMCP, name: str, ref: str) -> None:
+    async with Client(mcp) as client:
+        with pytest.raises(ToolError, match="Response validation failed"):
+            await client.call_tool(name, {"ref": ref})

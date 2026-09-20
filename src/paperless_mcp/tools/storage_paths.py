@@ -10,7 +10,8 @@ from pydantic import Field
 from paperless_mcp.models.common import Paginated
 from paperless_mcp.models.storage_path import StoragePath
 from paperless_mcp.tools._context import ToolContext
-from paperless_mcp.tools._registry import register_tool
+from paperless_mcp.tools._errors import paperless_errors
+from paperless_mcp.tools._metadata import tool_metadata
 
 
 def register(mcp: FastMCP, ctx: ToolContext) -> None:
@@ -22,7 +23,8 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
     """
     client = ctx.client
 
-    @register_tool(mcp, "list_storage_paths")
+    @mcp.tool(**tool_metadata("list_storage_paths"))
+    @paperless_errors
     async def list_storage_paths(
         page: Annotated[int, Field(ge=1)] = 1,
         page_size: Annotated[int, Field(ge=1, le=100)] = ctx.default_page_size,
@@ -33,7 +35,8 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
             page=page, page_size=page_size, ordering=ordering
         )
 
-    @register_tool(mcp, "get_storage_path")
+    @mcp.tool(**tool_metadata("get_storage_path"))
+    @paperless_errors
     async def get_storage_path(storage_path_id: int) -> StoragePath:
         """Fetch a storage path by ID."""
         return await client.storage_paths.get(storage_path_id)

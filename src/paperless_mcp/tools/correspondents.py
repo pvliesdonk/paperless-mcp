@@ -14,7 +14,8 @@ from paperless_mcp.models.correspondent import (
     CorrespondentPatch,
 )
 from paperless_mcp.tools._context import ToolContext
-from paperless_mcp.tools._registry import register_tool
+from paperless_mcp.tools._errors import paperless_errors
+from paperless_mcp.tools._metadata import tool_metadata
 
 
 def register(mcp: FastMCP, ctx: ToolContext) -> None:
@@ -26,7 +27,8 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
     """
     client = ctx.client
 
-    @register_tool(mcp, "list_correspondents")
+    @mcp.tool(**tool_metadata("list_correspondents"))
+    @paperless_errors
     async def list_correspondents(
         page: Annotated[int, Field(ge=1)] = 1,
         page_size: Annotated[int, Field(ge=1, le=100)] = ctx.default_page_size,
@@ -41,29 +43,34 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
             name__icontains=name__icontains,
         )
 
-    @register_tool(mcp, "get_correspondent")
+    @mcp.tool(**tool_metadata("get_correspondent"))
+    @paperless_errors
     async def get_correspondent(correspondent_id: int) -> Correspondent:
         """Fetch a correspondent by ID."""
         return await client.correspondents.get(correspondent_id)
 
-    @register_tool(mcp, "create_correspondent")
+    @mcp.tool(**tool_metadata("create_correspondent"))
+    @paperless_errors
     async def create_correspondent(body: CorrespondentCreate) -> Correspondent:
         """Create a new correspondent."""
         return await client.correspondents.create(body)
 
-    @register_tool(mcp, "update_correspondent")
+    @mcp.tool(**tool_metadata("update_correspondent"))
+    @paperless_errors
     async def update_correspondent(
         correspondent_id: int, patch: CorrespondentPatch
     ) -> Correspondent:
         """Patch selected fields on a correspondent."""
         return await client.correspondents.update(correspondent_id, patch)
 
-    @register_tool(mcp, "delete_correspondent")
+    @mcp.tool(**tool_metadata("delete_correspondent"))
+    @paperless_errors
     async def delete_correspondent(correspondent_id: int) -> None:
         """Delete a correspondent."""
         await client.correspondents.delete(correspondent_id)
 
-    @register_tool(mcp, "bulk_edit_correspondents")
+    @mcp.tool(**tool_metadata("bulk_edit_correspondents"))
+    @paperless_errors
     async def bulk_edit_correspondents(
         operation: str,
         ids: list[int],

@@ -10,6 +10,8 @@ its `stale_after` date passes. Project decisions belong in `docs/design/`.
 
 - [GitHub planning objects](github-planning-objects.md) — milestones,
   issue relationships, and PR design material used by roadmapping and releases.
+- [Core tool registration composition](core-tool-registration.md) — metadata,
+  icon helpers and Jobs error boundaries.
 - [Core transfer links and Paperless text ingestion](core-transfer-links.md) —
   sink contracts, retry grace, HTTP limits, and Markdown upload acceptance.
 - [Paperless-NGX version endpoints](paperless-version-endpoints.md) — which of

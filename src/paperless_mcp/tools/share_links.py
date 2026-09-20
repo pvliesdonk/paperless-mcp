@@ -10,7 +10,8 @@ from pydantic import Field
 from paperless_mcp.models.common import Paginated
 from paperless_mcp.models.share_link import ShareLink
 from paperless_mcp.tools._context import ToolContext
-from paperless_mcp.tools._registry import register_tool
+from paperless_mcp.tools._errors import paperless_errors
+from paperless_mcp.tools._metadata import tool_metadata
 
 
 def register(mcp: FastMCP, ctx: ToolContext) -> None:
@@ -27,7 +28,8 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
         if ctx.public_url:
             link.share_url = f"{ctx.public_url}/share/{link.slug}"
 
-    @register_tool(mcp, "list_share_links")
+    @mcp.tool(**tool_metadata("list_share_links"))
+    @paperless_errors
     async def list_share_links(
         page: Annotated[int, Field(ge=1)] = 1,
         page_size: Annotated[int, Field(ge=1, le=100)] = ctx.default_page_size,
@@ -41,7 +43,8 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
             _with_share_url(link)
         return result
 
-    @register_tool(mcp, "get_share_link")
+    @mcp.tool(**tool_metadata("get_share_link"))
+    @paperless_errors
     async def get_share_link(share_link_id: int) -> ShareLink:
         """Fetch a share link by ID."""
         link = await client.share_links.get(share_link_id)

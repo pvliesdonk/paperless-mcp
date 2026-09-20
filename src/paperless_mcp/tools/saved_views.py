@@ -10,7 +10,8 @@ from pydantic import Field
 from paperless_mcp.models.common import Paginated
 from paperless_mcp.models.saved_view import SavedView
 from paperless_mcp.tools._context import ToolContext
-from paperless_mcp.tools._registry import register_tool
+from paperless_mcp.tools._errors import paperless_errors
+from paperless_mcp.tools._metadata import tool_metadata
 
 
 def register(mcp: FastMCP, ctx: ToolContext) -> None:
@@ -22,7 +23,8 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
     """
     client = ctx.client
 
-    @register_tool(mcp, "list_saved_views")
+    @mcp.tool(**tool_metadata("list_saved_views"))
+    @paperless_errors
     async def list_saved_views(
         page: Annotated[int, Field(ge=1)] = 1,
         page_size: Annotated[int, Field(ge=1, le=100)] = ctx.default_page_size,
@@ -30,7 +32,8 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
         """List saved views."""
         return await client.saved_views.list(page=page, page_size=page_size)
 
-    @register_tool(mcp, "get_saved_view")
+    @mcp.tool(**tool_metadata("get_saved_view"))
+    @paperless_errors
     async def get_saved_view(view_id: int) -> SavedView:
         """Fetch a saved view by ID."""
         return await client.saved_views.get(view_id)

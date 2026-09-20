@@ -20,8 +20,8 @@ calling a tool.
 | `get_document` | Retrieve document metadata by ID; OCR `content` stripped by default (`include_content=True` to opt in) |
 | `get_document_content` | Retrieve the plain-text content of a document; capped at 50,000 characters by default (`max_chars=None` for the full text). A capped result names the range returned and the `offset` to pass to read the next section. |
 | `upload_document` | Upload a new document for ingestion |
-| `create_document_download_link` | Get an expiring HTTP link for an original file, archived PDF, preview or full OCR Markdown file |
-| `create_document_upload_link` | Get an expiring HTTP link to upload a file, including Markdown, with optional metadata |
+| `create_download_link` | Get an expiring HTTP link for an original file, archived PDF, preview or full OCR Markdown file |
+| `create_upload_link` | Get an expiring HTTP link to upload a file, including Markdown, with optional metadata |
 | `update_document` | Patch document metadata (title, tags, correspondent, etc.) |
 | `delete_document` | Permanently delete a document |
 | `bulk_edit_documents` | Apply a bulk operation to multiple documents. The change lands before the call returns, but Paperless queues the search-index rebuild, so `search_documents` may miss the edited documents for seconds to minutes while `list_documents` and `get_document` see them at once. Track the queued task with `list_tasks(task_type="bulk_update")` |
@@ -40,7 +40,7 @@ calling a tool.
 The two link tools require HTTP or SSE transport and `PAPERLESS_MCP_BASE_URL`.
 See [transfer configuration](../configuration.md#document-transfer-links).
 
-Call `create_document_download_link(document_id=42, variant="content")` for
+Call `create_download_link(ref='{"document_id":42,"variant":"content"}')` for
 full OCR text as a UTF-8 Markdown file. Other variants are `original` (the
 default), `archive` and `preview`. An archive request fails if no archived PDF
 exists. The tool returns `url` and `expires_in_s`; GET the URL from a file
@@ -51,8 +51,8 @@ Content exports have a YAML front-matter block with document ID, title, created
 timestamp, correspondent ID, document type ID and tag IDs. The OCR text follows
 unchanged. Short text remains available through `get_document_content`.
 
-Call `create_document_upload_link(filename="notes.md", metadata={"title":
-"Meeting notes", "tags": [2]})`, then PUT the raw file bytes to its URL. Do not
+Call `create_upload_link(ref='{"filename":"notes.md","metadata":{"title":"Meeting notes","tags":[2]}}')`,
+then PUT the raw file bytes to its URL. Do not
 wrap the bytes in JSON or multipart data. The response contains `task_id`; use
 `get_task(task_id=...)` to check whether Paperless has finished ingestion.
 
@@ -60,7 +60,7 @@ The upload tool also accepts PDF files and other file types your Paperless insta
 supports. Markdown bytes and filenames are preserved. Paperless detects the
 format from bytes; ordinary Markdown recognized as plain text is accepted.
 Front matter stays in the file: set Paperless metadata through the tool's
-`metadata` argument. Available fields are `title`, `correspondent`,
+`metadata` object in the JSON reference. Available fields are `title`, `correspondent`,
 `document_type`, `tags`, `created`, `archive_serial_number` and `custom_fields`.
 
 Links expire and allow a short retry window after success. An identical upload

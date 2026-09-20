@@ -282,18 +282,13 @@ def test_no_file_exchange_scaffolding(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    """make_server() registers no file-exchange tools.
+    """The removed exchange-directory setting cannot enable transfer tools.
 
-    The scaffold no longer calls ``register_file_exchange`` (removed
-    because the upstream pvl-core 3.x line dropped the API). Under the
-    HTTP + ``MCP_EXCHANGE_DIR`` configuration that previously activated
-    the producer tool, ``create_download_link`` is absent — so re-adding
-    ``register_file_exchange`` to ``make_server()`` would re-register it
-    and fail the first assertion below. The ``fetch_file`` /
-    ``create_upload_link`` assertions are defence-in-depth.
+    Current Path 1 transfers reuse the generic names but require BASE_URL.
+    MCP_EXCHANGE_DIR alone must never activate the old file-exchange surface.
     """
     monkeypatch.setenv("PAPERLESS_MCP_TRANSPORT", "http")
-    monkeypatch.setenv("PAPERLESS_MCP_BASE_URL", "https://test.example.com")
+    monkeypatch.delenv("PAPERLESS_MCP_BASE_URL", raising=False)
     monkeypatch.setenv("MCP_EXCHANGE_DIR", str(tmp_path))
 
     server = make_server(transport="http")

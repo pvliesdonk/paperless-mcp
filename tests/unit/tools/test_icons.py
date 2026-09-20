@@ -54,7 +54,7 @@ def test_every_registered_tool_carries_a_title() -> None:
     It enumerates the *full* registry rather than a client's ``tools/list`` so
     that a tool hidden by operator visibility cannot slip past untitled, and it
     therefore also covers ``get_server_info``, which ``fastmcp-pvl-core``
-    registers rather than this repo's ``register_tool``.  ``_list_tools`` is
+    registers rather than the domain's metadata helper.  ``_list_tools`` is
     private because FastMCP publishes no public accessor for the unfiltered
     set; the filtered listing would defeat the point of the sweep.
     """
@@ -72,6 +72,10 @@ def test_every_registered_tool_carries_a_title() -> None:
         if not (tool.annotations and (tool.annotations.title or "").strip())
     ]
     assert not untitled, f"tools without annotations.title: {untitled}"
+    # Core 7.2.0's server-info tool has no icon; domain and transfer tools do.
+    icon_names = set(ICON_REGISTRY) | {"create_download_link", "create_upload_link"}
+    assert all(tool.icons for tool in tools if tool.name in icon_names)
+    assert all(tool.annotations is not None for tool in tools)
     # The sweep must reach past this repo's own registry, or it would prove
     # nothing the registry tests above do not already prove.
     assert set(TITLE_REGISTRY) < {tool.name for tool in tools}

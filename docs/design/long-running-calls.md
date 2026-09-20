@@ -216,12 +216,17 @@ Six things the spike learned that reading the API would not have told us:
   `env(prefix, "SUFFIX")` call the AST scan looks for. scholar-mcp's claim to
   the same effect holds here. All seven generated files go stale until
   regenerated, which is a mechanical step, not a judgement call.
-- **Path 1 is unusable here.** `register_long_running_tool` registers the tool
-  itself through `mcp.tool`, which bypasses this repo's `register_tool` and
-  therefore loses the icon registry, the annotation registry, and the
-  Paperless-error-to-`ToolError` wrapper. Path 2 (`build_jobs` plus
-  `run_with_deadline`) composes cleanly and keeps all three. Any future
-  long-running tool here should assume path 2.
+- **Correction under #158: Path 1 is the default.** The spike treated the
+  local registration wrapper as fixed and therefore selected Path 2. Core's
+  `register_long_running_tool` accepts domain metadata and an error-wrapped
+  coroutine; no local registrar is needed. Domain tools now separate
+  `tool_metadata` and `paperless_errors` from registration, and
+  `tests/unit/tools/test_registry.py::test_core_jobs_preserves_metadata_and_domain_errors`
+  verifies inline success/error, promotion success/error, metadata and optional
+  native-task registration through the real Path 1 helper. The spike remains
+  historical evidence for timing and cost, not the adoption recipe. See
+  [tool registration](tool-registration.md) and the
+  [core contract](reference/core-tool-registration.md).
 - **The typed output schema is the one unavoidable loss.** `wait_for_task` has
   to widen from `Task` to `dict[str, Any]`, because the caller now receives
   either the task or a handle.

@@ -1,17 +1,27 @@
 # Document transfers
 
 Issues #111 and #112 share one Paperless transfer sink. The HTTP deployment
-registers `create_document_download_link` and `create_document_upload_link`
+registers `create_download_link` and `create_upload_link`
 when `PAPERLESS_MCP_BASE_URL` is set. Existing inline tools and resources remain
 available, including under stdio and HTTP without a public base URL.
 
 ## Wiring decision
 
-Path 2, `build_transfer_links`, keeps document IDs, representation choices,
-filenames and upload metadata in typed tool parameters. It also lets the tools
-use the domain registration wrapper for Paperless errors, titles, annotations
-and icons. Core owns the route, token store, lifetime and HTTP protocol. The
-[external reference](reference/core-transfer-links.md) records those contracts.
+Path 1, `register_transfer_routes`, owns both generic tools, their metadata,
+workflow instructions, HTTP route and token machinery. Paperless supplies a
+sink, a validation hook and appended descriptions. A download `ref` is a JSON
+string with `document_id` and optional `variant` (default `original`). An upload
+`ref` has `filename` and optional `metadata`. Pydantic validates these domain
+values before the hook returns an opaque handle; callers cannot supply upload
+operation IDs or receipt deadlines. Paperless errors are translated inside
+that hook independently of registration.
+
+This replaces #155's domain tools under #158. Their typed parameters were a
+local API choice, not a user requirement that core's generic tools could not
+meet. Both kinds of reference retain the same file operations and explicit
+metadata. The tools introduced by #155 had not shipped in a release, so their
+names and allow/deny entries change together before release. The
+[external reference](reference/core-transfer-links.md) records the core contract.
 
 `TransferConfig` is composed into `ProjectConfig` and populated with its own
 `from_env` reader. The generator discovers the composition, including all five
@@ -71,10 +81,13 @@ mapped HTTP status, and the next attempt returns 409. Receipt storage failure
 before submission cannot send bytes to Paperless.
 
 Receipts use `build_kv_store` with namespace `paperless-upload-receipts`; they
-contain no document bytes and expire after the lifetime recorded in the upload
-handle plus the Paperless request timeout. Keeping that deadline in the handle
-prevents a shorter configuration after restart from expiring a pending receipt
-before its original link. Persisted records survive a server restart when the
+contain no document bytes. Core's validator receives only the reference and
+kind, not the requested TTL. The upload handle therefore records a conservative
+retention deadline of creation time plus the configured maximum link lifetime;
+receipt retention adds the Paperless request timeout. Core alone clamps the
+actual link TTL. Keeping the retention deadline in the handle prevents a
+shorter configuration after restart from expiring a pending receipt before its
+original link. Persisted records survive a server restart when the
 operator uses a persistent KV backend. Both core's claim lock and the receipt
 lock are process-local: one server process must own a given transfer store.
 Sharing it between concurrent replicas does not provide exactly-once uploads.

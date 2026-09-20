@@ -7,10 +7,10 @@ on when to prompt for confirmation / cache results.
 These are the *shared* half of a tool's annotations: forty-nine tools map onto
 the five dicts below.  The per-tool label lives in
 :data:`paperless_mcp.tools._titles.TITLE_REGISTRY`, which
-:func:`paperless_mcp.tools._registry.register_tool` merges in.
+:func:`paperless_mcp.tools._metadata.tool_metadata` merges in.
 
 Keep this registry in lock-step with :data:`paperless_mcp.tools._icons.ICON_REGISTRY`
-and ``TITLE_REGISTRY``; ``register_tool`` raises ``KeyError`` on mismatch.
+and ``TITLE_REGISTRY``; ``tool_metadata`` raises ``KeyError`` on mismatch.
 """
 
 from __future__ import annotations
@@ -47,8 +47,6 @@ _BULK_EDIT: dict[str, bool] = {
 }
 
 ANNOTATION_REGISTRY: dict[str, dict[str, bool]] = {
-    "create_document_download_link": {**_READ, "idempotentHint": False},
-    "create_document_upload_link": _CREATE,
     # Documents — reads
     "list_documents": _READ,
     "search_documents": _READ,

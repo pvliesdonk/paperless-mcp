@@ -1,5 +1,15 @@
 # Reference research log
 
+## 2026-09-20
+
+- Added [Core tool registration composition](core-tool-registration.md) and
+  extended [transfer links](core-transfer-links.md) for #158. Checked core
+  7.2.0 registrars and execution boundaries; real-registrar tests refute the
+  earlier claim that local metadata and errors preclude Jobs Path 1. Transfer
+  validation receives no TTL, so receipt retention uses the configured maximum
+  while core owns actual link expiry. Native client/Docket execution was not
+  exercised.
+
 ## 2026-09-19
 
 - Added [Core transfer links and Paperless text ingestion](core-transfer-links.md)
