@@ -1196,7 +1196,7 @@
 
 <h1 id="resources">Resources<a class="headerlink" href="#resources" title="Permanent link">&para;</a></h1>
 <p>The MCP resources this server registers are listed below. Collection resources
-return the full set as JSON; document resources take a document ID.</p>
+return JSON; document resources take a document ID.</p>
 <!-- DOMAIN-RESOURCES-LIST-START -->
 
 <h2 id="collection-resources">Collection resources<a class="headerlink" href="#collection-resources" title="Permanent link">&para;</a></h2>
@@ -1246,10 +1246,13 @@ return the full set as JSON; document resources take a document ID.</p>
 </tr>
 <tr>
 <td><code>tasks://paperless</code></td>
-<td>All background tasks</td>
+<td>First page of unacknowledged background tasks</td>
 </tr>
 </tbody>
 </table>
+<p>The task resource returns a JSON array. Task timestamps are ISO 8601 strings;
+missing timestamps are <code>null</code>. Use the <code>list_tasks</code> tool to request further
+pages or filter tasks.</p>
 <h2 id="document-resources">Document resources<a class="headerlink" href="#document-resources" title="Permanent link">&para;</a></h2>
 <table>
 <thead>

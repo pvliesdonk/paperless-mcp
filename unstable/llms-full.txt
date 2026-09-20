@@ -634,7 +634,7 @@ When Paperless cannot answer, the `paperless` block is `{"version": null}` and t
 
 # Resources
 
-The MCP resources this server registers are listed below. Collection resources return the full set as JSON; document resources take a document ID.
+The MCP resources this server registers are listed below. Collection resources return JSON; document resources take a document ID.
 
 ## Collection resources
 
@@ -649,7 +649,9 @@ The MCP resources this server registers are listed below. Collection resources r
 | `custom-fields://paperless`  | All custom fields                                                                                                                         |
 | `storage-paths://paperless`  | All storage paths                                                                                                                         |
 | `saved-views://paperless`    | All saved views                                                                                                                           |
-| `tasks://paperless`          | All background tasks                                                                                                                      |
+| `tasks://paperless`          | First page of unacknowledged background tasks                                                                                             |
+
+The task resource returns a JSON array. Task timestamps are ISO 8601 strings; missing timestamps are `null`. Use the `list_tasks` tool to request further pages or filter tasks.
 
 ## Document resources
 
