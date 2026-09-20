@@ -33,7 +33,7 @@ def _normalise_page_marker(value: str | None) -> str | None:
     # Surface unexpected shapes (cursor/offset pagination, malformed URLs) at
     # WARNING so the normalised ``None`` — which otherwise silently stops
     # pagination — is traceable in production.
-    logger.warning("normalise_page_marker unexpected_shape value=%r", value)
+    logger.warning("normalise_page_marker_unexpected_shape value=%r", value)
     return None
 
 

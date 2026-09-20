@@ -14,14 +14,10 @@ a ``copier update`` re-renders, so it is not an invariant this package can
 rely on.
 
 :func:`build_tool_context` takes a :class:`~paperless_mcp.config.ProjectConfig`
-and reads no environment of its own; :func:`tool_context_for` falls back to
-``ProjectConfig.from_env()`` when no config is handed to it.  It has to: the
-template's ``make_server`` calls ``register_tools(mcp)`` with no config, and
-its ``DOMAIN-WIRING`` block — the one place this project may add a call — runs
-*after* registration, while ``default_page_size`` is a tool parameter default
-baked into the schema *during* registration.  So a config passed to
-``make_server(config=...)`` still does not reach the Paperless client; that is
-unchanged from v1.0.2 and tracked at pvliesdonk/fastmcp-server-template#622.
+and reads no environment of its own. When no config is handed directly to
+:func:`tool_context_for`, it reads the resolved config that ``make_server``
+bound to the server before registration. This keeps the Paperless client and
+schema-time defaults aligned with a caller-supplied config.
 
 The slot holds one entry.  Staging a second server's context over an
 unadopted first closes the first one's client on the way out, so a process
@@ -55,6 +51,8 @@ from paperless_mcp.config import _ENV_PREFIX, ProjectConfig
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
+
+    from fastmcp import FastMCP
 
     from paperless_mcp.tools._context import ToolContext
 
@@ -129,7 +127,7 @@ def build_tool_context(config: ProjectConfig) -> ToolContext:
     )
 
 
-def tool_context_for(mcp: object, config: ProjectConfig | None = None) -> ToolContext:
+def tool_context_for(mcp: FastMCP, config: ProjectConfig | None = None) -> ToolContext:
     """Return the shared :class:`ToolContext` for *mcp*, building it once.
 
     The first registrar to ask builds the Paperless client and stages the
@@ -140,11 +138,10 @@ def tool_context_for(mcp: object, config: ProjectConfig | None = None) -> ToolCo
     Args:
         mcp: The server being registered on, used only as an identity so a
             second server does not adopt the first one's client.
-        config: The config to build from.  ``None`` reads the environment via
-            ``ProjectConfig.from_env()`` — the only thing available to a
-            registrar the template calls with no config.  Ignored when a
-            context is already staged for *mcp*: the first registrar's config
-            wins, so the two registrars cannot disagree about page size.
+        config: The config to build from. ``None`` reads the config bound to
+            *mcp* by ``make_server``. Ignored when a context is already staged
+            for *mcp*: the first registrar's config wins, so the two registrars
+            cannot disagree about page size.
 
     Returns:
         The context for *mcp*, freshly built or the already-staged one.
@@ -156,7 +153,11 @@ def tool_context_for(mcp: object, config: ProjectConfig | None = None) -> ToolCo
         _discard(_pending[1])
         _pending = None
 
-    context = build_tool_context(config or ProjectConfig.from_env())
+    if config is None:
+        from paperless_mcp._server_deps import config_for
+
+        config = config_for(mcp)
+    context = build_tool_context(config)
     _pending = (mcp, context)
     return context
 
@@ -193,7 +194,7 @@ def pending_tool_context() -> ToolContext | None:
 
 
 def upstream_version_provider(
-    mcp: object,
+    mcp: FastMCP,
 ) -> Callable[[], Awaitable[dict[str, object] | None]]:
     """Build the zero-arg provider ``register_server_info_tool`` calls.
 

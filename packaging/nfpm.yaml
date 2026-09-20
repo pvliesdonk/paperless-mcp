@@ -28,7 +28,7 @@ homepage: "https://pvliesdonk.github.io/paperless-mcp/"
 # PROJECT-LICENSE-START — the license you picked; replace the value below and
 # it is kept across copier update.  nfpm wants a short free-form name, which is
 # not necessarily the SPDX id used in pyproject.toml.  See LICENSE.
-license: "Proprietary"  # starter: TODO update when you pick a license (see LICENSE)
+license: "MIT"
 # PROJECT-LICENSE-END
 
 # --- Package contents ---

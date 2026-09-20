@@ -10,6 +10,9 @@ its `stale_after` date passes. Project decisions belong in `docs/design/`.
 
 - [GitHub planning objects](github-planning-objects.md) — milestones,
   issue relationships, and PR design material used by roadmapping and releases.
+- [GitHub repository security settings](github-repository-security-settings.md) —
+  private vulnerability reporting, Dependabot alerts, push protection and the
+  security policy file, as `bootstrap.yml` and `SECURITY.md` rely on them.
 - [Core tool registration composition](core-tool-registration.md) — metadata,
   icon helpers and Jobs error boundaries.
 - [Core transfer links and Paperless text ingestion](core-transfer-links.md) —

@@ -38,6 +38,14 @@
 
 ## 2026-09-18
 
+- Added [GitHub repository security settings](github-repository-security-settings.md),
+  checked against GitHub.com documentation and two read-only API probes.
+  Covered the private-vulnerability-reporting, vulnerability-alerts and
+  `security_and_analysis` endpoints, their visibility and licence limits, and
+  the security policy file's locations. Single pass, no refute pass and no
+  writes: the page is `draft` until a generated project's bootstrap run
+  confirms the calls. Next review: 2027-03-18.
+
 - Added [Paperless-NGX bulk edit and deferred search indexing](paperless-bulk-edit-indexing.md),
   read from paperless-ngx at the `v3.1.3` tag and from a live 3.1.3 instance.
   Written for [#141](https://github.com/pvliesdonk/paperless-mcp/issues/141),

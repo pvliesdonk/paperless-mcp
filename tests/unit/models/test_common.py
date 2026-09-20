@@ -93,7 +93,7 @@ def test_paginated_next_without_page_param_becomes_none(
     # Surfacing unexpected pagination shapes at WARNING helps operators
     # diagnose silently-truncated walks in production.
     assert any(
-        "normalise_page_marker unexpected_shape" in rec.message
+        "normalise_page_marker_unexpected_shape" in rec.message
         for rec in caplog.records
     )
 

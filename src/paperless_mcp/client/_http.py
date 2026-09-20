@@ -217,7 +217,7 @@ class PaperlessHTTP:
                 # TODO: respect Retry-After header when present
             ):
                 logger.debug(
-                    "retryable %s on %s %s (attempt %d/%d)",
+                    "retryable_response status=%s method=%s path=%s attempt=%d max_attempts=%d",
                     response.status_code,
                     method,
                     path,

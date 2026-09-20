@@ -6,15 +6,23 @@ import pytest
 from fastmcp import FastMCP
 
 from paperless_mcp import domain
+from paperless_mcp._server_deps import bind_config
 from paperless_mcp.config import ProjectConfig
 from paperless_mcp.resources import register_resources
 from paperless_mcp.tools import register_tools
 
 
+def _bound_server(name: str) -> FastMCP:
+    """Build a bare test server with the fixture-backed project config bound."""
+    mcp = FastMCP(name)
+    bind_config(mcp, ProjectConfig.from_env())
+    return mcp
+
+
 @pytest.mark.asyncio
 async def test_service_adopts_the_staged_context_and_closes_its_client() -> None:
     """`start` takes the staged context; `stop` closes the client it held."""
-    mcp = FastMCP("test")
+    mcp = _bound_server("test")
     context = domain.tool_context_for(mcp)
     assert domain.pending_tool_context() is context
 
@@ -38,7 +46,7 @@ def test_tool_context_is_shared_per_server_whichever_registrar_runs_first() -> N
     """Registration order is decided in template-owned `server.py`, so both
     registrars must resolve the same context, and a second server must not
     adopt the first one's client."""
-    first = FastMCP("first")
+    first = _bound_server("first")
     register_resources(first)
     resources_ctx = domain.pending_tool_context()
     register_tools(first)
@@ -46,7 +54,7 @@ def test_tool_context_is_shared_per_server_whichever_registrar_runs_first() -> N
         "register_tools re-staged a second context over the resources' one"
     )
 
-    second = FastMCP("second")
+    second = _bound_server("second")
     register_tools(second)
     assert domain.pending_tool_context() is not resources_ctx, (
         "a second server adopted the first server's client"
@@ -60,7 +68,7 @@ def test_tool_context_is_shared_per_server_whichever_registrar_runs_first() -> N
 @pytest.mark.asyncio
 async def test_stop_is_safe_when_nothing_was_staged() -> None:
     """A service whose lifespan starts with an empty slot still stops cleanly."""
-    domain.tool_context_for(FastMCP("test"))
+    domain.tool_context_for(_bound_server("test"))
     adopter = domain.Service()
     await adopter.start()
 
