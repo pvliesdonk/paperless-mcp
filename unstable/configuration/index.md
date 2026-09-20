@@ -124,6 +124,18 @@ PAPERLESS_MCP_HTTP_TIMEOUT_SECONDS=60
 PAPERLESS_MCP_DEFAULT_PAGE_SIZE=50
 ```
 
+## Document transfer links
+
+Set `PAPERLESS_MCP_BASE_URL` to the public root URL of this MCP server and use HTTP or SSE transport to enable document transfer links. A base URL of `https://mcp.example.com` produces `https://mcp.example.com/transfer/<token>`. Use the MCP server URL, not the Paperless URL, and omit the `/mcp` endpoint. Your reverse proxy must route `/transfer/` to the server. A path prefix in the public URL requires the proxy to remove that prefix before forwarding.
+
+The URL is a bearer capability: its recipient can transfer the file without MCP credentials. Give it only to the intended recipient. Existing inline interfaces remain available when no base URL is configured and under stdio.
+
+The [Transfer variables](#transfer) control lifetime, retry grace, reservation lease and upload size. File bytes stay out of MCP responses but are buffered in server memory; the upload cap does not limit download memory use.
+
+Use one server process per transfer store. For restart persistence, configure `PAPERLESS_MCP_KV_STORE_URL` with a persistent backend for tokens and upload receipts. Concurrent replicas sharing that store cannot guarantee duplicate prevention. To disable uploads, include `create_document_upload_link` alongside other write tools in `PAPERLESS_MCP_TOOLS_DENY`, or use an allow list containing only the tools you want. Previously issued links also respect these settings.
+
+See [file transfer links](https://pvliesdonk.github.io/paperless-mcp/unstable/tools/#file-transfer-links) for downloads, Markdown uploads and task tracking.
+
 ### Paperless
 
 | Variable                             | Default | Required | Description                                                                                               |
@@ -134,3 +146,13 @@ PAPERLESS_MCP_DEFAULT_PAGE_SIZE=50
 | `PAPERLESS_MCP_HTTP_RETRIES`         | `2`     | No       | Retries for idempotent requests after network errors or 5xx responses.                                    |
 | `PAPERLESS_MCP_DEFAULT_PAGE_SIZE`    | `25`    | No       | Default page size for list tools, from 1 through 100.                                                     |
 | `PAPERLESS_MCP_PAPERLESS_PUBLIC_URL` | (none)  | No       | Public Paperless UI URL for user-visible links; defaults to PAPERLESS_URL.                                |
+
+### Transfer
+
+| Variable                                  | Default     | Required | Description                                                                                                           |
+| ----------------------------------------- | ----------- | -------- | --------------------------------------------------------------------------------------------------------------------- |
+| `PAPERLESS_MCP_TRANSFER_TTL_DEFAULT_S`    | `3600.0`    | No       | Link lifetime in seconds when the caller requests no explicit TTL.                                                    |
+| `PAPERLESS_MCP_TRANSFER_TTL_MAX_S`        | `86400.0`   | No       | Ceiling in seconds a caller-requested link TTL is clamped to.                                                         |
+| `PAPERLESS_MCP_TRANSFER_GRACE_TTL_S`      | `60.0`      | No       | Post-success grace window in seconds: a served token's TTL shrinks to this so a stalled transfer can retry within it. |
+| `PAPERLESS_MCP_TRANSFER_LEASE_S`          | `60.0`      | No       | Crashed-handler reclaim window in seconds for an in-flight reservation.                                               |
+| `PAPERLESS_MCP_TRANSFER_MAX_UPLOAD_BYTES` | `104857600` | No       | Maximum size in bytes of a single upload.                                                                             |
