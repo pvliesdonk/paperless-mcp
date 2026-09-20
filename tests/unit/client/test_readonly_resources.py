@@ -115,3 +115,15 @@ async def test_share_links_get(
         )
         r = await sl.get(5)
     assert r.id == 5
+
+
+@pytest.mark.asyncio
+async def test_v10_saved_view_visibility_is_unknown(http: PaperlessHTTP) -> None:
+    sv = SavedViewsClient(http)
+    async with respx.mock(base_url="http://paperless.test") as mock:
+        mock.get("/api/saved_views/1/").mock(
+            return_value=httpx.Response(200, json={"id": 1, "name": "Inbox"})
+        )
+        view = await sv.get(1)
+    assert view.show_on_dashboard is None
+    assert view.show_in_sidebar is None

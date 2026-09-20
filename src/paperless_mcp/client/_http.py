@@ -4,10 +4,8 @@ All resource clients (``documents.py``, ``tags.py``, ...) go through
 :class:`PaperlessHTTP` for authenticated requests, retry on transient
 errors, and consistent error mapping.
 
-``_ACCEPT_HEADER`` pins the Paperless payload version.  Before changing the
-number, read ``docs/design/reference/paperless-api-versioning.md``: version 10
-reshapes ``/api/tasks/`` (bare array to envelope, four renamed members,
-lowercased status) and is refused with a 406 by every Paperless 2.x instance.
+Requests prefer payload version 10 and fall back to 9 only on an explicit
+Accept-version rejection. See docs/design/reference/paperless-api-versioning.md.
 """
 
 from __future__ import annotations
@@ -22,10 +20,10 @@ from urllib.parse import parse_qs, urlparse
 import httpx
 
 from paperless_mcp.client._errors import PaperlessAPIError, error_from_response
+from paperless_mcp.client._payload import PayloadVersion
 
 logger = logging.getLogger(__name__)
 
-_ACCEPT_HEADER = "application/json; version=9"
 _IDEMPOTENT_METHODS = frozenset({"GET", "HEAD", "OPTIONS"})
 
 _SECRET_HEADER_RE = re.compile(
@@ -72,6 +70,7 @@ class PaperlessHTTP:
             msg = "max_retries must be >= 0"
             raise ValueError(msg)
         self._base_url = base_url.rstrip("/")
+        self._payload = PayloadVersion()
         self._max_retries = max_retries
         self._backoff_factor = backoff_factor
         self._client = httpx.AsyncClient(
@@ -79,7 +78,6 @@ class PaperlessHTTP:
             timeout=httpx.Timeout(timeout_seconds),
             headers={
                 "Authorization": f"Token {api_token}",
-                "Accept": _ACCEPT_HEADER,
             },
         )
 
@@ -195,8 +193,11 @@ class PaperlessHTTP:
         attempt = 0
         while True:
             try:
-                response = await self._client.request(
-                    method, path, json=json, data=data, files=files, params=params
+                response = await self._payload.request(
+                    self._client,
+                    method,
+                    path,
+                    {"json": json, "data": data, "files": files, "params": params},
                 )
             except httpx.RequestError as exc:
                 if method in _IDEMPOTENT_METHODS and attempt < self._max_retries:

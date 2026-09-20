@@ -1,10 +1,8 @@
 """Tasks resource client.
 
-The bare-array response this module paginates client-side is specific to
-Paperless payload version 9, which ``client/_http.py`` pins.  Version 10
-returns a paginated envelope instead, which would make :meth:`TasksClient.list`
-iterate the envelope's keys and :meth:`TasksClient.get` return ``None`` for
-every lookup.  See ``docs/design/reference/paperless-api-versioning.md``.
+Payload version 10 supplies server-paginated envelopes; version 9 fallback
+supplies bare arrays paginated locally. UUID lookup and waiting accept both.
+See ``docs/design/reference/paperless-api-versioning.md``.
 
 The ``task_type`` filter is what makes deferred work observable — notably the
 ``bulk_update`` rebuild a bulk edit queues after answering ``OK``.  See
@@ -42,9 +40,8 @@ class TasksClient:
     ) -> Paginated[Task]:
         """List Paperless tasks with pagination and optional filtering.
 
-        The ``/api/tasks/`` endpoint returns a bare JSON array (no paginated
-        envelope), so pagination is performed client-side: all matching tasks
-        are fetched in one request and sliced here.
+        Version 10 paginates on the server. Version 9 returns a bare array,
+        which is sliced locally after the HTTP layer adapts its query filters.
 
         Args:
             acknowledged: Filter by acknowledged flag.  When ``None`` and
@@ -58,16 +55,15 @@ class TasksClient:
             status: Filter by task status.
             task_type: Filter by kind of work, such as
                 :attr:`TaskType.BULK_UPDATE` for the search-index rebuild a
-                bulk edit queues.  Paperless honours this filter at payload
-                version 9 as well as 10, even though version 9 responses
-                carry the value under ``task_name``.
+                bulk edit queues. The HTTP boundary translates this filter
+                to the legacy task_name spelling on version 9 instances.
 
         Returns:
             A :class:`Paginated` page of :class:`Task` objects.
         """
-        params: dict[str, object] = {}
+        params: dict[str, object] = {"page": page, "page_size": page_size}
         if status is not None:
-            params["status"] = status.value
+            params["status"] = status.value.lower()
         if task_type is not None:
             params["task_type"] = task_type.value
         if acknowledged is None and not include_acknowledged:
@@ -75,7 +71,9 @@ class TasksClient:
         if acknowledged is not None:
             params["acknowledged"] = str(acknowledged).lower()
         body = await self._http.get_json("/api/tasks/", params=params)
-        # /api/tasks/ returns a bare list — paginate client-side.
+        if isinstance(body, dict):
+            return Paginated[Task].model_validate(body)
+        # Version 9 instances return an unpaginated list.
         all_tasks = [Task.model_validate(item) for item in body]
         start = (page - 1) * page_size
         end = start + page_size
@@ -101,8 +99,9 @@ class TasksClient:
             The matching :class:`Task`, or ``None`` if not found.
         """
         body = await self._http.get_json("/api/tasks/", params={"task_id": task_uuid})
-        if body and isinstance(body, builtins.list):
-            return Task.model_validate(body[0])
+        items = body.get("results", []) if isinstance(body, dict) else body
+        if items and isinstance(items, builtins.list):
+            return Task.model_validate(items[0])
         return None
 
     async def wait_for(

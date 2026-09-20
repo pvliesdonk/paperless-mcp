@@ -29,11 +29,17 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
         page: Annotated[int, Field(ge=1)] = 1,
         page_size: Annotated[int, Field(ge=1, le=100)] = ctx.default_page_size,
     ) -> Paginated[SavedView]:
-        """List saved views."""
+        """List saved views.
+
+        Visibility flags are null when payload v10 omits those preferences.
+        """
         return await client.saved_views.list(page=page, page_size=page_size)
 
     @mcp.tool(**tool_metadata("get_saved_view"))
     @paperless_errors
     async def get_saved_view(view_id: int) -> SavedView:
-        """Fetch a saved view by ID."""
+        """Fetch a saved view by ID.
+
+        Visibility flags are null when payload v10 omits those preferences.
+        """
         return await client.saved_views.get(view_id)
