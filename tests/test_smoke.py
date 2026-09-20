@@ -204,8 +204,10 @@ def test_instructions_env_override(
     monkeypatch.setenv("PAPERLESS_MCP_INSTRUCTIONS", "Custom operator text.")
     monkeypatch.setenv("PAPERLESS_MCP_INSTANCE_DESCRIPTION", "Demo material.")
     monkeypatch.setenv("PAPERLESS_MCP_INSTRUCTIONS_EXTRA", "House rule: be brief.")
-    # Scope to core's logger: make_server() re-applies FASTMCP_LOG_LEVEL to the
-    # root logger, which would otherwise drop the record under a stricter env.
+    # Scope to core's logger: make_server() re-applies PAPERLESS_MCP_LOG_LEVEL
+    # (or its deprecated FASTMCP_LOG_LEVEL fallback) to the root logger, which
+    # would otherwise drop the record under a stricter env.
+    monkeypatch.delenv("PAPERLESS_MCP_LOG_LEVEL", raising=False)
     monkeypatch.delenv("FASTMCP_LOG_LEVEL", raising=False)
     with caplog.at_level("WARNING", logger="fastmcp_pvl_core"):
         server = make_server()
@@ -245,10 +247,9 @@ def test_instructions_name_the_instance_the_tools_call(
 
     The URL comes from the staged ``ToolContext``, so the instructions cannot
     name one Paperless while every ``web_url`` in a tool result points at
-    another.  Asserting the two *agree* — rather than asserting which source
-    wins — keeps this honest once a config passed to ``make_server`` reaches
-    ``register_tools`` (pvliesdonk/fastmcp-server-template#622); today the
-    environment wins on both sides, and afterwards the passed config will.
+    another. Asserting the two *agree* — rather than asserting the literal URL
+    — keeps this honest now that a config passed to ``make_server`` reaches
+    ``register_tools`` (pvliesdonk/fastmcp-server-template#622).
     """
     server = make_server(
         config=ProjectConfig(
@@ -337,3 +338,49 @@ def test_tool_allowlist_hides_unlisted_tools(monkeypatch: pytest.MonkeyPatch) ->
             return tools
 
     assert asyncio.run(_probe()) == {"list_documents"}
+
+
+def test_config_passed_to_make_server_reaches_registration() -> None:
+    """Registration sees the exact config object passed to ``make_server``."""
+    from paperless_mcp._server_deps import config_for
+
+    config = ProjectConfig.from_env()
+    server = make_server(config=config)
+    assert config_for(server) is config
+
+
+def test_config_for_refuses_an_unbound_server() -> None:
+    """A bare server gets no silent environment fallback."""
+    from fastmcp import FastMCP
+
+    from paperless_mcp._server_deps import config_for
+
+    with pytest.raises(RuntimeError, match="make_server"):
+        config_for(FastMCP("unbound"))
+
+
+def test_get_config_resolves_in_a_handler() -> None:
+    """A handler dependency resolves to the config bound during assembly."""
+    from fastmcp.dependencies import Depends
+
+    from paperless_mcp._server_deps import get_config
+
+    config = ProjectConfig.from_env()
+    server = make_server(config=config)
+
+    @server.tool
+    async def bound_server_name(
+        config: ProjectConfig = Depends(get_config),  # noqa: B008
+    ) -> str:
+        return config.server_name
+
+    async def _call() -> str:
+        async with Client(server) as smoke_client:
+            result = await smoke_client.call_tool("bound_server_name", {})
+        first = result.content[0]
+        assert hasattr(first, "text"), (
+            f"expected text tool content, got {type(first).__name__}"
+        )
+        return str(first.text)
+
+    assert asyncio.run(_call()) == config.server_name

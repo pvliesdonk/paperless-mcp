@@ -23,14 +23,10 @@ scan *cannot* see; nothing prevented it from seeing these, so the declaration
 and the code that read it were two sources for one fact, and the project
 carried `pydantic-settings` for those six fields alone.
 
-**What did not change: the environment is still read twice per `make_server`.**
-`make_server` resolves a `ProjectConfig` and `tool_context_for` resolves another
-one, because the first cannot reach it (see *The config does not reach
-registration* below). Before, the second read built a `DomainConfig`; now it
-builds a second `ProjectConfig`, so `ServerConfig.from_env` runs twice where it
-used to run once. Both reads are pure and produce equal values, so this is
-waste rather than a correctness problem, and it ends when
-pvliesdonk/fastmcp-server-template#622 does.
+`make_server` resolves `ProjectConfig` once and binds that object to the server
+before any registrar runs. `tool_context_for` reads the bound object, so a
+caller-supplied config reaches the Paperless client and schema-time defaults
+without a second environment read.
 
 ## Three constraints that shaped the result
 
@@ -65,19 +61,18 @@ reads `No` for both, so their descriptions and the hand-written prose above the
 table carry the requirement instead. Filed upstream as
 pvliesdonk/fastmcp-server-template#621.
 
-### The config does not reach registration
+### Registration reads the bound config
 
-`make_server` resolves a `ProjectConfig` and then calls `register_tools(mcp)`
-without it; `server.py` is template-owned, and the one block this project may
-add code to — `DOMAIN-WIRING` — runs *after* registration. `default_page_size`
-is a tool parameter default baked into the tool schema *during* registration, so
-a later rebind could not fix what registration already wrote. `tool_context_for`
-therefore falls back to `ProjectConfig.from_env()` when nobody hands it a
-config, exactly as `load_domain_config()` did before.
+`make_server` calls `bind_config(mcp, config)` before `register_tools(mcp)` and
+the other registrars. `tool_context_for` retrieves that exact object through
+`config_for(mcp)`, so `default_page_size`, the Paperless client, and the
+instance URL all reflect a config passed directly to `make_server`. A test that
+uses a bare `FastMCP` with the top-level registrars must bind a config first;
+there is deliberately no environment fallback that could recreate the old
+divergence.
 
-`build_tool_context(config)` itself reads no environment, so the context is
-constructible in a test from a plain `ProjectConfig(...)`, and `register_tools`
-/ `register_resources` accept a pre-built context. Filed upstream as
+`build_tool_context(config)` itself still reads no environment, so the context
+remains constructible from a plain `ProjectConfig(...)`. This closes
 pvliesdonk/fastmcp-server-template#622.
 
 ## Field semantics worth keeping

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+from dataclasses import replace
 
 from fastmcp_pvl_core import ServerConfig
 
@@ -60,8 +61,9 @@ def test_every_registered_tool_carries_a_title() -> None:
     """
     server = make_server(
         transport="http",
-        config=ProjectConfig(
-            server=ServerConfig(base_url="http://test", kv_store_url="memory://")
+        config=replace(
+            ProjectConfig.from_env(),
+            server=ServerConfig(base_url="http://test", kv_store_url="memory://"),
         ),
     )
     tools = asyncio.run(server._list_tools())

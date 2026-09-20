@@ -20,7 +20,7 @@ reaches it.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING
 
 import pytest
@@ -115,7 +115,10 @@ def test_make_server_configures_the_task_backend(
 
 def test_tasks_url_reaches_the_backend(task_backend: _TaskBackendCapture) -> None:
     """An explicit `PAPERLESS_MCP_TASKS_URL` selects the Docket backend."""
-    config = ProjectConfig(server=ServerConfig(tasks_url="redis://tasks.test:6379/1"))
+    config = replace(
+        ProjectConfig.from_env(),
+        server=ServerConfig(tasks_url="redis://tasks.test:6379/1"),
+    )
     make_server(config=config)
     assert task_backend.settings().url == "redis://tasks.test:6379/1"
 
@@ -129,6 +132,9 @@ def test_redis_kv_store_url_is_reused_for_tasks(
     than a default-constructed one: the derivation can only see `kv_store_url`
     if the config passed through.
     """
-    config = ProjectConfig(server=ServerConfig(kv_store_url="redis://kv.test:6379/0"))
+    config = replace(
+        ProjectConfig.from_env(),
+        server=ServerConfig(kv_store_url="redis://kv.test:6379/0"),
+    )
     make_server(config=config)
     assert task_backend.settings().url == "redis://kv.test:6379/0"

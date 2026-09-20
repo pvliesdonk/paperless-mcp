@@ -313,8 +313,9 @@ async def test_invalid_document_and_metadata(mcp: FastMCP, ctx: ToolContext) -> 
 def test_server_wiring(
     transport: str, transfer_base: str | None, enabled: bool
 ) -> None:
-    config = ProjectConfig(
-        server=ServerConfig(base_url=transfer_base, kv_store_url="memory://")
+    config = replace(
+        ProjectConfig.from_env(),
+        server=ServerConfig(base_url=transfer_base, kv_store_url="memory://"),
     )
     server = make_server(config=config, transport=transport)
     tools = asyncio.run(server._list_tools())
