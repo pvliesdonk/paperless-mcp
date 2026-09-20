@@ -9,7 +9,7 @@ This is a registry of its own rather than a key in
 differ in kind: the four CRUD hints are *shared* — forty-nine tools map onto
 five dicts — while a title is per-tool.  Folding titles into those dicts would
 unshare all five to carry one string each.
-:func:`paperless_mcp.tools._registry.register_tool` merges the two.
+:func:`paperless_mcp.tools._metadata.tool_metadata` merges the two.
 
 Most titles are the tool name in title case.  Where the name reads wrong on its
 own, the title says what the tool does instead: ``get_remote_version`` asks
@@ -25,8 +25,6 @@ lock-step with :data:`paperless_mcp.tools._icons.ICON_REGISTRY` and
 from __future__ import annotations
 
 TITLE_REGISTRY: dict[str, str] = {
-    "create_document_download_link": "Create Document Download Link",
-    "create_document_upload_link": "Create Document Upload Link",
     # Documents — reads
     "list_documents": "List Documents",
     "search_documents": "Search Documents",

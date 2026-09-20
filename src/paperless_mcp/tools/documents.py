@@ -24,7 +24,8 @@ from paperless_mcp.models.document import (
     DocumentSuggestions,
 )
 from paperless_mcp.tools._context import ToolContext
-from paperless_mcp.tools._registry import register_tool
+from paperless_mcp.tools._errors import paperless_errors
+from paperless_mcp.tools._metadata import tool_metadata
 
 #: Default ceiling on inline OCR text returned by ``get_document_content``.
 #:
@@ -95,7 +96,8 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
         if ctx.public_url:
             doc.web_url = f"{ctx.public_url}/documents/{doc.id}/"
 
-    @register_tool(mcp, "list_documents")
+    @mcp.tool(**tool_metadata("list_documents"))
+    @paperless_errors
     async def list_documents(
         page: Annotated[int, Field(ge=1)] = 1,
         page_size: Annotated[int, Field(ge=1, le=100)] = ctx.default_page_size,
@@ -133,7 +135,8 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
             _with_web_url(doc)
         return result
 
-    @register_tool(mcp, "search_documents")
+    @mcp.tool(**tool_metadata("search_documents"))
+    @paperless_errors
     async def search_documents(
         query: str,
         page: Annotated[int, Field(ge=1)] = 1,
@@ -162,7 +165,8 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
             _with_web_url(doc)
         return result
 
-    @register_tool(mcp, "get_document")
+    @mcp.tool(**tool_metadata("get_document"))
+    @paperless_errors
     async def get_document(
         document_id: int,
         include_content: bool = False,
@@ -180,7 +184,8 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
         _with_web_url(doc)
         return doc
 
-    @register_tool(mcp, "get_document_content")
+    @mcp.tool(**tool_metadata("get_document_content"))
+    @paperless_errors
     async def get_document_content(
         document_id: int,
         max_chars: Annotated[int | None, Field(gt=0)] = CONTENT_CHAR_CAP,
@@ -208,7 +213,8 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
         text = await client.documents.get_content(document_id)
         return _slice_content(text, max_chars=max_chars, offset=offset)
 
-    @register_tool(mcp, "get_document_thumbnail")
+    @mcp.tool(**tool_metadata("get_document_thumbnail"))
+    @paperless_errors
     async def get_document_thumbnail(document_id: int) -> ImageContent:
         """Return the document's thumbnail as inline image content."""
         data, content_type = await client.documents.get_thumbnail(document_id)
@@ -218,27 +224,32 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
             mime_type=content_type or "image/png",
         )
 
-    @register_tool(mcp, "get_document_metadata")
+    @mcp.tool(**tool_metadata("get_document_metadata"))
+    @paperless_errors
     async def get_document_metadata(document_id: int) -> DocumentMetadata:
         """Return technical metadata for a document (checksums, filenames, etc.)."""
         return await client.documents.get_metadata(document_id)
 
-    @register_tool(mcp, "get_document_notes")
+    @mcp.tool(**tool_metadata("get_document_notes"))
+    @paperless_errors
     async def get_document_notes(document_id: int) -> list[DocumentNote]:
         """Return notes attached to a document."""
         return await client.documents.get_notes(document_id)
 
-    @register_tool(mcp, "get_document_history")
+    @mcp.tool(**tool_metadata("get_document_history"))
+    @paperless_errors
     async def get_document_history(document_id: int) -> list[DocumentHistoryEntry]:
         """Return the audit history for a document."""
         return await client.documents.get_history(document_id)
 
-    @register_tool(mcp, "get_document_suggestions")
+    @mcp.tool(**tool_metadata("get_document_suggestions"))
+    @paperless_errors
     async def get_document_suggestions(document_id: int) -> DocumentSuggestions:
         """Return Paperless's classifier suggestions for a document."""
         return await client.documents.get_suggestions(document_id)
 
-    @register_tool(mcp, "update_document")
+    @mcp.tool(**tool_metadata("update_document"))
+    @paperless_errors
     async def update_document(
         document_id: int,
         patch: DocumentPatch,
@@ -255,12 +266,14 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
         _with_web_url(doc)
         return doc
 
-    @register_tool(mcp, "delete_document")
+    @mcp.tool(**tool_metadata("delete_document"))
+    @paperless_errors
     async def delete_document(document_id: int) -> None:
         """Delete a document."""
         await client.documents.delete(document_id)
 
-    @register_tool(mcp, "upload_document")
+    @mcp.tool(**tool_metadata("upload_document"))
+    @paperless_errors
     async def upload_document(
         filename: str,
         content_base64: str,
@@ -286,7 +299,8 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
             custom_fields=custom_fields,
         )
 
-    @register_tool(mcp, "bulk_edit_documents")
+    @mcp.tool(**tool_metadata("bulk_edit_documents"))
+    @paperless_errors
     async def bulk_edit_documents(
         operation: BulkEditOperation,
         ids: list[int],
@@ -307,12 +321,14 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
             document_ids=ids, method=operation, parameters=parameters
         )
 
-    @register_tool(mcp, "add_document_note")
+    @mcp.tool(**tool_metadata("add_document_note"))
+    @paperless_errors
     async def add_document_note(document_id: int, note: str) -> DocumentNote:
         """Append a note to a document."""
         return await client.documents.add_note(document_id, note)
 
-    @register_tool(mcp, "delete_document_note")
+    @mcp.tool(**tool_metadata("delete_document_note"))
+    @paperless_errors
     async def delete_document_note(document_id: int, note_id: int) -> None:
         """Remove a note from a document."""
         await client.documents.delete_note(document_id, note_id)

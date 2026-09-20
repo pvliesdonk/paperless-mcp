@@ -10,7 +10,8 @@ from pydantic import Field
 from paperless_mcp.models.common import Paginated
 from paperless_mcp.models.task import Task, TaskStatus, TaskType
 from paperless_mcp.tools._context import ToolContext
-from paperless_mcp.tools._registry import register_tool
+from paperless_mcp.tools._errors import paperless_errors
+from paperless_mcp.tools._metadata import tool_metadata
 
 
 def register(mcp: FastMCP, ctx: ToolContext) -> None:
@@ -22,7 +23,8 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
     """
     client = ctx.client
 
-    @register_tool(mcp, "list_tasks")
+    @mcp.tool(**tool_metadata("list_tasks"))
+    @paperless_errors
     async def list_tasks(
         page: Annotated[int, Field(ge=1)] = 1,
         page_size: Annotated[int, Field(ge=1, le=100)] = ctx.default_page_size,
@@ -52,12 +54,14 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
             include_acknowledged=include_acknowledged,
         )
 
-    @register_tool(mcp, "get_task")
+    @mcp.tool(**tool_metadata("get_task"))
+    @paperless_errors
     async def get_task(task_uuid: str) -> Task | None:
         """Fetch a task by UUID.  Returns ``None`` if no such task exists."""
         return await client.tasks.get(task_uuid)
 
-    @register_tool(mcp, "wait_for_task")
+    @mcp.tool(**tool_metadata("wait_for_task"))
+    @paperless_errors
     async def wait_for_task(
         task_uuid: str,
         timeout_seconds: Annotated[float, Field(gt=0, le=600)] = 60.0,

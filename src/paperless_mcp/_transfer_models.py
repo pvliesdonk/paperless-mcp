@@ -30,12 +30,10 @@ class UploadMetadata(BaseModel):
     custom_fields: list[PositiveId] | None = None
 
 
-class UploadHandle(BaseModel):
-    """Persisted upload destination; the unique ID scopes retry receipts."""
+class UploadReference(BaseModel):
+    """Caller-supplied filename and metadata for a new document."""
 
     model_config = ConfigDict(extra="forbid")
-    operation_id: str
-    expires_at: float = Field(gt=0, allow_inf_nan=False)
     filename: str = Field(min_length=1, max_length=255)
     metadata: UploadMetadata = Field(default_factory=UploadMetadata)
 
@@ -50,12 +48,19 @@ class UploadHandle(BaseModel):
         return value
 
 
+class UploadHandle(UploadReference):
+    """Persisted destination with server-owned identity and receipt retention."""
+
+    operation_id: str
+    expires_at: float = Field(gt=0, allow_inf_nan=False)
+
+
 class DownloadHandle(BaseModel):
     """A document and the file representation to retrieve at redemption."""
 
     model_config = ConfigDict(extra="forbid")
     document_id: PositiveId
-    variant: DocumentVariant
+    variant: DocumentVariant = "original"
 
 
 def render_markdown(document: Document) -> bytes:

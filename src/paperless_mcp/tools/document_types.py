@@ -14,7 +14,8 @@ from paperless_mcp.models.document_type import (
     DocumentTypePatch,
 )
 from paperless_mcp.tools._context import ToolContext
-from paperless_mcp.tools._registry import register_tool
+from paperless_mcp.tools._errors import paperless_errors
+from paperless_mcp.tools._metadata import tool_metadata
 
 
 def register(mcp: FastMCP, ctx: ToolContext) -> None:
@@ -26,7 +27,8 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
     """
     client = ctx.client
 
-    @register_tool(mcp, "list_document_types")
+    @mcp.tool(**tool_metadata("list_document_types"))
+    @paperless_errors
     async def list_document_types(
         page: Annotated[int, Field(ge=1)] = 1,
         page_size: Annotated[int, Field(ge=1, le=100)] = ctx.default_page_size,
@@ -41,29 +43,34 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
             name__icontains=name__icontains,
         )
 
-    @register_tool(mcp, "get_document_type")
+    @mcp.tool(**tool_metadata("get_document_type"))
+    @paperless_errors
     async def get_document_type(document_type_id: int) -> DocumentType:
         """Fetch a document type by ID."""
         return await client.document_types.get(document_type_id)
 
-    @register_tool(mcp, "create_document_type")
+    @mcp.tool(**tool_metadata("create_document_type"))
+    @paperless_errors
     async def create_document_type(body: DocumentTypeCreate) -> DocumentType:
         """Create a new document type."""
         return await client.document_types.create(body)
 
-    @register_tool(mcp, "update_document_type")
+    @mcp.tool(**tool_metadata("update_document_type"))
+    @paperless_errors
     async def update_document_type(
         document_type_id: int, patch: DocumentTypePatch
     ) -> DocumentType:
         """Patch selected fields on a document type."""
         return await client.document_types.update(document_type_id, patch)
 
-    @register_tool(mcp, "delete_document_type")
+    @mcp.tool(**tool_metadata("delete_document_type"))
+    @paperless_errors
     async def delete_document_type(document_type_id: int) -> None:
         """Delete a document type."""
         await client.document_types.delete(document_type_id)
 
-    @register_tool(mcp, "bulk_edit_document_types")
+    @mcp.tool(**tool_metadata("bulk_edit_document_types"))
+    @paperless_errors
     async def bulk_edit_document_types(
         operation: str,
         ids: list[int],

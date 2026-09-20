@@ -6,29 +6,25 @@ External contracts: ``docs/design/reference/core-transfer-links.md``.
 from __future__ import annotations
 
 import time
-from typing import TYPE_CHECKING, Annotated, Any
+from typing import TYPE_CHECKING, Any
 from uuid import uuid4
 
 from fastmcp_pvl_core import (
     TransferReadResult,
     TransferSinkError,
-    add_transfer_workflow,
     build_kv_store,
-    build_transfer_links,
+    register_transfer_routes,
 )
-from pydantic import Field
 
 from paperless_mcp._transfer_models import (
-    DocumentVariant,
     DownloadHandle,
-    PositiveId,
     UploadHandle,
-    UploadMetadata,
+    UploadReference,
     render_markdown,
 )
 from paperless_mcp._transfer_uploads import UploadReceiver
 from paperless_mcp.client._errors import PaperlessAPIError
-from paperless_mcp.tools._registry import register_tool
+from paperless_mcp.tools._errors import paperless_errors
 
 if TYPE_CHECKING:
     from fastmcp import FastMCP
@@ -37,8 +33,8 @@ if TYPE_CHECKING:
     from paperless_mcp.tools._context import ToolContext
 
 
-_DOWNLOAD_TOOL = "create_document_download_link"
-_UPLOAD_TOOL = "create_document_upload_link"
+_DOWNLOAD_TOOL = "create_download_link"
+_UPLOAD_TOOL = "create_upload_link"
 
 
 class PaperlessTransferSink:
@@ -121,81 +117,61 @@ def _transfer_error(exc: PaperlessAPIError) -> TransferSinkError:
 
 
 def register_transfers(mcp: FastMCP, ctx: ToolContext, config: ProjectConfig) -> None:
-    """Mount transfer routes and register document-specific link tools.
+    """Register core transfer tools with Paperless reference validation.
 
     Args:
         mcp: HTTP server with a configured public base URL.
         ctx: The same Paperless context used by existing tools and resources.
         config: Server and transfer configuration.
     """
-    links = build_transfer_links(
-        mcp, config.server, config.transfer, sink=PaperlessTransferSink(ctx, config)
-    )
 
-    @register_tool(mcp, _DOWNLOAD_TOOL)
-    async def create_document_download_link(
-        document_id: PositiveId,
-        variant: DocumentVariant = "original",
-        ttl_s: Annotated[float | None, Field(gt=0, allow_inf_nan=False)] = None,
-    ) -> dict[str, Any]:
-        """Create an expiring link to a document file without returning its bytes.
-
-        GET the URL externally to download it. Content returns the full OCR
-        text as UTF-8 Markdown with title and metadata front matter; it does
-        not infer formatting from OCR. Files are fetched at download time.
-        An archive request fails if the document has no archived PDF.
+    @paperless_errors
+    async def validate(ref: str, kind: str) -> str:
+        """Resolve a JSON reference into a server-owned Paperless handle.
 
         Args:
-            document_id: Paperless document ID.
-            variant: Original file, archived PDF, preview, or OCR content Markdown.
-            ttl_s: Optional lifetime in seconds, capped at the configured maximum.
+            ref: Document selection or upload destination encoded as JSON.
+            kind: Transfer direction supplied by core: download or upload.
 
         Returns:
-            URL and lifetime. The URL grants access without MCP credentials.
+            Validated serialized handle for the transfer sink.
         """
-        download = DownloadHandle(document_id=document_id, variant=variant)
-        # Check existence and permissions before granting a capability.
-        await ctx.client.documents.get(document_id)
-        return await links.mint_download(download.model_dump_json(), ttl_s)
-
-    @register_tool(mcp, _UPLOAD_TOOL, tags={"write"})
-    async def create_document_upload_link(
-        filename: str,
-        metadata: UploadMetadata | None = None,
-        ttl_s: Annotated[float | None, Field(gt=0, allow_inf_nan=False)] = None,
-    ) -> dict[str, Any]:
-        """Create an expiring link that accepts one new document, including Markdown.
-
-        PUT raw file bytes to the URL (not JSON, base64, or multipart). The HTTP
-        response returns task_id; use get_task to track consumption separately.
-        Markdown bytes and filename are preserved. Paperless must recognize
-        the file as a supported type; YAML front matter is not applied as
-        document metadata. Supply metadata explicitly here.
-
-        Identical retries return the same task ID. HTTP 409 means the bytes
-        changed or an earlier upload's outcome is uncertain: inspect Paperless
-        tasks before creating another link.
-
-        Args:
-            filename: Plain filename, such as invoice.pdf or notes.md.
-            metadata: Optional title, tags and other Paperless upload fields.
-            ttl_s: Optional lifetime in seconds, capped at the configured maximum.
-
-        Returns:
-            URL and lifetime. The URL grants upload access without MCP credentials.
-        """
+        if kind == "download":
+            download = DownloadHandle.model_validate_json(ref)
+            await ctx.client.documents.get(download.document_id)
+            return download.model_dump_json()
+        destination = UploadReference.model_validate_json(ref)
+        # Core's validator does not receive ttl_s. Retain receipts for the
+        # maximum possible link lifetime; core alone resolves the actual TTL.
         upload = UploadHandle(
+            **destination.model_dump(),
             operation_id=uuid4().hex,
-            expires_at=time.time()
-            + min(
-                ttl_s if ttl_s is not None else config.transfer.ttl_default_s,
-                config.transfer.ttl_max_s,
-            ),
-            filename=filename,
-            metadata=metadata or UploadMetadata(),
+            expires_at=time.time() + config.transfer.ttl_max_s,
         )
-        return await links.mint_upload(upload.model_dump_json(), ttl_s)
+        return upload.model_dump_json()
 
-    # Separate snippets retain the download workflow if uploads are hidden.
-    add_transfer_workflow(mcp, download_tool=_DOWNLOAD_TOOL)
-    add_transfer_workflow(mcp, upload_tool=_UPLOAD_TOOL)
+    register_transfer_routes(
+        mcp,
+        config.server,
+        config.transfer,
+        sink=PaperlessTransferSink(ctx, config),
+        validate=validate,
+        download_note=(
+            'Paperless ref is a JSON string, e.g. {"document_id":42,"variant":"content"}. '
+            "variant is original (default), archive, preview, or content. "
+            "content exports full unchanged OCR as Markdown with metadata front matter; "
+            "archive fails when no archived PDF exists. Access is checked at minting "
+            "and redemption; downloads fetch current data."
+        ),
+        upload_note=(
+            "Paperless ref is a JSON string, e.g. "
+            '{"filename":"notes.md","metadata":{"title":"Notes","tags":[2]}}. '
+            "filename must be a plain filename. Optional metadata fields are title, "
+            "correspondent, document_type, tags, created, archive_serial_number and "
+            "custom_fields. PUT raw file bytes, including Markdown, to the URL. "
+            "Front matter stays file content, not Paperless metadata. The HTTP "
+            "response contains task_id; get_task tracks ingestion. Identical retries "
+            "return the same task ID; HTTP 409 requires inspecting Paperless tasks "
+            "before another submission."
+        ),
+    )

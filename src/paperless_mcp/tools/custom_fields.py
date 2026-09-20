@@ -14,7 +14,8 @@ from paperless_mcp.models.custom_field import (
     CustomFieldPatch,
 )
 from paperless_mcp.tools._context import ToolContext
-from paperless_mcp.tools._registry import register_tool
+from paperless_mcp.tools._errors import paperless_errors
+from paperless_mcp.tools._metadata import tool_metadata
 
 
 def register(mcp: FastMCP, ctx: ToolContext) -> None:
@@ -26,7 +27,8 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
     """
     client = ctx.client
 
-    @register_tool(mcp, "list_custom_fields")
+    @mcp.tool(**tool_metadata("list_custom_fields"))
+    @paperless_errors
     async def list_custom_fields(
         page: Annotated[int, Field(ge=1)] = 1,
         page_size: Annotated[int, Field(ge=1, le=100)] = ctx.default_page_size,
@@ -37,12 +39,14 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
             page=page, page_size=page_size, ordering=ordering
         )
 
-    @register_tool(mcp, "get_custom_field")
+    @mcp.tool(**tool_metadata("get_custom_field"))
+    @paperless_errors
     async def get_custom_field(field_id: int) -> CustomField:
         """Fetch a custom field by ID."""
         return await client.custom_fields.get(field_id)
 
-    @register_tool(mcp, "create_custom_field")
+    @mcp.tool(**tool_metadata("create_custom_field"))
+    @paperless_errors
     async def create_custom_field(body: CustomFieldCreate) -> CustomField:
         """Create a new custom field.
 
@@ -59,7 +63,8 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
         """
         return await client.custom_fields.create(body)
 
-    @register_tool(mcp, "update_custom_field")
+    @mcp.tool(**tool_metadata("update_custom_field"))
+    @paperless_errors
     async def update_custom_field(
         field_id: int, patch: CustomFieldPatch
     ) -> CustomField:
@@ -79,7 +84,8 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
         """
         return await client.custom_fields.update(field_id, patch)
 
-    @register_tool(mcp, "delete_custom_field")
+    @mcp.tool(**tool_metadata("delete_custom_field"))
+    @paperless_errors
     async def delete_custom_field(field_id: int) -> None:
         """Delete a custom field."""
         await client.custom_fields.delete(field_id)

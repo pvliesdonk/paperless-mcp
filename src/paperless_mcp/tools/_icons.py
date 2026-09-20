@@ -8,20 +8,17 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from fastmcp_pvl_core import make_icon
 from mcp.types import Icon
-
-from paperless_mcp.tools._registry import build_icon
 
 _ICONS_DIR = Path(__file__).parent.parent / "static" / "icons"
 
 
 def _icon(name: str) -> Icon:
-    return build_icon(_ICONS_DIR / f"{name}.svg")
+    return make_icon(_ICONS_DIR / f"{name}.svg")
 
 
 ICON_REGISTRY: dict[str, list[Icon]] = {
-    "create_document_download_link": [_icon("files")],
-    "create_document_upload_link": [_icon("upload")],
     # Documents — reads
     "list_documents": [_icon("files")],
     "search_documents": [_icon("search")],

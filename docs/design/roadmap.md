@@ -55,8 +55,9 @@ without ever becoming an epic.
   ([#111](https://github.com/pvliesdonk/paperless-mcp/issues/111)). Promoted by
   a delivery path that keeps file bytes outside model context. `evidenced`:
   [document transfers](document-transfers.md) resolves the wiring choice in
-  favor of domain tools over core's link minter, with explicit document IDs,
-  representations and upload metadata. File-size measurement remains useful
+  favor of core's generic link tools with validated domain references for
+  document IDs, representations and upload metadata. File-size measurement
+  remains useful
   for server-memory sizing, but does not determine the transfer API. #111 and
   #112 share one subsystem, so
   they are one story or neither; #35 is `derived` as the same story's inline
@@ -166,9 +167,9 @@ backlog that predates this index.
   transfer implementation; it remains unknown for server-memory sizing. This
   does not change the delivery API or block the user-requested implementation.
 - **Which of the library's two transfer wirings fits this server.** `evidenced`:
-  [document transfers](document-transfers.md) selects domain tools over
-  `build_transfer_links` for typed Paperless parameters and the existing tool
-  registration wrapper. The same design includes full OCR Markdown downloads
+  [document transfers](document-transfers.md) selects core's Path 1 generic
+  tools with a domain validation hook. The same design includes full OCR
+  Markdown downloads
   and file uploads, including Markdown, with explicit upload metadata.
 - ~~**What the Paperless 3.x API adds, and what its newer payload version
   changes in what this client already parses.**~~ **Answered**, `evidenced`, by
@@ -215,6 +216,19 @@ backlog that predates this index.
   documented in `config.md` beside this file.
 
 ## Revisions
+
+### 2026-09-20 (shared registration)
+
+- `stated`: core's Path 1 should cover ordinary integrations, with roughly
+  99% as the architectural target rather than a measured claim. Path 2 needs
+  a concrete unmet user requirement and a reason a shared upstream change is
+  unsuitable ([#158](https://github.com/pvliesdonk/paperless-mcp/issues/158)).
+- `evidenced`: [tool registration](tool-registration.md) separates domain
+  metadata and error translation from registration. Core's Jobs Path 1 accepts
+  both, and transfer Path 1 carries the existing file operations through its
+  reference validator. `derived`: preserving a local wrapper or locally
+  chosen signature cannot justify taking maintenance out of core. This
+  corrects the earlier transfer rationale and the Jobs spike's recommendation.
 
 ### 2026-09-19 (document transfers)
 

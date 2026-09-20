@@ -59,6 +59,15 @@ tag, then re-read the handlers to check the protocol docstrings.
 
 ## Registration and sink
 
+- `register_transfer_routes` (Path 1) mounts the same route and registers
+  `create_download_link(ref, ttl_s)` and `create_upload_link(ref, ttl_s)`.
+  Core owns their metadata and instructions. The async `validate(ref, kind)`
+  hook returns an opaque handle; it does not receive `ttl_s`. Optional
+  download/upload notes append domain reference syntax to the descriptions.
+  Rechecked in installed 7.2.0 on 2026-09-20. [source: register]
+  [pins: tests/test_transfers.py::test_core_transfer_surface]
+  [pins: tests/test_transfers.py::test_invalid_core_refs]
+
 - `build_transfer_links(mcp, server_config, transfer_config, sink=...)` mounts
   `/transfer/{token}` and returns `TransferLinks` without registering tools;
   the domain validates handles before calling `mint_download` or `mint_upload`.

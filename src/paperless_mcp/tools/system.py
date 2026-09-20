@@ -6,7 +6,8 @@ from fastmcp import FastMCP
 
 from paperless_mcp.models.system import RemoteVersion, Statistics
 from paperless_mcp.tools._context import ToolContext
-from paperless_mcp.tools._registry import register_tool
+from paperless_mcp.tools._errors import paperless_errors
+from paperless_mcp.tools._metadata import tool_metadata
 
 
 def register(mcp: FastMCP, ctx: ToolContext) -> None:
@@ -18,12 +19,14 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
     """
     client = ctx.client
 
-    @register_tool(mcp, "get_statistics")
+    @mcp.tool(**tool_metadata("get_statistics"))
+    @paperless_errors
     async def get_statistics() -> Statistics:
         """Fetch collection-level statistics."""
         return await client.system.statistics()
 
-    @register_tool(mcp, "get_remote_version")
+    @mcp.tool(**tool_metadata("get_remote_version"))
+    @paperless_errors
     async def get_remote_version() -> RemoteVersion:
         """Check whether a newer release of Paperless-NGX exists upstream.
 
