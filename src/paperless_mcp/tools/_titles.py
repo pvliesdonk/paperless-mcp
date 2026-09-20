@@ -25,6 +25,8 @@ lock-step with :data:`paperless_mcp.tools._icons.ICON_REGISTRY` and
 from __future__ import annotations
 
 TITLE_REGISTRY: dict[str, str] = {
+    "create_document_download_link": "Create Document Download Link",
+    "create_document_upload_link": "Create Document Upload Link",
     # Documents — reads
     "list_documents": "List Documents",
     "search_documents": "Search Documents",

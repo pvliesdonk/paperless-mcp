@@ -4,6 +4,9 @@ from __future__ import annotations
 
 import asyncio
 
+from fastmcp_pvl_core import ServerConfig
+
+from paperless_mcp.config import ProjectConfig
 from paperless_mcp.server import make_server
 from paperless_mcp.tools._annotations import ANNOTATION_REGISTRY
 from paperless_mcp.tools._icons import ICON_REGISTRY
@@ -55,7 +58,12 @@ def test_every_registered_tool_carries_a_title() -> None:
     private because FastMCP publishes no public accessor for the unfiltered
     set; the filtered listing would defeat the point of the sweep.
     """
-    server = make_server()
+    server = make_server(
+        transport="http",
+        config=ProjectConfig(
+            server=ServerConfig(base_url="http://test", kv_store_url="memory://")
+        ),
+    )
     tools = asyncio.run(server._list_tools())
 
     untitled = [
