@@ -1783,6 +1783,9 @@ lifetime up to the configured maximum of 24 hours.</p>
 </tr>
 </tbody>
 </table>
+<p>Saved-view <code>show_on_dashboard</code> and <code>show_in_sidebar</code> are <code>null</code> when Paperless
+omits them at payload version 10. Their values are unavailable. Python
+consumers that assumed these fields were always <code>bool</code> must handle <code>None</code>.</p>
 <h2 id="share-link-tools">Share link tools<a class="headerlink" href="#share-link-tools" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -1829,6 +1832,22 @@ lifetime up to the configured maximum of 24 hours.</p>
 </tr>
 </tbody>
 </table>
+<p>Requests prefer Paperless payload version 10. An explicit version rejection
+switches that client session to version 9 for Paperless 2.x; authentication,
+permission and other failures do not trigger fallback. Restart the MCP server
+after upgrading a connected 2.x instance to select version 10 again.</p>
+<p>Version 10 task pages come from Paperless directly. Version 9 task arrays are
+paginated locally. Both return the same page envelope and preserve the default
+unacknowledged filter. Status filters and task-type names are translated for
+the selected version; a task kind must exist on the connected instance.</p>
+<p>Tasks include <code>task_type</code>, <code>trigger_source</code>, <code>result_data</code>,
+<code>related_document_ids</code>, <code>date_started</code>, <code>duration_seconds</code> and
+<code>wait_time_seconds</code> when available. Status values keep their uppercase spelling
+for compatibility. The older <code>task_name</code>, <code>type</code>, <code>result</code>, <code>task_file_name</code>
+and <code>related_document</code> fields remain available; the last field represents only
+the first related document. Use the structured fields for complete results.
+Version 9 cannot supply the richer timing and result data, so absent values
+remain <code>null</code> rather than being inferred from result prose.</p>
 <h2 id="system-tools">System tools<a class="headerlink" href="#system-tools" title="Permanent link">&para;</a></h2>
 <table>
 <thead>

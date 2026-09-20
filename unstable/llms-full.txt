@@ -579,6 +579,8 @@ Unknown shapes are rejected by Paperless with a 400 error.
 | `list_saved_views` | List all saved views   |
 | `get_saved_view`   | Get a saved view by ID |
 
+Saved-view `show_on_dashboard` and `show_in_sidebar` are `null` when Paperless omits them at payload version 10. Their values are unavailable. Python consumers that assumed these fields were always `bool` must handle `None`.
+
 ## Share link tools
 
 | Tool               | Description                                        |
@@ -595,6 +597,12 @@ Both tools include a `share_url` field of the form `<PAPERLESS_MCP_PAPERLESS_PUB
 | `list_tasks`    | List background Celery tasks, newest first. Paginates (`page`, `page_size` up to 100). Defaults to unacknowledged tasks only. Pass `include_acknowledged=True` to include acknowledged tasks, or `acknowledged=True` to return only acknowledged ones. Filter by kind of work with `task_type`, such as `task_type="bulk_update"` for the search-index rebuild `bulk_edit_documents` queues. |
 | `get_task`      | Get a task by UUID                                                                                                                                                                                                                                                                                                                                                                           |
 | `wait_for_task` | Poll until a task reaches a terminal state or times out                                                                                                                                                                                                                                                                                                                                      |
+
+Requests prefer Paperless payload version 10. An explicit version rejection switches that client session to version 9 for Paperless 2.x; authentication, permission and other failures do not trigger fallback. Restart the MCP server after upgrading a connected 2.x instance to select version 10 again.
+
+Version 10 task pages come from Paperless directly. Version 9 task arrays are paginated locally. Both return the same page envelope and preserve the default unacknowledged filter. Status filters and task-type names are translated for the selected version; a task kind must exist on the connected instance.
+
+Tasks include `task_type`, `trigger_source`, `result_data`, `related_document_ids`, `date_started`, `duration_seconds` and `wait_time_seconds` when available. Status values keep their uppercase spelling for compatibility. The older `task_name`, `type`, `result`, `task_file_name` and `related_document` fields remain available; the last field represents only the first related document. Use the structured fields for complete results. Version 9 cannot supply the richer timing and result data, so absent values remain `null` rather than being inferred from result prose.
 
 ## System tools
 
