@@ -1481,19 +1481,19 @@ calling a tool.</p>
 <tbody>
 <tr>
 <td><code>list_documents</code></td>
-<td>List documents with optional filters; OCR <code>content</code> stripped by default (<code>include_content=True</code> to opt in). <code>notes[].note</code> and <code>custom_fields[].value</code> are always stripped. Fetch them via single-document endpoints.</td>
+<td>List documents with optional filters. OCR <code>content</code>, <code>notes[].note</code>, and <code>custom_fields[].value</code> are stripped; fetch text through a single-document endpoint.</td>
 </tr>
 <tr>
 <td><code>search_documents</code></td>
-<td>Full-text and filtered document search; OCR <code>content</code> stripped by default (<code>include_content=True</code> to opt in). <code>notes[].note</code> and <code>custom_fields[].value</code> are always stripped on hits.</td>
+<td>Full-text and filtered document search. OCR <code>content</code>, <code>notes[].note</code>, and <code>custom_fields[].value</code> are stripped from hits.</td>
 </tr>
 <tr>
 <td><code>get_document</code></td>
-<td>Retrieve document metadata by ID; OCR <code>content</code> stripped by default (<code>include_content=True</code> to opt in)</td>
+<td>Retrieve document metadata by ID without OCR content</td>
 </tr>
 <tr>
 <td><code>get_document_content</code></td>
-<td>Retrieve the plain-text content of a document; capped at 50,000 characters by default (<code>max_chars=None</code> for the full text). A capped result names the range returned and the <code>offset</code> to pass to read the next section.</td>
+<td>Retrieve up to 20,000 characters of plain-text OCR content. A partial result names the range, the next <code>offset</code>, and the transfer-link route when available.</td>
 </tr>
 <tr>
 <td><code>upload_document</code></td>
@@ -1509,7 +1509,7 @@ calling a tool.</p>
 </tr>
 <tr>
 <td><code>update_document</code></td>
-<td>Patch document metadata (title, tags, correspondent, etc.)</td>
+<td>Patch document metadata; the response omits OCR content</td>
 </tr>
 <tr>
 <td><code>delete_document</code></td>

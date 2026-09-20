@@ -1264,11 +1264,11 @@ pages or filter tasks.</p>
 <tbody>
 <tr>
 <td><code>paperless://documents/{document_id}</code></td>
-<td>Document metadata by ID</td>
+<td>Document metadata by ID, without OCR content</td>
 </tr>
 <tr>
 <td><code>paperless://documents/{document_id}/content</code></td>
-<td>Extracted text content, in full. Resources take no arguments, so the character cap that <code>get_document_content</code> applies by default does not apply here.</td>
+<td>First 20,000 characters of extracted text. A partial result points to <code>get_document_content</code> for paging and to transfer links when available.</td>
 </tr>
 <tr>
 <td><code>paperless://documents/{document_id}/metadata</code></td>
@@ -1286,16 +1286,12 @@ pages or filter tasks.</p>
 <td><code>paperless://documents/{document_id}/thumbnail</code></td>
 <td>Thumbnail image</td>
 </tr>
-<tr>
-<td><code>paperless://documents/{document_id}/preview</code></td>
-<td>PDF preview</td>
-</tr>
-<tr>
-<td><code>paperless://documents/{document_id}/download</code></td>
-<td>Original file download</td>
-</tr>
 </tbody>
 </table>
+<p>On HTTP deployments with <code>PAPERLESS_MCP_BASE_URL</code>, original files, archived PDF
+files, and previews are available through <code>create_download_link</code>. Returning
+whole files as resources puts their bytes in model context, so the inline
+preview and download resources are not registered.</p>
 <!-- DOMAIN-RESOURCES-LIST-END -->
 
 
