@@ -34,7 +34,7 @@ sources:
   - id: pngx-serialisers
     title: paperless-ngx src/documents/serialisers.py (v3.1.3)
     resource: https://github.com/paperless-ngx/paperless-ngx/blob/d48663e9ebaadc4b413a6ca3bc88cb5fbc4e468e/src/documents/serialisers.py
-    accessed: 2026-09-17
+    accessed: 2026-09-20
   - id: pngx-api-md
     title: paperless-ngx docs/api.md, "API Versioning" (v3.1.3)
     resource: https://github.com/paperless-ngx/paperless-ngx/blob/v3.1.3/docs/api.md
@@ -277,6 +277,12 @@ against a populated instance would confirm them.
   [source: pngx-serialisers]
   [pins: tests/unit/models/test_task.py::test_v10_fields_and_legacy_projection]
   [pins: tests/unit/models/test_task.py::test_v10_multiple_related_documents_are_preserved]
+- `TaskSerializerV9._TRIGGER_SOURCE_TO_V9_TYPE` maps `scheduled` to
+  `scheduled_task` and `system`, `email_consume`, and `folder_consume` to
+  `auto_task`. Its `get_type` method defaults other values to `manual_task`,
+  including the known `web_ui`, `api_upload`, and `manual` triggers.
+  [source: pngx-serialisers] [source: pngx-models]
+  [pins: tests/unit/models/test_task.py::test_v10_trigger_projects_legacy_type]
 - V10 omits saved-view show_on_dashboard and show_in_sidebar. A consumer
   cannot infer False from their absence. [source: pngx-serialisers]
   [pins: tests/unit/client/test_readonly_resources.py::test_v10_saved_view_visibility_is_unknown]
