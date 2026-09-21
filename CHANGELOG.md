@@ -5,6 +5,25 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 <!-- version list -->
 
+## 3.0.0 (2026-09-21)
+
+### Breaking Changes
+
+- prefer payload v10 with v9 fallback and richer tasks (#161)
+- upgrade template and pvl-core to v9 (#168)
+
+### Features
+
+- transfer files and Markdown through capability links (#155)
+- bound all inline document content (#165)
+
+### Bug Fixes
+
+- serialize task timestamps as JSON (#162)
+- return the get_document shape from update_document (#175)
+- request last_correspondence on list (#176)
+- keep select options when a patch leaves extra_data out (#177)
+
 ## 3.0.0-rc.1 (2026-09-21)
 
 ### Breaking Changes

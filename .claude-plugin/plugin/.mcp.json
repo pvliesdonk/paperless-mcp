@@ -3,7 +3,7 @@
     "command": "uvx",
     "args": [
       "--from",
-      "pvliesdonk-paperless-mcp[all]==2.1.0",
+      "pvliesdonk-paperless-mcp[all]==3.0.0",
       "paperless-mcp",
       "serve"
     ],
