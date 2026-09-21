@@ -89,7 +89,7 @@ All paginated tools return `next`/`previous` as bare `page=N` markers (or `None`
 
 | Tool | Description |
 |---|---|
-| `list_correspondents` | List all correspondents |
+| `list_correspondents` | List correspondents; each row carries `last_correspondence`, the date of its newest document, and `ordering` accepts it |
 | `get_correspondent` | Get a correspondent by ID |
 | `create_correspondent` | Create a new correspondent |
 | `update_correspondent` | Update a correspondent |

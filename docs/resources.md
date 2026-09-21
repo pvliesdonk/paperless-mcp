@@ -13,7 +13,7 @@ return JSON; document resources take a document ID.
 | `stats://paperless` | Paperless-NGX document statistics |
 | `remote-version://paperless` | The newest Paperless-NGX release published upstream, and whether it is newer than the connected instance. Not the version installed on it |
 | `tags://paperless` | All tags |
-| `correspondents://paperless` | All correspondents |
+| `correspondents://paperless` | All correspondents, each with `last_correspondence` |
 | `document-types://paperless` | All document types |
 | `custom-fields://paperless` | All custom fields |
 | `storage-paths://paperless` | All storage paths |

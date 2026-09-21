@@ -83,3 +83,32 @@ async def test_tags_resource_returns_json(monkeypatch: pytest.MonkeyPatch) -> No
     async with Client(mcp) as client:
         result = await client.read_resource("tags://paperless")
     assert result  # non-empty response
+
+
+@pytest.mark.asyncio
+async def test_correspondents_resource_asks_for_last_correspondence() -> None:
+    """The resource walks the endpoint itself, so it must ask too (#172).
+
+    Paperless leaves ``last_correspondence`` out of list rows unless the query
+    string carries the parameter; ``correspondents://paperless`` would
+    otherwise disagree with ``get_correspondent`` and ``list_correspondents``.
+    """
+    from fastmcp import Client
+
+    seen: dict[str, Any] = {}
+
+    async def paginate(
+        path: str, *, params: dict[str, Any] | None = None, **_kwargs: Any
+    ) -> AsyncGenerator[Any, None]:
+        seen[path] = params
+        return
+        yield  # pragma: no cover
+
+    client_mock = _mock_client()
+    client_mock.http.paginate = paginate
+    mcp = FastMCP("test")
+    ctx = ToolContext(client=client_mock, default_page_size=25, public_url="")
+    collections_mod.register(mcp, ctx)
+    async with Client(mcp) as client:
+        await client.read_resource("correspondents://paperless")
+    assert seen["/api/correspondents/"] == {"last_correspondence": "true"}

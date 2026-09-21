@@ -49,8 +49,17 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
 
     @mcp.resource(uri="correspondents://paperless", mime_type="application/json")
     async def correspondents_resource() -> str:
-        """Return all correspondents as a JSON array."""
-        items = [item async for item in client.http.paginate("/api/correspondents/")]
+        """Return all correspondents as a JSON array.
+
+        Each entry carries ``last_correspondence``, the date of the newest
+        document, or null when it has none.
+        """
+        items = [
+            item
+            async for item in client.http.paginate(
+                "/api/correspondents/", params={"last_correspondence": "true"}
+            )
+        ]
         return json.dumps(items)
 
     @mcp.resource(uri="document-types://paperless", mime_type="application/json")
