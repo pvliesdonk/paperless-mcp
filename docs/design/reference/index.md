@@ -39,6 +39,9 @@ its `stale_after` date passes. Project decisions belong in `docs/design/`.
 - [Paperless-NGX correspondent last_correspondence on list and detail](paperless-correspondent-last-correspondence.md)
   — the list endpoint omits it unless asked, any non-empty value asks, and
   ordering by it without the ask answers 500.
+- [Paperless-NGX custom field updates on select fields](paperless-custom-field-select-patch.md)
+  — a PATCH of a select field must carry its options, a monetary one need not,
+  and how this project renames a select field.
 
 See the [research log](log.md) for completed research passes. Add project
 references here as they are written.

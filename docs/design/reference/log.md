@@ -2,6 +2,15 @@
 
 ## 2026-09-21
 
+- Added [custom field updates on select fields](paperless-custom-field-select-patch.md)
+  for [#171](https://github.com/pvliesdonk/paperless-mcp/issues/171). Read
+  Paperless 3.1.3 `CustomFieldSerializer.validate`: the select branch runs on
+  every update of a select field and demands `select_options`. Three live
+  checks on throwaway fields, since deleted: the bare rename answered 400, a
+  rename with the options resent answered 200 with them intact, and a
+  name-only patch of a monetary field answered 200. Paperless 2.x was not
+  read. Next review: 2027-03-21.
+
 - Added [correspondent `last_correspondence` on list and detail](paperless-correspondent-last-correspondence.md)
   for [#172](https://github.com/pvliesdonk/paperless-mcp/issues/172). Read
   Paperless 3.1.3 `CorrespondentViewSet`: `retrieve` always annotates, `list`

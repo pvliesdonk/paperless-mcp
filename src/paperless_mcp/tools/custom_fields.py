@@ -79,6 +79,8 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
           ``{"select_options": [{"id": "abc", "label": "Low"}, ...]}``.
           Omitting an option's ``id`` creates a new option; dropping an option
           from the list deletes it and any document values referencing it.
+          A patch without ``extra_data``, such as a rename, keeps the current
+          options: the server reads them and sends them back with their ids.
 
         See ``create_custom_field`` for the full ``extra_data`` shape table.
         """

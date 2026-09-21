@@ -125,7 +125,7 @@ The additional-data field shape depends on the custom field type. Refer to these
 |---|---|---|
 | `string`, `longtext`, `integer`, `boolean`, `float`, `date`, `url`, `documentlink` | (unused) | Omit or pass `null` |
 | `monetary` | `{"default_currency": "USD"}` | Optional ISO-4217 currency code; Paperless accepts `null`/absent |
-| `select` | `{"select_options": [{"label": "Low"}, {"label": "Medium"}]}` | **Required** on create. Paperless assigns each option a stable `id` on creation. On update, re-use existing `id` values to preserve document values. |
+| `select` | `{"select_options": [{"label": "Low"}, {"label": "Medium"}]}` | **Required** on create. Paperless assigns each option a stable `id` on creation. On update, re-use existing `id` values to preserve document values. A patch that leaves `extra_data` out, such as a rename, keeps the current options: the server reads them and sends them back. |
 
 Unknown shapes are rejected by Paperless with a 400 error.
 
