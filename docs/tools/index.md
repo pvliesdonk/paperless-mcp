@@ -22,7 +22,7 @@ calling a tool.
 | `upload_document` | Upload a new document for ingestion |
 | `create_download_link` | Get an expiring HTTP link for an original file, archived PDF, preview or full OCR Markdown file |
 | `create_upload_link` | Get an expiring HTTP link to upload a file, including Markdown, with optional metadata |
-| `update_document` | Patch document metadata; the response omits OCR content |
+| `update_document` | Patch document metadata; the response omits OCR content and has the same shape as `get_document` |
 | `delete_document` | Permanently delete a document |
 | `bulk_edit_documents` | Apply a bulk operation to multiple documents. The change lands before the call returns, but Paperless queues the search-index rebuild, so `search_documents` may miss the edited documents for seconds to minutes while `list_documents` and `get_document` see them at once. Track the queued task with `list_tasks(task_type="bulk_update")` |
 | `get_document_metadata` | Retrieve file metadata: original filename, checksums, MIME type |

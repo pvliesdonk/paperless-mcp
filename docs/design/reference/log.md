@@ -1,5 +1,15 @@
 # Reference research log
 
+## 2026-09-21
+
+- Added [document permission keys on read and write](paperless-document-write-shape.md)
+  for [#173](https://github.com/pvliesdonk/paperless-mcp/issues/173). Read
+  Paperless 3.1.3 `DocumentSerializer` and `DocumentViewSet`: PATCH and PUT force
+  `full_perms`, which swaps `user_can_change` and `is_shared_by_requester` for
+  `permissions`. Confirmed the two GET shapes live; the PATCH shape rests on the
+  source and on the issue reporter's call, not on a PATCH sent here. Paperless
+  2.x was not read. Next review: 2027-03-21.
+
 ## 2026-09-20
 
 - Rechecked the trigger-to-legacy-type mapping in Paperless 3.1.3

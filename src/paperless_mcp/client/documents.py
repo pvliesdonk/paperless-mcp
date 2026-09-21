@@ -256,18 +256,22 @@ class DocumentsClient:
     async def update(self, document_id: int, patch: DocumentPatch) -> Document:
         """Partially update a document via PATCH.
 
+        Paperless forces ``full_perms`` on PATCH and PUT, so the PATCH body swaps
+        ``user_can_change`` / ``is_shared_by_requester`` for ``permissions``
+        (see ``docs/design/reference/paperless-document-write-shape.md``).  The
+        body is discarded and the document re-read, so the result has the same
+        shape as :meth:`get`.
+
         Args:
             document_id: ID of the document to update.
             patch: Fields to update; unset fields are excluded from the payload.
 
         Returns:
-            The updated Document.
+            The updated Document, as :meth:`get` returns it.
         """
         payload = patch.model_dump(exclude_unset=True, mode="json")
-        body = await self._http.patch_json(
-            f"/api/documents/{document_id}/", json=payload
-        )
-        return Document.model_validate(body)
+        await self._http.patch_json(f"/api/documents/{document_id}/", json=payload)
+        return await self.get(document_id)
 
     async def delete(self, document_id: int) -> None:
         """Delete a document by ID.
