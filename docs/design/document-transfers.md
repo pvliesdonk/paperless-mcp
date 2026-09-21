@@ -52,9 +52,11 @@ layout or Markdown structure is invented.
 
 Inline reads have a 20,000-character maximum, and offset paging remains
 available.
-Structured tool and resource responses omit OCR content. The content resource
-returns the same bounded preview, while full files and OCR Markdown use this
-transfer route. Downloads fetch current data at redemption rather than pinning
+Structured tool and resource responses omit OCR content, and document lists and
+searches leave it out of the Paperless request too (see
+[the fields projection reference](reference/paperless-document-fields-projection.md)).
+The content resource returns the same bounded preview, while full files and OCR
+Markdown use this transfer route. Downloads fetch current data at redemption rather than pinning
 a snapshot at mint time. Core and the existing Paperless client materialize
 file bytes in server memory; these links avoid model-context costs, not
 server-memory costs. No archive file-size measurement was made as part of this

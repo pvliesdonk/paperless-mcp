@@ -21,14 +21,67 @@ from paperless_mcp.models.document import (
     DocumentSuggestions,
 )
 
+# Every field Paperless's ``DocumentSerializer`` returns for a document except
+# ``content``, as of 3.1.3.  Paperless can project a response to named fields
+# but cannot exclude one, so leaving the OCR text out of a list means naming
+# everything else.  The names are listed here rather than read from
+# :class:`Document`, which declares fewer than Paperless returns and lets the
+# rest through as extras; naming them all keeps a list row the same as
+# ``get_document`` bar the text.  Names Paperless does not know, or does not
+# return (``set_permissions``, ``remove_inbox_tags``), are ignored.  A field
+# added upstream later is missing from list rows until it is added here.  See
+# ``docs/design/reference/paperless-document-fields-projection.md``.
+_LISTING_FIELDS = (
+    "id",
+    "correspondent",
+    "document_type",
+    "storage_path",
+    "title",
+    "tags",
+    "created",
+    "created_date",
+    "modified",
+    "added",
+    "deleted_at",
+    "archive_serial_number",
+    "original_file_name",
+    "archived_file_name",
+    "duplicate_documents",
+    "owner",
+    "permissions",
+    "user_can_change",
+    "is_shared_by_requester",
+    "set_permissions",
+    "notes",
+    "custom_fields",
+    "remove_inbox_tags",
+    "page_count",
+    "mime_type",
+    "root_document",
+    "versions",
+)
+
+
+def _projection(*, include_content: bool) -> dict[str, str]:
+    """Return the ``fields`` query parameter that leaves out OCR ``content``.
+
+    Empty when ``include_content`` is ``True``, so Paperless returns every field.
+    """
+    if include_content:
+        return {}
+    return {"fields": ",".join(_LISTING_FIELDS)}
+
 
 def _strip_listing_heavy_fields(doc: Document, *, include_content: bool) -> None:
     """Drop per-document heavy fields from list/search responses (see #30).
 
     Always strips ``notes[].note`` and ``custom_fields[].value`` — metadata refs
     (ids, timestamps, field refs) stay intact so callers can still detect
-    presence and dereference via single-document endpoints.  OCR ``content``
-    is only stripped when ``include_content`` is ``False``.
+    presence and dereference via single-document endpoints.  Those two are
+    nested, which a ``fields`` projection cannot reach.  OCR ``content`` is not
+    requested at all when ``include_content`` is ``False`` (see
+    :func:`_projection`); clearing it here is the backstop for a server that
+    ignores the projection.
 
     Layer note: stripping for **bulk** endpoints (list, search) happens here
     in the client layer so any direct consumer of :class:`PaperlessClient`
@@ -75,9 +128,9 @@ class DocumentsClient:
             document_type: Filter by document type ID.
             storage_path: Filter by storage path ID.
             custom_field: Filter by custom field ID.
-            include_content: When ``False`` (default), strips the OCR
-                ``content`` field from every result to keep responses small.
-                Set to ``True`` to retain the full text.  ``notes[].note``
+            include_content: When ``False`` (default), the OCR ``content``
+                field is left out of the request, so Paperless never sends it.
+                Set to ``True`` to retrieve the full text.  ``notes[].note``
                 and ``custom_fields[].value`` are always stripped on list
                 responses regardless of this flag (see #30); use
                 ``get_document_notes`` and ``get_document`` to fetch them.
@@ -98,6 +151,7 @@ class DocumentsClient:
             params["storage_path__id"] = storage_path
         if custom_field is not None:
             params["custom_fields__id"] = custom_field
+        params.update(_projection(include_content=include_content))
         body = await self._http.get_json("/api/documents/", params=params)
         result = Paginated[Document].model_validate(body)
         for doc in result.results:
@@ -120,9 +174,9 @@ class DocumentsClient:
             page: Page number (1-based).
             page_size: Number of results per page.
             more_like: Return documents similar to this document ID.
-            include_content: When ``False`` (default), strips the OCR
-                ``content`` field from every hit to keep responses small.
-                Set to ``True`` to retain the full text.  ``notes[].note``
+            include_content: When ``False`` (default), the OCR ``content``
+                field is left out of the request, so Paperless never sends it.
+                Set to ``True`` to retrieve the full text.  ``notes[].note``
                 and ``custom_fields[].value`` are always stripped on search
                 responses regardless of this flag (see #30).
 
@@ -134,6 +188,7 @@ class DocumentsClient:
             params["more_like_id"] = more_like
         if query:
             params["query"] = query
+        params.update(_projection(include_content=include_content))
         body = await self._http.get_json("/api/documents/", params=params)
         result = Paginated[Document].model_validate(body)
         for doc in result.results:

@@ -42,6 +42,9 @@ its `stale_after` date passes. Project decisions belong in `docs/design/`.
 - [Paperless-NGX custom field updates on select fields](paperless-custom-field-select-patch.md)
   — a PATCH of a select field must carry its options, a monetary one need not,
   and how this project renames a select field.
+- [Paperless-NGX document field projection on lists and searches](paperless-document-fields-projection.md)
+  — the `fields` parameter is a keep list, what it left unchanged, and the
+  payload it saves.
 
 See the [research log](log.md) for completed research passes. Add project
 references here as they are written.
