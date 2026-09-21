@@ -528,14 +528,14 @@ All paginated tools return `next`/`previous` as bare `page=N` markers (or `None`
 
 ## Correspondent tools
 
-| Tool                       | Description                                  |
-| -------------------------- | -------------------------------------------- |
-| `list_correspondents`      | List all correspondents                      |
-| `get_correspondent`        | Get a correspondent by ID                    |
-| `create_correspondent`     | Create a new correspondent                   |
-| `update_correspondent`     | Update a correspondent                       |
-| `delete_correspondent`     | Delete a correspondent                       |
-| `bulk_edit_correspondents` | Apply a bulk operation across correspondents |
+| Tool                       | Description                                                                                                             |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `list_correspondents`      | List correspondents; each row carries `last_correspondence`, the date of its newest document, and `ordering` accepts it |
+| `get_correspondent`        | Get a correspondent by ID                                                                                               |
+| `create_correspondent`     | Create a new correspondent                                                                                              |
+| `update_correspondent`     | Update a correspondent                                                                                                  |
+| `delete_correspondent`     | Delete a correspondent                                                                                                  |
+| `bulk_edit_correspondents` | Apply a bulk operation across correspondents                                                                            |
 
 ## Document type tools
 
@@ -649,7 +649,7 @@ The MCP resources this server registers are listed below. Collection resources r
 | `stats://paperless`          | Paperless-NGX document statistics                                                                                                         |
 | `remote-version://paperless` | The newest Paperless-NGX release published upstream, and whether it is newer than the connected instance. Not the version installed on it |
 | `tags://paperless`           | All tags                                                                                                                                  |
-| `correspondents://paperless` | All correspondents                                                                                                                        |
+| `correspondents://paperless` | All correspondents, each with `last_correspondence`                                                                                       |
 | `document-types://paperless` | All document types                                                                                                                        |
 | `custom-fields://paperless`  | All custom fields                                                                                                                         |
 | `storage-paths://paperless`  | All storage paths                                                                                                                         |
