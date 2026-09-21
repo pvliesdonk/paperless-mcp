@@ -17,6 +17,10 @@ sources:
     title: paperless-ngx src/documents/serialisers.py
     resource: https://github.com/paperless-ngx/paperless-ngx/blob/d48663e9ebaadc4b413a6ca3bc88cb5fbc4e468e/src/documents/serialisers.py
     accessed: 2026-09-21
+  - id: pngx-perms
+    title: paperless-ngx src/documents/permissions.py
+    resource: https://github.com/paperless-ngx/paperless-ngx/blob/d48663e9ebaadc4b413a6ca3bc88cb5fbc4e468e/src/documents/permissions.py
+    accessed: 2026-09-21
 ---
 
 # Paperless-NGX custom field updates on select fields
@@ -63,6 +67,11 @@ options it does not mention are not in question. That is
 `extra_data` to the PATCH. A rename then applies and every option keeps its
 id. The cost is one extra GET per such update, and another writer's change to
 the options between the read and the write is overwritten.
+
+The read also costs a permission the PATCH does not: `CustomFieldViewSet` uses
+`PaperlessObjectPermissions`, whose map sends `GET` to `view_customfield` and
+`PATCH` to `change_customfield`, so a token holding only the second now
+answers 403 to such an update. [source: pngx-perms]
 [pins: tests/unit/client/test_custom_fields_write.py::test_update_select_field_resends_current_options]
 [pins: tests/unit/client/test_custom_fields_write.py::test_update_with_extra_data_skips_the_read]
 
