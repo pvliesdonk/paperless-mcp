@@ -39,7 +39,8 @@ correspondents that have documents. That is
 - Does not cover: other resources' list and detail keys beyond the comparison
   below, or how the value is filtered by document permissions.
 - Depended on by: `CorrespondentsClient.list` in
-  `src/paperless_mcp/client/correspondents.py`.
+  `src/paperless_mcp/client/correspondents.py` and the `correspondents://paperless`
+  resource in `src/paperless_mcp/resources/collections.py`.
 
 ## Claims
 
@@ -73,9 +74,11 @@ correspondents that have documents. That is
 
 ## Where this project departs from the subject
 
-`CorrespondentsClient.list` always sends `last_correspondence=true`, so list
-rows carry the value the detail call returns and ordering by it works.
+`CorrespondentsClient.list` and the `correspondents://paperless` resource,
+which walks the endpoint itself, always send `last_correspondence=true`, so
+list rows carry the value the detail call returns and ordering by it works.
 [pins: tests/unit/client/test_correspondents.py::test_list_asks_for_last_correspondence]
+[pins: tests/unit/resources/test_collections.py::test_correspondents_resource_asks_for_last_correspondence]
 
 ## Not covered
 
