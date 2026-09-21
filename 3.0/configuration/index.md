@@ -1,0 +1,163 @@
+# Configuration
+
+Paperless MCP reads all configuration from environment variables. Domain variables carry the `PAPERLESS_MCP_` prefix; a few third-party variables (`FASTMCP_*`, `PUID`/`PGID`) keep their upstream names.
+
+This page is the complete reference: every variable the server reads appears in exactly one table below. The tables come from the same source as `.env.example`, the packaged env files, and the [configuration generator](https://pvliesdonk.github.io/paperless-mcp/3.0/configuration-generator/index.md), so the four cannot disagree. The README carries a hand-picked subset of these variables as its quick entry point.
+
+## Server
+
+Transport, identity, and tool visibility. `PAPERLESS_MCP_SERVER_NAME` identifies the deployment, `PAPERLESS_MCP_INSTANCE_DESCRIPTION` distinguishes its material or responsibility for routing, and `PAPERLESS_MCP_INSTRUCTIONS_EXTRA` supplies deployment-specific behavioral policy. The legacy `PAPERLESS_MCP_INSTRUCTIONS` replaces all generated text, ignores both additive variables, and logs a deprecation warning at startup.
+
+Generated guidance targets 1,536 UTF-16 units, reserving 512 units for normal operator routing and policy within Claude Code's known 2,048-unit limit. Crossing either threshold logs a warning; startup continues and the server does not truncate the instructions.
+
+The generated guidance names the Paperless instance this deployment fronts, taking the URL from `PAPERLESS_MCP_PAPERLESS_PUBLIC_URL` or, unset, from `PAPERLESS_MCP_PAPERLESS_URL`. A model can then recognise a link to that instance and read the document id out of it.
+
+`PAPERLESS_MCP_TOOLS_ALLOW` and `PAPERLESS_MCP_TOOLS_DENY` trim which tools an instance exposes. Hidden tools disappear from `tools/list` and are rejected on `tools/call`; resources and prompts are unaffected. Setting both variables, or setting one to a value with no names in it, is a startup error. A name matching no registered tool is ignored, but an allowlist that matches nothing logs a startup warning, since the instance then exposes zero tools. See `fastmcp-pvl-core`'s README for the full semantics.
+
+`PAPERLESS_MCP_HEALTH_DETAIL` decides how much the unauthenticated `/health` and `/health/ready` bodies say, since anyone who can reach the port can read them: `status` alone, the default `standard` with the server name, version and a verdict per readiness check, or `full` with a redacted reason for each check that raised. See [Docker deployment](https://pvliesdonk.github.io/paperless-mcp/3.0/deployment/docker/#health) for the routes themselves.
+
+| Variable                             | Default     | Description                                                                                                                                                                                                                                                 |
+| ------------------------------------ | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PAPERLESS_MCP_TRANSPORT`            | `stdio`     | Transport the server speaks: `stdio` for local Claude Desktop/Code, `http` or `sse` for a network server.                                                                                                                                                   |
+| `PAPERLESS_MCP_HOST`                 | `127.0.0.1` | Interface the HTTP server binds to.                                                                                                                                                                                                                         |
+| `PAPERLESS_MCP_PORT`                 | `8000`      | TCP port for the HTTP server.                                                                                                                                                                                                                               |
+| `PAPERLESS_MCP_SHUTDOWN_GRACE_S`     | `3`         | Seconds SIGTERM may spend draining in-flight requests before the HTTP server exits. Keep it at or below the termination grace period the orchestrator allows. `0` drops in-flight requests immediately.                                                     |
+| `PAPERLESS_MCP_BASE_URL`             | (none)      | Public base URL of the deployed server (`https://mcp.example.com`). Required for OIDC. Also the fallback source of the MCP Apps domain when `app_domain` is unset.                                                                                          |
+| `PAPERLESS_MCP_TOOLS_ALLOW`          | (none)      | Comma-separated explicit tool names this instance exposes; every other tool is hidden from listings and cannot be invoked. Names matching no registered tool are inert. Mutually exclusive with `tools_deny`. Takes effect through `apply_tool_visibility`. |
+| `PAPERLESS_MCP_TOOLS_DENY`           | (none)      | Comma-separated explicit tool names hidden from this instance (absent from listings, cannot be invoked). Names matching no registered tool are inert. Mutually exclusive with `tools_allow`. Takes effect through `apply_tool_visibility`.                  |
+| `PAPERLESS_MCP_SERVER_NAME`          | (none)      | Rename this server instance; defaults to the project name.                                                                                                                                                                                                  |
+| `PAPERLESS_MCP_INSTANCE_DESCRIPTION` | (none)      | Concise routing context that distinguishes this deployment's material or responsibility.                                                                                                                                                                    |
+| `PAPERLESS_MCP_INSTRUCTIONS_EXTRA`   | (none)      | Deployment-specific behavioral policy added to the generated MCP instructions.                                                                                                                                                                              |
+| `PAPERLESS_MCP_INSTRUCTIONS`         | (none)      | Legacy: replaces all generated MCP instructions (deprecated; use \_INSTANCE_DESCRIPTION for routing and \_INSTRUCTIONS_EXTRA for policy).                                                                                                                   |
+| `PAPERLESS_MCP_HTTP_PATH`            | `/mcp`      | Mount path for the MCP endpoint; the health routes derive their prefix from it.                                                                                                                                                                             |
+| `PAPERLESS_MCP_HEALTH_DETAIL`        | `standard`  | How much the unauthenticated /health and /health/ready bodies say: status, standard (adds name, version and per-check verdicts), or full (adds redacted reasons; trusted networks only).                                                                    |
+
+## Authentication
+
+Callers authenticate with a bearer token, with OIDC, or with both. OIDC itself has two modes. **remote** validates tokens locally against the provider's JWKS and needs only `PAPERLESS_MCP_BASE_URL` and `PAPERLESS_MCP_OIDC_CONFIG_URL`. **oidc-proxy** runs the OAuth flow itself and also needs `PAPERLESS_MCP_OIDC_CLIENT_ID` and `PAPERLESS_MCP_OIDC_CLIENT_SECRET`, registered with the provider as a confidential client whose redirect URI points at this server.
+
+The Required column below marks the oidc-proxy set. Setting all four selects that mode and omitting the two client credentials selects remote, so `PAPERLESS_MCP_AUTH_MODE` is the way to state the choice rather than leave it to be inferred. With none of these set, the server starts and serves unauthenticated. See the [authentication guide](https://pvliesdonk.github.io/paperless-mcp/3.0/guides/authentication/index.md) for setup, mapped multi-subject tokens, and troubleshooting.
+
+| Variable                                 | Default                 | Required | Description                                                                                                                                                                                                                                                                                                                                                                   |
+| ---------------------------------------- | ----------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PAPERLESS_MCP_BEARER_TOKEN`             | (none)                  | No       | Single shared bearer token; enables bearer auth unless `bearer_tokens_file` is set, which takes precedence.                                                                                                                                                                                                                                                                   |
+| `PAPERLESS_MCP_OIDC_CONFIG_URL`          | (none)                  | **Yes**  | OIDC discovery document URL (`https://auth.example.com/.well-known/openid-configuration`).                                                                                                                                                                                                                                                                                    |
+| `PAPERLESS_MCP_OIDC_CLIENT_ID`           | (none)                  | **Yes**  | OIDC client identifier registered with the provider.                                                                                                                                                                                                                                                                                                                          |
+| `PAPERLESS_MCP_OIDC_CLIENT_SECRET`       | (none)                  | **Yes**  | OIDC client secret registered with the provider.                                                                                                                                                                                                                                                                                                                              |
+| `PAPERLESS_MCP_OIDC_AUDIENCE`            | (none)                  | No       | Expected `aud` claim; tokens issued for another audience are rejected.                                                                                                                                                                                                                                                                                                        |
+| `PAPERLESS_MCP_OIDC_REQUIRED_SCOPES`     | `openid`                | No       | Scopes a caller must present, space- or comma-separated. Defaults to `openid` in oidc-proxy mode.                                                                                                                                                                                                                                                                             |
+| `PAPERLESS_MCP_OIDC_ADVERTISED_SCOPES`   | `openid offline_access` | No       | Scopes advertised to MCP clients in protected-resource metadata, space- or comma-separated. Overrides the default `openid offline_access`; `oidc_required_scopes` is always added on top. Set this when the registered client is not permitted `offline_access`, or to have clients request extra claim scopes (such as `groups`) without also requiring them in every token. |
+| `PAPERLESS_MCP_OIDC_JWT_SIGNING_KEY`     | `derived`               | No       | Signing key for issued tokens; used in oidc-proxy mode only. When unset, the key is derived deterministically from `oidc_client_secret`, so tokens survive a restart. Rotating that secret then invalidates every issued token. Set this explicitly to decouple token validity from secret rotation. Generate with `openssl rand -hex 32`.                                    |
+| `PAPERLESS_MCP_OIDC_VERIFY_ACCESS_TOKEN` | `false`                 | No       | Validate the access token instead of the id token.                                                                                                                                                                                                                                                                                                                            |
+| `PAPERLESS_MCP_AUTH_MODE`                | (none)                  | No       | Explicit auth-mode override, accepting `remote` or `oidc-proxy` (case- and whitespace-insensitive). When unset the mode is auto-detected from which auth variables are set; the override exists because having all four OIDC variables set is ambiguous between those two modes. Other values are ignored with a warning.                                                     |
+| `PAPERLESS_MCP_BEARER_TOKENS_FILE`       | (none)                  | No       | Path to a TOML file mapping bearer tokens to subjects; overrides the single-token `bearer_token` mode.                                                                                                                                                                                                                                                                        |
+| `PAPERLESS_MCP_BEARER_DEFAULT_SUBJECT`   | `bearer-anon`           | No       | Subject assigned to the single-token bearer mode; ignored when `bearer_tokens_file` is set, since mapped mode carries per-token subjects.                                                                                                                                                                                                                                     |
+
+## Persistence
+
+One URL configures every stateful subsystem. A `redis://` `PAPERLESS_MCP_KV_STORE_URL` is also reused for background tasks when `PAPERLESS_MCP_TASKS_URL` is unset, so a single URL covers both.
+
+| Variable                        | Default              | Description                                                                                                                                                                                                                                                                                                                                                                                                               |
+| ------------------------------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PAPERLESS_MCP_KV_STORE_URL`    | `file:///data/state` | Persistent-state backend URL shared by every pvl-core subsystem that needs state. `memory://` is in-process and lost on restart; `file:///path` persists on one server; `redis://`, `dynamodb://` and `mongodb://` each need their matching extra. When unset, defaults to `file:///data/state` (the volume family Docker images mount), or to `memory://` (with a warning) on a host where that directory is not usable. |
+| `PAPERLESS_MCP_EVENT_STORE_URL` | (none)               | Legacy state-backend override, used by `build_event_store` and `build_kv_store` only when `kv_store_url` is unset. It then backs every namespace, not just HTTP resumability. Prefer `kv_store_url` for new deployments.                                                                                                                                                                                                  |
+| `PAPERLESS_MCP_TASKS_URL`       | (none)               | Background-task (Docket) backend URL: `memory://` is in-process and lost on restart; `redis://` is durable and multi-process. When unset, a `redis://` `kv_store_url` is reused for tasks too; otherwise fastmcp's `memory://` default applies. Only applies when task-enabled tools exist. Applied via `configure_task_backend`.                                                                                         |
+
+## Background tasks
+
+Every Paperless MCP instance wires a background-task backend at startup, so a tool registered with `task=True` works with no extra setup. `PAPERLESS_MCP_TASKS_URL` (under Persistence above) picks the backend: `memory://` runs tasks in-process and loses them on restart; `redis://...` is durable and shared across processes. With neither it nor a `redis://` KV store set, the backend falls back to `memory://`, which the server logs at startup when running over HTTP. The queue name comes from the `PAPERLESS_MCP` prefix, so two servers sharing one Redis do not share a queue.
+
+Worker tuning stays on the native `FASTMCP_DOCKET_*` variables below. Set the backend through `PAPERLESS_MCP_TASKS_URL` rather than `FASTMCP_DOCKET_URL`: the former wins when both are set, and the server warns about the disagreement.
+
+| Variable                                | Default | Description                                                                              |
+| --------------------------------------- | ------- | ---------------------------------------------------------------------------------------- |
+| `FASTMCP_DOCKET_CONCURRENCY`            | `10`    | Maximum background tasks this worker runs at once.                                       |
+| `FASTMCP_DOCKET_WORKER_NAME`            | (none)  | Identifies this worker in the queue; defaults to a generated name.                       |
+| `FASTMCP_DOCKET_REDELIVERY_TIMEOUT`     | `300`   | Seconds before a task claimed by a worker that never finished is redelivered to another. |
+| `FASTMCP_DOCKET_RECONNECTION_DELAY`     | `5`     | Seconds to wait before reconnecting after the queue connection drops.                    |
+| `FASTMCP_DOCKET_MINIMUM_CHECK_INTERVAL` | `0.05`  | Seconds between queue polls; lower cuts latency and raises idle load.                    |
+
+## MCP Apps
+
+| Variable                   | Default | Description                                                                                  |
+| -------------------------- | ------- | -------------------------------------------------------------------------------------------- |
+| `PAPERLESS_MCP_APP_DOMAIN` | (none)  | MCP Apps iframe domain, used for CSP sandboxing. Overrides the host derived from `base_url`. |
+
+## Logging
+
+`PAPERLESS_MCP_LOG_LEVEL` sets how much every logger in the process says, FastMCP's own included; `-v` on the command line forces `DEBUG`. The unprefixed `FASTMCP_LOG_LEVEL` still works for one major version and logs a deprecation warning that names the replacement.
+
+`PAPERLESS_MCP_LOG_FORMAT` picks the renderer. `rich` writes one coloured `event key=value` line per record, for a person at a terminal. `json` writes one JSON object per record, with `ts`, `level`, `logger` and the event's own fields as keys, for a log collector. Unset, the server chooses by itself: `rich` when stderr is a terminal and `json` everywhere else, so a container and a systemd unit log JSON with no configuration. Neither the image nor the packaged unit sets anything.
+
+The choice applies to the whole process. pvl-core owns the root logger and switches FastMCP's own handlers off, so this server's `paperless_mcp.*` lines and FastMCP's render through the same chain, as do uvicorn's. Access lines from `uvicorn.access` are filtered rather than levelled: below `DEBUG` only failed requests (status 400 and above) appear, and at every level the query string is stripped and a credential in the path is redacted.
+
+Set `PAPERLESS_MCP_LOG_FORMAT=rich` in `.env` or in `/etc/paperless-mcp/env` to read a container's or a unit's log in colour. A test runner is not a terminal either: a test that asserts on Rich-shaped stderr needs the same setting, or it reads JSON.
+
+| Variable                   | Default | Description                                                                                                                                                                                                                                                              |
+| -------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `PAPERLESS_MCP_LOG_LEVEL`  | `INFO`  | Log level for every logger in the process, FastMCP's included (DEBUG / INFO / WARNING / ERROR / CRITICAL). The -v CLI flag overrides to DEBUG. The unprefixed FASTMCP_LOG_LEVEL still works for one major version and logs a deprecation warning.                        |
+| `PAPERLESS_MCP_LOG_FORMAT` | (none)  | Log rendering. rich is one colour event key=value line per record, for a terminal; json is one JSON object per record, for a collector. Unset picks rich when stderr is a terminal and json everywhere else, so a container or journald gets JSON with no configuration. |
+
+## Container runtime
+
+Read by the container entrypoint (Docker / Compose), not by the server process.
+
+| Variable | Default | Description                                                                                                  |
+| -------- | ------- | ------------------------------------------------------------------------------------------------------------ |
+| `PUID`   | `1000`  | Run the server process as this UID; the container entrypoint reassigns ownership of writable paths to match. |
+| `PGID`   | `1000`  | Run the server process as this GID; pair with PUID to match the owner of a mounted volume.                   |
+
+## Remote debugger
+
+Development only; the image must be built with `--build-arg DEBUG=true`, and the protocol is unauthenticated. See [remote debugging](https://pvliesdonk.github.io/paperless-mcp/3.0/deployment/docker/#remote-debugging).
+
+| Variable                   | Default | Description                                                                 |
+| -------------------------- | ------- | --------------------------------------------------------------------------- |
+| `PAPERLESS_MCP_DEBUG_PORT` | `5678`  | debugpy listen port; the image must be built with `--build-arg DEBUG=true`. |
+| `PAPERLESS_MCP_DEBUG_WAIT` | `false` | Block startup until a debugger attaches.                                    |
+
+## Domain variables
+
+`PAPERLESS_MCP_PAPERLESS_URL` and `PAPERLESS_MCP_API_TOKEN` are the two variables the server cannot start without: leave either unset and startup stops with a message naming it. The table below still shows them under `Required: No`, because that column reports whether the underlying field declares a default rather than whether the server runs without a value; read the description column for these two. `PAPERLESS_MCP_PAPERLESS_PUBLIC_URL` lets you name a different base URL for user-visible links than the internal API URL the server calls; unset, it defaults to `PAPERLESS_MCP_PAPERLESS_URL`, and trailing slashes are stripped from both.
+
+A minimal `.env`:
+
+```
+PAPERLESS_MCP_PAPERLESS_URL=http://paperless.local:8000
+PAPERLESS_MCP_API_TOKEN=abc123yourtokenhere
+PAPERLESS_MCP_HTTP_TIMEOUT_SECONDS=60
+PAPERLESS_MCP_DEFAULT_PAGE_SIZE=50
+```
+
+## Document transfer links
+
+Set `PAPERLESS_MCP_BASE_URL` to the public root URL of this MCP server and use HTTP or SSE transport to enable document transfer links. A base URL of `https://mcp.example.com` produces `https://mcp.example.com/transfer/<token>`. Use the MCP server URL, not the Paperless URL, and omit the `/mcp` endpoint. Your reverse proxy must route `/transfer/` to the server. A path prefix in the public URL requires the proxy to remove that prefix before forwarding.
+
+The URL is a bearer capability: its recipient can transfer the file without MCP credentials. Give it only to the intended recipient. Existing inline interfaces remain available when no base URL is configured and under stdio.
+
+The [Transfer variables](#transfer) control lifetime, retry grace, reservation lease and upload size. File bytes stay out of MCP responses but are buffered in server memory; the upload cap does not limit download memory use.
+
+Use one server process per transfer store. For restart persistence, configure `PAPERLESS_MCP_KV_STORE_URL` with a persistent backend for tokens and upload receipts. Concurrent replicas sharing that store cannot guarantee duplicate prevention. To disable uploads, include `create_document_upload_link` alongside other write tools in `PAPERLESS_MCP_TOOLS_DENY`, or use an allow list containing only the tools you want. Previously issued links also respect these settings.
+
+See [file transfer links](https://pvliesdonk.github.io/paperless-mcp/3.0/tools/#file-transfer-links) for downloads, Markdown uploads and task tracking.
+
+### Paperless
+
+| Variable                             | Default | Required | Description                                                                                               |
+| ------------------------------------ | ------- | -------- | --------------------------------------------------------------------------------------------------------- |
+| `PAPERLESS_MCP_PAPERLESS_URL`        | (none)  | No       | Base URL of the Paperless-NGX REST API, without a trailing slash. The server refuses to start without it. |
+| `PAPERLESS_MCP_API_TOKEN`            | (none)  | No       | Paperless service-account token used for outbound API requests. The server refuses to start without it.   |
+| `PAPERLESS_MCP_HTTP_TIMEOUT_SECONDS` | `30.0`  | No       | Per-request HTTP timeout in seconds.                                                                      |
+| `PAPERLESS_MCP_HTTP_RETRIES`         | `2`     | No       | Retries for idempotent requests after network errors or 5xx responses.                                    |
+| `PAPERLESS_MCP_DEFAULT_PAGE_SIZE`    | `25`    | No       | Default page size for list tools, from 1 through 100.                                                     |
+| `PAPERLESS_MCP_PAPERLESS_PUBLIC_URL` | (none)  | No       | Public Paperless UI URL for user-visible links; defaults to PAPERLESS_URL.                                |
+
+### Transfer
+
+| Variable                                  | Default     | Required | Description                                                                                                           |
+| ----------------------------------------- | ----------- | -------- | --------------------------------------------------------------------------------------------------------------------- |
+| `PAPERLESS_MCP_TRANSFER_TTL_DEFAULT_S`    | `3600.0`    | No       | Link lifetime in seconds when the caller requests no explicit TTL.                                                    |
+| `PAPERLESS_MCP_TRANSFER_TTL_MAX_S`        | `86400.0`   | No       | Ceiling in seconds a caller-requested link TTL is clamped to.                                                         |
+| `PAPERLESS_MCP_TRANSFER_GRACE_TTL_S`      | `60.0`      | No       | Post-success grace window in seconds: a served token's TTL shrinks to this so a stalled transfer can retry within it. |
+| `PAPERLESS_MCP_TRANSFER_LEASE_S`          | `60.0`      | No       | Crashed-handler reclaim window in seconds for an in-flight reservation.                                               |
+| `PAPERLESS_MCP_TRANSFER_MAX_UPLOAD_BYTES` | `104857600` | No       | Maximum size in bytes of a single upload.                                                                             |
