@@ -44,6 +44,27 @@ async def test_list(
 
 
 @pytest.mark.asyncio
+async def test_list_asks_for_last_correspondence(
+    correspondents: CorrespondentsClient,
+) -> None:
+    """Paperless annotates ``last_correspondence`` on a list only when asked (#172).
+
+    Without the query parameter the key is absent from every row, and
+    ``ordering=last_correspondence`` answers ``500``.  Any non-empty value
+    switches the annotation on, so the client always sends one.
+    """
+    page: dict[str, Any] = {"count": 0, "next": None, "previous": None, "results": []}
+    async with respx.mock(base_url="http://paperless.test") as mock:
+        route = mock.get("/api/correspondents/").mock(
+            return_value=httpx.Response(200, json=page)
+        )
+        await correspondents.list(ordering="-last_correspondence")
+    params = route.calls.last.request.url.params
+    assert params["last_correspondence"] == "true"
+    assert params["ordering"] == "-last_correspondence"
+
+
+@pytest.mark.asyncio
 async def test_get(
     correspondents: CorrespondentsClient, load_fixture: Callable[[str], Any]
 ) -> None:

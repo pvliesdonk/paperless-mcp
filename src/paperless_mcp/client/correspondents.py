@@ -31,6 +31,12 @@ class CorrespondentsClient:
     ) -> Paginated[Correspondent]:
         """List correspondents with optional filtering.
 
+        Paperless leaves ``last_correspondence`` out of list rows unless the
+        query string asks for it, and answers ``500`` to ordering by it without
+        that ask.  The parameter is always sent, so a row carries the value
+        :meth:`get` returns.  See
+        ``docs/design/reference/paperless-correspondent-last-correspondence.md``.
+
         Args:
             page: Page number (1-based).
             page_size: Number of results per page.
@@ -40,7 +46,11 @@ class CorrespondentsClient:
         Returns:
             A paginated list of :class:`Correspondent` objects.
         """
-        params: dict[str, object] = {"page": page, "page_size": page_size}
+        params: dict[str, object] = {
+            "page": page,
+            "page_size": page_size,
+            "last_correspondence": "true",
+        }
         if ordering:
             params["ordering"] = ordering
         if name__icontains:

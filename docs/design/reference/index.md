@@ -36,6 +36,9 @@ its `stale_after` date passes. Project decisions belong in `docs/design/`.
   — why a PATCH body carries `permissions` where a GET carries
   `user_can_change` and `is_shared_by_requester`, and the fix this project
   applies.
+- [Paperless-NGX correspondent last_correspondence on list and detail](paperless-correspondent-last-correspondence.md)
+  — the list endpoint omits it unless asked, any non-empty value asks, and
+  ordering by it without the ask answers 500.
 
 See the [research log](log.md) for completed research passes. Add project
 references here as they are written.

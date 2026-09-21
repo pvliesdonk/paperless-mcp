@@ -35,7 +35,11 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
         ordering: str | None = None,
         name__icontains: str | None = None,
     ) -> Paginated[Correspondent]:
-        """List correspondents."""
+        """List correspondents.
+
+        Each row's ``last_correspondence`` is the date of the correspondent's
+        newest document, or null when it has none; ``ordering`` accepts it.
+        """
         return await client.correspondents.list(
             page=page,
             page_size=page_size,

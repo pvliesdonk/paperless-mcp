@@ -2,6 +2,16 @@
 
 ## 2026-09-21
 
+- Added [correspondent `last_correspondence` on list and detail](paperless-correspondent-last-correspondence.md)
+  for [#172](https://github.com/pvliesdonk/paperless-mcp/issues/172). Read
+  Paperless 3.1.3 `CorrespondentViewSet`: `retrieve` always annotates, `list`
+  only on a non-empty `last_correspondence` query value. Three live checks:
+  omitted, `true` and `false` behave as described, and ordering by the field
+  without the parameter returned 500. Compared list and detail keys on five
+  resources; only correspondents differed. Paperless 2.x was not read and the
+  aggregate cost was not measured beyond a small instance. Next review:
+  2027-03-21.
+
 - Added [document permission keys on read and write](paperless-document-write-shape.md)
   for [#173](https://github.com/pvliesdonk/paperless-mcp/issues/173). Read
   Paperless 3.1.3 `DocumentSerializer` and `DocumentViewSet`: PATCH and PUT force
