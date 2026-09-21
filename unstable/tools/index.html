@@ -1740,7 +1740,7 @@ lifetime up to the configured maximum of 24 hours.</p>
 <tr>
 <td><code>select</code></td>
 <td><code>{"select_options": [{"label": "Low"}, {"label": "Medium"}]}</code></td>
-<td><strong>Required</strong> on create. Paperless assigns each option a stable <code>id</code> on creation. On update, re-use existing <code>id</code> values to preserve document values.</td>
+<td><strong>Required</strong> on create. Paperless assigns each option a stable <code>id</code> on creation. On update, re-use existing <code>id</code> values to preserve document values. A patch that leaves <code>extra_data</code> out, such as a rename, keeps the current options: the server reads them and sends them back.</td>
 </tr>
 </tbody>
 </table>
