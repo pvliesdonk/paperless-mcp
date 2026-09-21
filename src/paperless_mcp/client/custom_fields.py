@@ -7,6 +7,7 @@ from paperless_mcp.models.common import Paginated
 from paperless_mcp.models.custom_field import (
     CustomField,
     CustomFieldCreate,
+    CustomFieldDataType,
     CustomFieldPatch,
 )
 
@@ -74,6 +75,14 @@ class CustomFieldsClient:
     async def update(self, field_id: int, patch: CustomFieldPatch) -> CustomField:
         """Partially update a custom field via PATCH.
 
+        Paperless validates ``extra_data.select_options`` on every update of a
+        ``select`` field and answers ``400`` when the list is missing (see
+        ``docs/design/reference/paperless-custom-field-select-patch.md``).  A
+        patch that leaves ``extra_data`` unset therefore reads the field first
+        and, for a ``select`` field, sends its current options along, ids
+        included, so a rename keeps every option.  Another writer's change to
+        the options between the read and the PATCH is overwritten.
+
         Args:
             field_id: ID of the custom field to update.
             patch: Fields to update; unset fields are excluded from the payload.
@@ -82,6 +91,10 @@ class CustomFieldsClient:
             The updated :class:`CustomField`.
         """
         payload = patch.model_dump(exclude_unset=True, mode="json")
+        if "extra_data" not in payload:
+            current = await self.get(field_id)
+            if current.data_type is CustomFieldDataType.SELECT:
+                payload["extra_data"] = current.extra_data
         response = await self._http.patch_json(
             f"/api/custom_fields/{field_id}/", json=payload
         )
