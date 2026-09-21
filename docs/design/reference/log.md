@@ -2,6 +2,15 @@
 
 ## 2026-09-21
 
+- Added [document field projection on lists and searches](paperless-document-fields-projection.md)
+  for [#164](https://github.com/pvliesdonk/paperless-mcp/issues/164). Read
+  Paperless 3.1.3 `DynamicFieldsModelSerializer` and `SearchResultSerializer`.
+  Compared a full page with one projected to every field but `content`, on
+  lists and searches at payload versions 9 and 10: every other key and value
+  matched, and the payload fell from 2.2 MB to 101 KB (list) and from 10.5 MB to
+  33 KB (search). Paperless 2.x was not read, and neither was the cost inside
+  Paperless. Next review: 2027-03-21.
+
 - Added [custom field updates on select fields](paperless-custom-field-select-patch.md)
   for [#171](https://github.com/pvliesdonk/paperless-mcp/issues/171). Read
   Paperless 3.1.3 `CustomFieldSerializer.validate`: the select branch runs on

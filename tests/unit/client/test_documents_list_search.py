@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import gzip
+import json
+from pathlib import Path
 from typing import Any
 
 import httpx
@@ -9,6 +12,14 @@ import pytest
 import respx
 
 from paperless_mcp.client import PaperlessClient
+from paperless_mcp.client.documents import _LISTING_FIELDS
+
+_OPENAPI = (
+    Path(__file__).resolve().parents[3]
+    / "docs/design/reference/paperless-openapi-3.1.3.json.gz"
+)
+# Accepted on write, never returned, so absent from the response schema.
+_WRITE_ONLY = {"set_permissions", "remove_inbox_tags"}
 
 
 @pytest.fixture
@@ -258,3 +269,112 @@ async def test_list_normalises_upstream_next_url(
     # Upstream hostname must not leak into the MCP response.
     assert result.next == "page=2"
     assert result.previous is None
+
+
+def _projected_page(**extra: Any) -> dict[str, Any]:
+    """A list body as Paperless answers a ``fields`` projection without content."""
+    return {
+        "count": 1,
+        "next": None,
+        "previous": None,
+        "results": [
+            {
+                "id": 42,
+                "title": "Big PDF",
+                "created": "2026-01-01T00:00:00Z",
+                "tags": [],
+                "mime_type": "application/pdf",
+                **extra,
+            }
+        ],
+    }
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("call", ["list", "search"])
+async def test_content_is_left_out_of_the_request_by_default(
+    call: str,
+    paperless_base_url: str,
+    paperless_api_token: str,
+) -> None:
+    """Paperless can project fields but not exclude one (#164).
+
+    Naming every field but ``content`` keeps the OCR text out of the response
+    itself, not only out of the result the tool returns.
+    """
+    async with respx.mock(base_url=paperless_base_url) as mock:
+        route = mock.get("/api/documents/").mock(
+            return_value=httpx.Response(200, json=_projected_page())
+        )
+        c = PaperlessClient(base_url=paperless_base_url, api_token=paperless_api_token)
+        try:
+            if call == "list":
+                result = await c.documents.list()
+            else:
+                result = await c.documents.search("invoice")
+        finally:
+            await c.aclose()
+    fields = route.calls.last.request.url.params["fields"].split(",")
+    assert "content" not in fields
+    # Fields the Document model does not declare still reach the caller.
+    assert {"id", "title", "notes", "custom_fields", "mime_type", "versions"} <= set(
+        fields
+    )
+    assert result.results[0].content is None
+    assert result.results[0].model_extra is not None
+    assert result.results[0].model_extra["mime_type"] == "application/pdf"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("call", ["list", "search"])
+async def test_include_content_sends_no_projection(
+    call: str,
+    _documents_page: dict[str, Any],
+    paperless_base_url: str,
+    paperless_api_token: str,
+) -> None:
+    async with respx.mock(base_url=paperless_base_url) as mock:
+        route = mock.get("/api/documents/").mock(
+            return_value=httpx.Response(200, json=_documents_page)
+        )
+        c = PaperlessClient(base_url=paperless_base_url, api_token=paperless_api_token)
+        try:
+            if call == "list":
+                result = await c.documents.list(include_content=True)
+            else:
+                result = await c.documents.search("invoice", include_content=True)
+        finally:
+            await c.aclose()
+    assert "fields" not in route.calls.last.request.url.params
+    assert result.results[0].content == "A" * 50_000
+
+
+@pytest.mark.asyncio
+async def test_search_hit_survives_the_projection(
+    paperless_base_url: str,
+    paperless_api_token: str,
+) -> None:
+    """Paperless adds ``__search_hit__`` after projecting, so it stays."""
+    hit = {"score": 1.5, "highlights": "<b>x</b>", "rank": 0}
+    async with respx.mock(base_url=paperless_base_url) as mock:
+        mock.get("/api/documents/").mock(
+            return_value=httpx.Response(200, json=_projected_page(__search_hit__=hit))
+        )
+        c = PaperlessClient(base_url=paperless_base_url, api_token=paperless_api_token)
+        try:
+            result = await c.documents.search("invoice")
+        finally:
+            await c.aclose()
+    assert result.results[0].model_extra is not None
+    assert result.results[0].model_extra["__search_hit__"] == hit
+
+
+def test_listing_fields_are_the_3_1_3_document_schema_minus_content() -> None:
+    """The projection names what Paperless 3.1.3 returns for a document.
+
+    A field missing here is missing from every list row, so the constant is
+    pinned to the ``Document`` response schema shipped with the references.
+    """
+    schema = json.loads(gzip.decompress(_OPENAPI.read_bytes()))
+    returned = set(schema["components"]["schemas"]["Document"]["properties"])
+    assert set(_LISTING_FIELDS) - _WRITE_ONLY == returned - {"content"}
