@@ -1,6 +1,6 @@
 # 3.0
 
-Compared with v2.1.0, this release keeps large OCR and binary files out of ordinary MCP responses. It prefers Paperless payload v10 with a v9 fallback, and task resources now emit valid timestamp JSON. HTTP and SSE deployments can move full files and OCR Markdown through expiring transfer links. The shared runtime moves to fastmcp-server-template v9 and fastmcp-pvl-core v9, which requires logging-variable changes and a review of explicit authentication settings.
+Compared with v2.1.0, this release keeps large OCR and binary files out of ordinary MCP responses, and document lists and searches no longer download OCR text from Paperless. It prefers Paperless payload v10 with a v9 fallback, and task resources now emit valid timestamp JSON. Three tool results are corrected: `update_document` matches `get_document`, `list_correspondents` reports `last_correspondence`, and renaming a select custom field works. HTTP and SSE deployments can move full files and OCR Markdown through expiring transfer links. The shared runtime moves to fastmcp-server-template v9 and fastmcp-pvl-core v9, which requires logging-variable changes and a review of explicit authentication settings.
 
 ## Transfer links for files and Markdown
 
@@ -16,13 +16,21 @@ Inline OCR content has one 20,000-character limit across the MCP document surfac
 
 Original and preview binary resources are no longer sent inline. Use the transfer links above for full files when the server runs over HTTP or SSE. Stdio deployments, and HTTP deployments without `PAPERLESS_MCP_BASE_URL`, keep the bounded inline path and offset paging ([#149](https://github.com/pvliesdonk/paperless-mcp/issues/149), [#165](https://github.com/pvliesdonk/paperless-mcp/pull/165)).
 
-The Paperless request still includes OCR before the server removes it from the MCP response. That transport and memory cost remains open in [#164](https://github.com/pvliesdonk/paperless-mcp/issues/164).
+Document lists and searches also leave OCR text out of the request to Paperless. Paperless can only project a response to a named list of fields, so the client names every document field except `content`. A page of 25 documents fell from 2,215,697 to 101,385 bytes, and a search page of 12 hits from 10,486,197 to 32,919 bytes, with every other field unchanged (measured on a live Paperless 3.1.3 instance at payload v10, [#164](https://github.com/pvliesdonk/paperless-mcp/issues/164), [#178](https://github.com/pvliesdonk/paperless-mcp/pull/178)). Notes and custom-field values sit inside fields that a projection cannot reach, so they are still fetched and dropped after parsing.
 
 ## Paperless payload v10 and task resources
 
 The client now requests Paperless payload v10 first. It retries with v9 only when Paperless returns the explicit invalid-version 406 response, then keeps that choice for the session. V10 task responses use an envelope and structured fields; the client translates v9's task filters and legacy field names when a 2.x instance requires the fallback. Saved-view visibility fields can now be `null` when v10 omits them ([#139](https://github.com/pvliesdonk/paperless-mcp/issues/139), [#161](https://github.com/pvliesdonk/paperless-mcp/pull/161)).
 
 `tasks://paperless` now serializes timestamps through Pydantic's JSON mode, so populated pages produce valid ISO 8601 strings instead of failing on a `datetime` value. Its scope remains the first page of unacknowledged tasks; `list_tasks` remains the paginated interface ([#160](https://github.com/pvliesdonk/paperless-mcp/issues/160), [#162](https://github.com/pvliesdonk/paperless-mcp/pull/162)). The legacy trigger mapping is pinned to Paperless 3.1.3's serializer, including `email_consume → auto_task` ([#163](https://github.com/pvliesdonk/paperless-mcp/pull/163)).
+
+## Tool results that now agree
+
+Three tools returned results that disagreed with their neighbours or failed on a valid request. Each traces to how Paperless behaves, so the fixes live in the client.
+
+- **`update_document` matches `get_document`.** Paperless returns a document's full-permission form on every PATCH, so the update result carried a `permissions` object where `get_document` carries `user_can_change` and `is_shared_by_requester`. The server now reads the document again after the update and returns that. It costs one extra request per update, and no tool or resource returns `permissions` any more ([#173](https://github.com/pvliesdonk/paperless-mcp/issues/173), [#175](https://github.com/pvliesdonk/paperless-mcp/pull/175)).
+- **`list_correspondents` and `correspondents://paperless` report `last_correspondence`.** Paperless computes that date on a list only when the request asks for it, so list rows showed `null` (the resource omitted the key) where `get_correspondent` returned a date, and ordering by it returned an HTTP 500. The date is now requested on every list. It is the newest document's date, or `null` for a correspondent without documents ([#172](https://github.com/pvliesdonk/paperless-mcp/issues/172), [#176](https://github.com/pvliesdonk/paperless-mcp/pull/176)).
+- **`update_custom_field` can rename a select field.** Paperless refuses any update of a select field that lacks `extra_data.select_options`, so a patch with only `name` returned a 400. When the patch leaves `extra_data` out, the server reads the field and sends its current options, ids included, so every option and the document values that use it survive. That costs one extra read, and a change to the options made by someone else in between is overwritten ([#171](https://github.com/pvliesdonk/paperless-mcp/issues/171), [#177](https://github.com/pvliesdonk/paperless-mcp/pull/177)).
 
 ## Shared runtime and deployment baseline
 
@@ -38,4 +46,5 @@ The repository now carries a security policy. Bootstrap can enable private vulne
 - Remove `FASTMCP_ENABLE_RICH_LOGGING`. Use `PAPERLESS_MCP_LOG_FORMAT=rich` or `json`; when unset, the renderer chooses Rich for a terminal and JSON elsewhere.
 - If `PAPERLESS_MCP_AUTH_MODE` is set explicitly, provide the complete provider configuration. v9 refuses to start when that mode resolves to no provider.
 - Python consumers must accept `None` for `SavedView.show_on_dashboard` and `SavedView.show_in_sidebar`.
+- Automation that read `permissions` from an `update_document` result will no longer find it; the result now has the same keys as `get_document`.
 - HTTP/SSE operators who want full files or OCR Markdown must set `PAPERLESS_MCP_BASE_URL` and route `/transfer/`. Other deployments retain bounded inline OCR and offset paging.

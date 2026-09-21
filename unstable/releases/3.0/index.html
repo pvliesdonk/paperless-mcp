@@ -1108,6 +1108,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#tool-results-that-now-agree" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tool results that now agree
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#shared-runtime-and-deployment-baseline" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1150,10 +1161,10 @@
 
 
 <h1 id="30">3.0<a class="headerlink" href="#30" title="Permanent link">&para;</a></h1>
-<!-- notes-range-end: 9d0aabb7f4305c654e6be148924afe90a4d9cb08 -->
+<!-- notes-range-end: 2f8d87768c9cd5311bcb25e0c7b8d00458b744ba -->
 
 <!-- RELEASE-SUMMARY v3.0.0 START -->
-<p>Compared with v2.1.0, this release keeps large OCR and binary files out of ordinary MCP responses. It prefers Paperless payload v10 with a v9 fallback, and task resources now emit valid timestamp JSON. HTTP and SSE deployments can move full files and OCR Markdown through expiring transfer links. The shared runtime moves to fastmcp-server-template v9 and fastmcp-pvl-core v9, which requires logging-variable changes and a review of explicit authentication settings.</p>
+<p>Compared with v2.1.0, this release keeps large OCR and binary files out of ordinary MCP responses, and document lists and searches no longer download OCR text from Paperless. It prefers Paperless payload v10 with a v9 fallback, and task resources now emit valid timestamp JSON. Three tool results are corrected: <code>update_document</code> matches <code>get_document</code>, <code>list_correspondents</code> reports <code>last_correspondence</code>, and renaming a select custom field works. HTTP and SSE deployments can move full files and OCR Markdown through expiring transfer links. The shared runtime moves to fastmcp-server-template v9 and fastmcp-pvl-core v9, which requires logging-variable changes and a review of explicit authentication settings.</p>
 <!-- RELEASE-SUMMARY v3.0.0 END -->
 
 <h2 id="transfer-links-for-files-and-markdown">Transfer links for files and Markdown<a class="headerlink" href="#transfer-links-for-files-and-markdown" title="Permanent link">&para;</a></h2>
@@ -1181,8 +1192,14 @@ content, and the JSON document resource returns <code>content: null</code>.</p>
 transfer links above for full files when the server runs over HTTP or SSE.
 Stdio deployments, and HTTP deployments without <code>PAPERLESS_MCP_BASE_URL</code>,
 keep the bounded inline path and offset paging (<a href="https://github.com/pvliesdonk/paperless-mcp/issues/149">#149</a>, <a href="https://github.com/pvliesdonk/paperless-mcp/pull/165">#165</a>).</p>
-<p>The Paperless request still includes OCR before the server removes it from
-the MCP response. That transport and memory cost remains open in <a href="https://github.com/pvliesdonk/paperless-mcp/issues/164">#164</a>.</p>
+<p>Document lists and searches also leave OCR text out of the request to
+Paperless. Paperless can only project a response to a named list of fields, so
+the client names every document field except <code>content</code>. A page of 25 documents
+fell from 2,215,697 to 101,385 bytes, and a search page of 12 hits from
+10,486,197 to 32,919 bytes, with every other field unchanged (measured on a live
+Paperless 3.1.3 instance at payload v10, <a href="https://github.com/pvliesdonk/paperless-mcp/issues/164">#164</a>, <a href="https://github.com/pvliesdonk/paperless-mcp/pull/178">#178</a>).
+Notes and custom-field values sit inside fields that a projection cannot reach,
+so they are still fetched and dropped after parsing.</p>
 <h2 id="paperless-payload-v10-and-task-resources">Paperless payload v10 and task resources<a class="headerlink" href="#paperless-payload-v10-and-task-resources" title="Permanent link">&para;</a></h2>
 <p>The client now requests Paperless payload v10 first. It retries with v9 only
 when Paperless returns the explicit invalid-version 406 response, then keeps
@@ -1194,6 +1211,31 @@ fields; the client translates v9's task filters and legacy field names when a
 populated pages produce valid ISO 8601 strings instead of failing on a
 <code>datetime</code> value. Its scope remains the first page of unacknowledged tasks;
 <code>list_tasks</code> remains the paginated interface (<a href="https://github.com/pvliesdonk/paperless-mcp/issues/160">#160</a>, <a href="https://github.com/pvliesdonk/paperless-mcp/pull/162">#162</a>). The legacy trigger mapping is pinned to Paperless 3.1.3's serializer, including <code>email_consume → auto_task</code> (<a href="https://github.com/pvliesdonk/paperless-mcp/pull/163">#163</a>).</p>
+<h2 id="tool-results-that-now-agree">Tool results that now agree<a class="headerlink" href="#tool-results-that-now-agree" title="Permanent link">&para;</a></h2>
+<p>Three tools returned results that disagreed with their neighbours or failed on
+a valid request. Each traces to how Paperless behaves, so the fixes live in the
+client.</p>
+<ul>
+<li><strong><code>update_document</code> matches <code>get_document</code>.</strong> Paperless returns a document's
+  full-permission form on every PATCH, so the update result carried a
+  <code>permissions</code> object where <code>get_document</code> carries <code>user_can_change</code> and
+  <code>is_shared_by_requester</code>. The server now reads the document again after the
+  update and returns that. It costs one extra request per update, and no tool
+  or resource returns <code>permissions</code> any more (<a href="https://github.com/pvliesdonk/paperless-mcp/issues/173">#173</a>, <a href="https://github.com/pvliesdonk/paperless-mcp/pull/175">#175</a>).</li>
+<li><strong><code>list_correspondents</code> and <code>correspondents://paperless</code> report
+  <code>last_correspondence</code>.</strong> Paperless computes that date on a list only when the
+  request asks for it, so list rows showed <code>null</code> (the resource omitted the key)
+  where <code>get_correspondent</code> returned a date, and ordering by it returned an
+  HTTP 500. The date is now requested on every list. It is the newest
+  document's date, or <code>null</code> for a correspondent without documents (<a href="https://github.com/pvliesdonk/paperless-mcp/issues/172">#172</a>, <a href="https://github.com/pvliesdonk/paperless-mcp/pull/176">#176</a>).</li>
+<li><strong><code>update_custom_field</code> can rename a select field.</strong> Paperless refuses any
+  update of a select field that lacks <code>extra_data.select_options</code>, so a patch
+  with only <code>name</code> returned a 400. When the patch leaves <code>extra_data</code> out, the
+  server reads the field and sends its current options, ids included, so every
+  option and the document values that use it survive. That costs one extra
+  read, and a change to the options made by someone else in between is
+  overwritten (<a href="https://github.com/pvliesdonk/paperless-mcp/issues/171">#171</a>, <a href="https://github.com/pvliesdonk/paperless-mcp/pull/177">#177</a>).</li>
+</ul>
 <h2 id="shared-runtime-and-deployment-baseline">Shared runtime and deployment baseline<a class="headerlink" href="#shared-runtime-and-deployment-baseline" title="Permanent link">&para;</a></h2>
 <p>This server now follows <a href="https://github.com/pvliesdonk/fastmcp-server-template/releases/tag/v9.0.0">fastmcp-server-template v9.0.0</a> and <a href="https://github.com/pvliesdonk/fastmcp-pvl-core/releases/tag/v9.0.0">fastmcp-pvl-core v9.0.0</a> (<a href="https://github.com/pvliesdonk/paperless-mcp/pull/168">#168</a>). pvl-core owns the process logger and HTTP runner. Logs are JSON when stderr is not a terminal; set <code>PAPERLESS_MCP_LOG_FORMAT=rich</code> when a terminal-style stream is wanted. <code>PAPERLESS_MCP_LOG_LEVEL</code> is the prefixed level variable. <code>FASTMCP_LOG_LEVEL</code> remains a one-major fallback, while <code>FASTMCP_ENABLE_RICH_LOGGING</code> is removed.</p>
 <p>Malformed operator configuration now raises one <code>ConfigurationError</code> line and
@@ -1218,6 +1260,8 @@ project and its published package metadata now use the MIT license
   provider.</li>
 <li>Python consumers must accept <code>None</code> for
   <code>SavedView.show_on_dashboard</code> and <code>SavedView.show_in_sidebar</code>.</li>
+<li>Automation that read <code>permissions</code> from an <code>update_document</code> result will no
+  longer find it; the result now has the same keys as <code>get_document</code>.</li>
 <li>HTTP/SSE operators who want full files or OCR Markdown must set
   <code>PAPERLESS_MCP_BASE_URL</code> and route <code>/transfer/</code>. Other deployments retain
   bounded inline OCR and offset paging.</li>
