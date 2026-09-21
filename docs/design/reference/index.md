@@ -32,6 +32,10 @@ its `stale_after` date passes. Project decisions belong in `docs/design/`.
 - [The Paperless-NGX 3.x REST surface this server does not expose](paperless-3x-rest-surface.md)
   — the 93-route inventory against the 30 this client wraps, and how the
   Paperless AI chat and suggestion endpoints behave.
+- [Paperless-NGX document permission keys on read and write](paperless-document-write-shape.md)
+  — why a PATCH body carries `permissions` where a GET carries
+  `user_can_change` and `is_shared_by_requester`, and the fix this project
+  applies.
 
 See the [research log](log.md) for completed research passes. Add project
 references here as they are written.

@@ -13,7 +13,7 @@ import respx
 from paperless_mcp.client._http import PaperlessHTTP
 from paperless_mcp.client.documents import DocumentsClient
 from paperless_mcp.models.common import BulkEditOperation
-from paperless_mcp.models.document import DocumentPatch
+from paperless_mcp.models.document import Document, DocumentPatch
 
 
 @pytest.fixture
@@ -40,11 +40,50 @@ async def test_update_sends_only_set_fields(
         route = mock.patch("/api/documents/1/").mock(
             return_value=httpx.Response(200, json=updated)
         )
+        mock.get("/api/documents/1/").mock(
+            return_value=httpx.Response(200, json=updated)
+        )
         doc = await documents.update(1, DocumentPatch(title="Renamed"))
     assert doc.title == "Renamed"
     # only set fields should be in the payload
     payload = route.calls.last.request.content
     assert json.loads(payload) == {"title": "Renamed"}
+
+
+@pytest.mark.asyncio
+async def test_update_returns_the_shape_get_returns(
+    documents: DocumentsClient, load_fixture: Callable[[str], Any]
+) -> None:
+    """Paperless forces ``full_perms`` on PATCH, swapping the permission keys (#173).
+
+    The PATCH body carries ``permissions`` and drops ``is_shared_by_requester``;
+    a plain GET carries the reverse.  ``update`` must answer with the GET shape.
+    """
+    fetched = load_fixture("document_full.json")
+    fetched["title"] = "Renamed"
+    fetched["is_shared_by_requester"] = False
+    patched = {
+        k: v
+        for k, v in fetched.items()
+        if k not in ("user_can_change", "is_shared_by_requester")
+    }
+    patched["permissions"] = {
+        "view": {"users": [], "groups": []},
+        "change": {"users": [], "groups": []},
+    }
+    async with respx.mock(base_url="http://paperless.test") as mock:
+        mock.patch("/api/documents/42/").mock(
+            return_value=httpx.Response(200, json=patched)
+        )
+        get_route = mock.get("/api/documents/42/").mock(
+            return_value=httpx.Response(200, json=fetched)
+        )
+        doc = await documents.update(42, DocumentPatch(title="Renamed"))
+    assert get_route.called
+    dumped = doc.model_dump()
+    assert "permissions" not in dumped
+    assert dumped["is_shared_by_requester"] is False
+    assert dumped == Document.model_validate(fetched).model_dump()
 
 
 @pytest.mark.asyncio
