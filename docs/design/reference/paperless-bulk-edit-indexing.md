@@ -1,7 +1,7 @@
 ---
 type: Reference
 title: Paperless-NGX bulk edit and deferred search indexing
-description: What the two bulk-edit endpoints do before they answer OK, which follow-up work they queue, and how a caller can observe it.
+description: Which methods and fields the two bulk-edit endpoints accept, what they do before they answer OK, which follow-up work they queue, and how a caller can observe it.
 subject_version: "3.1.3 (d48663e9ebaadc4b413a6ca3bc88cb5fbc4e468e)"
 valid_for: "paperless-ngx 3.x"
 generated:
@@ -12,6 +12,8 @@ status: stable
 verified:
   - by: process:researching-references
     at: 2026-09-18
+  - by: process:researching-references
+    at: 2026-09-27
 sources:
   - id: pngx-bulk-edit
     title: paperless-ngx src/documents/bulk_edit.py
@@ -41,6 +43,18 @@ sources:
     title: paperless-ngx src/documents/apps.py
     resource: https://github.com/paperless-ngx/paperless-ngx/blob/v3.1.3/src/documents/apps.py
     accessed: 2026-09-18
+  - id: pngx-serialisers
+    title: paperless-ngx src/documents/serialisers.py
+    resource: https://github.com/paperless-ngx/paperless-ngx/blob/v3.1.3/src/documents/serialisers.py
+    accessed: 2026-09-27
+  - id: pngx-serialisers-2x
+    title: paperless-ngx src/documents/serialisers.py at v2.20.15
+    resource: https://github.com/paperless-ngx/paperless-ngx/blob/v2.20.15/src/documents/serialisers.py
+    accessed: 2026-09-27
+  - id: pngx-openapi
+    title: Paperless-NGX 3.1.3 OpenAPI document, vendored in this bundle
+    resource: paperless-openapi-3.1.3.json.gz
+    accessed: 2026-09-27
 ---
 
 # Paperless-NGX bulk edit and deferred search indexing
@@ -97,6 +111,44 @@ takes, and what a caller can observe — the questions
 - This is the endpoint behind `bulk_edit_tags`, `bulk_edit_correspondents`
   and `bulk_edit_document_types`, so those three tools have no deferred
   indexing to declare. [source: pngx-views]
+
+### Which methods and fields the two endpoints accept
+
+- The document endpoint's `method` enum at 3.1.3 is `set_correspondent`,
+  `set_document_type`, `set_storage_path`, `add_tag`, `remove_tag`,
+  `modify_tags`, `modify_custom_fields`, `set_permissions`, `delete`,
+  `reprocess`, `rotate`, `merge`, `edit_pdf`, `remove_password`, `split` and
+  `delete_pages`. There is no `redo_ocr`. [source: pngx-openapi]
+  [pins: tests/unit/models/test_bulk_edit_operation.py::test_operations_match_the_openapi_method_enum]
+- 2.20.15 accepts `redo_ocr` as an alias that resolves to the same
+  `bulk_edit.reprocess` as `reprocess`. At 3.1.3 the `method` `ChoiceField`
+  rejects `redo_ocr`; the `validate_method` branch that still names it is
+  unreachable. Only `reprocess` works on both. [source: pngx-serialisers-2x]
+  [source: pngx-serialisers]
+- Eight of those methods are legacy aliases at 3.1.3: `delete`, `reprocess`,
+  `rotate`, `merge`, `edit_pdf`, `remove_password`, `split` and `delete_pages`
+  (`BulkEditSerializer.MOVED_DOCUMENT_ACTION_ENDPOINTS`, marked for removal
+  "when API v9 is dropped"). They still work, and the view logs `Deprecated
+  bulk_edit method` for each, naming the `/api/documents/<action>/` route
+  that replaces it. [source: pngx-serialisers] [source: pngx-views]
+- Each method's arguments travel in the request's `parameters` object and are
+  validated per method (`_validate_parameters_*`): for example
+  `modify_tags` needs `add_tags` and `remove_tags`, `split` takes `pages` as a
+  string such as `"1,2-3"`, and `edit_pdf` takes `operations`, a list of
+  `{"page", "rotate", "doc"}` entries in which omitted pages are discarded.
+  [source: pngx-serialisers] [source: pngx-bulk-edit]
+- The object endpoint (`/api/bulk_edit_objects/`) has no `parameters` field.
+  Its `operation` is `set_permissions` or `delete`, and `set_permissions`
+  reads `permissions`, `owner` and `merge` from the top level of the request.
+  A nested `parameters` object is ignored and the view still answers
+  `{"result": "OK"}`, having changed nothing. [source: pngx-openapi]
+  [source: pngx-views]
+  [pins: tests/unit/client/test_bulk_objects.py::test_every_object_client_sends_the_same_shape]
+- The same endpoint also accepts `all` and `filters`. With `all: true` the
+  serializer empties `objects` and the view acts on every object of that type
+  the user may change, deleting all of them for `delete`. [source: pngx-serialisers]
+  [source: pngx-views]
+  [pins: tests/unit/client/test_bulk_objects.py::test_other_keys_are_refused]
 
 ### What the queued task does
 
