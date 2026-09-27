@@ -962,7 +962,7 @@ tasks = [
 
 [[package]]
 name = "fastmcp-pvl-core"
-version = "9.0.1"
+version = "10.1.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "fastmcp", extra = ["tasks"] },
@@ -970,9 +970,9 @@ dependencies = [
     { name = "httpx2" },
     { name = "opentelemetry-api" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/bd/e7/5f58c37ecbf3624918c21eb1bb58223bdc8ee1b842577778f7870690bbe3/fastmcp_pvl_core-9.0.1.tar.gz", hash = "sha256:d3cc55103752b126851995f645fdcdd36baedc407da2062688381f314805b5c1", size = 769090, upload-time = "2026-09-24T04:58:58.511Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/0c/00/45be774a172175d16881dc1d210062ede824be9c5904935c428fccb5f7df/fastmcp_pvl_core-10.1.0.tar.gz", hash = "sha256:8f3d42d454d7fd20c1b726db64e7517febd10214b1a4a81e1c143cbd896b81f9", size = 805267, upload-time = "2026-09-27T19:15:38.009Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/8c/1f/88f11a9d23d4315c5bcd8126374c0b24119b061b264a6f616be48cfb63b7/fastmcp_pvl_core-9.0.1-py3-none-any.whl", hash = "sha256:2341079db6e991863836e4985be1a271a50ad471392529dc6651587db3eeb34f", size = 189205, upload-time = "2026-09-24T04:58:56.928Z" },
+    { url = "https://files.pythonhosted.org/packages/b2/27/5f417c2a3e7448de24a64381835cf860fd41f55e845342477bfd3e80c76d/fastmcp_pvl_core-10.1.0-py3-none-any.whl", hash = "sha256:b22985d44e84f1fc520382e5dee18a6279af368d131be1708388031ff015c982", size = 196592, upload-time = "2026-09-27T19:15:36.66Z" },
 ]
 
 [package.optional-dependencies]
@@ -2253,7 +2253,7 @@ docs = [
 
 [package.metadata]
 requires-dist = [
-    { name = "fastmcp-pvl-core", specifier = ">=9.0.0,<10" },
+    { name = "fastmcp-pvl-core", specifier = ">=10.1,<11" },
     { name = "fastmcp-pvl-core", extras = ["debug"], marker = "extra == 'debug'" },
     { name = "httpx", specifier = ">=0.27" },
     { name = "pydantic", specifier = ">=2.7" },
