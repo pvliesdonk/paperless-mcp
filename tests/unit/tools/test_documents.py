@@ -381,3 +381,38 @@ async def test_get_document_content_rejects_non_advancing_bounds(
         ):
             with pytest.raises(ToolError):
                 await c.call_tool("get_document_content", args)
+
+
+@pytest.mark.asyncio
+async def test_upload_document_rejects_invalid_base64(mock_client: Any) -> None:
+    """Bad base64 is the model's to fix, and is never uploaded half-decoded."""
+    import logging
+
+    mcp = FastMCP("test")
+    documents_mod.register(
+        mcp, ToolContext(client=mock_client, default_page_size=25, public_url="")
+    )
+    with pytest.raises(ToolError) as excinfo:
+        await mcp.call_tool(
+            "upload_document",
+            {"filename": "a.pdf", "content_base64": "not base64!"},
+        )
+    assert "content_base64" in str(excinfo.value)
+    assert excinfo.value.log_level == logging.INFO
+    mock_client.documents.upload.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_upload_document_accepts_line_wrapped_base64(mock_client: Any) -> None:
+    """MIME-style line breaks decoded before as now; only stray characters fail."""
+    from paperless_mcp.models.common import UploadTaskAcknowledgement
+
+    mock_client.documents.upload.return_value = UploadTaskAcknowledgement(task_id="t")
+    mcp = FastMCP("test")
+    documents_mod.register(
+        mcp, ToolContext(client=mock_client, default_page_size=25, public_url="")
+    )
+    await mcp.call_tool(
+        "upload_document", {"filename": "a.txt", "content_base64": "aGVs\nbG8="}
+    )
+    assert mock_client.documents.upload.await_args.kwargs["content"] == b"hello"

@@ -160,3 +160,61 @@ async def test_v10_task_details_reach_mcp(mock_client: Any) -> None:
             assert payload["result_data"] == {"document_ids": [1, 2]}
             assert payload["related_document_ids"] == [1, 2]
             assert payload["status"] == "SUCCESS"
+
+
+@pytest.mark.asyncio
+async def test_wait_for_task_deadline_tells_the_model_to_wait_again(
+    mock_client: Any,
+) -> None:
+    """A task still running at the deadline is an INFO outcome, not a fault."""
+    import logging
+
+    from fastmcp.exceptions import ToolError
+
+    mock_client.tasks.wait_for.side_effect = TimeoutError("still running")
+    mock_client.tasks.get.return_value = MagicMock()
+    mcp = FastMCP("test")
+    tasks_mod.register(
+        mcp, ToolContext(client=mock_client, default_page_size=25, public_url="")
+    )
+    with pytest.raises(ToolError) as excinfo:
+        await mcp.call_tool("wait_for_task", {"task_uuid": "abc", "timeout_seconds": 5})
+    assert "has not finished after 5 seconds" in str(excinfo.value)
+    assert "get_task" in str(excinfo.value)
+    assert excinfo.value.log_level == logging.INFO
+
+
+@pytest.mark.asyncio
+async def test_wait_for_task_names_an_unknown_task(mock_client: Any) -> None:
+    """A task id Paperless never knew is reported as such, not as still running."""
+    from fastmcp.exceptions import ToolError
+
+    mock_client.tasks.wait_for.side_effect = TimeoutError("no such task")
+    mock_client.tasks.get.return_value = None
+    mcp = FastMCP("test")
+    tasks_mod.register(
+        mcp, ToolContext(client=mock_client, default_page_size=25, public_url="")
+    )
+    with pytest.raises(ToolError, match="has no task with id abc"):
+        await mcp.call_tool("wait_for_task", {"task_uuid": "abc", "timeout_seconds": 1})
+
+
+@pytest.mark.asyncio
+async def test_wait_for_task_returns_a_task_that_finished_at_the_deadline(
+    mock_client: Any,
+) -> None:
+    """The extra read after the timeout returns a task that just finished."""
+    from paperless_mcp.models.task import TaskStatus
+
+    finished = MagicMock(status=TaskStatus.SUCCESS)
+    mock_client.tasks.wait_for.side_effect = TimeoutError("raced")
+    mock_client.tasks.get.return_value = finished
+    mcp = FastMCP("test")
+    tasks_mod.register(
+        mcp, ToolContext(client=mock_client, default_page_size=25, public_url="")
+    )
+    from fastmcp.tools import FunctionTool
+
+    tool = await mcp.get_tool("wait_for_task")
+    assert isinstance(tool, FunctionTool)
+    assert await tool.fn(task_uuid="abc", timeout_seconds=1) is finished

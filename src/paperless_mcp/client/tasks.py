@@ -19,7 +19,7 @@ from paperless_mcp.client._http import PaperlessHTTP
 from paperless_mcp.models.common import Paginated
 from paperless_mcp.models.task import Task, TaskStatus, TaskType
 
-_TERMINAL_STATUSES = {TaskStatus.SUCCESS, TaskStatus.FAILURE, TaskStatus.REVOKED}
+TERMINAL_STATUSES = {TaskStatus.SUCCESS, TaskStatus.FAILURE, TaskStatus.REVOKED}
 
 
 class TasksClient:
@@ -127,7 +127,7 @@ class TasksClient:
         deadline = time.monotonic() + timeout_seconds
         while True:
             task = await self.get(task_uuid)
-            if task is not None and task.status in _TERMINAL_STATUSES:
+            if task is not None and task.status in TERMINAL_STATUSES:
                 return task
             if time.monotonic() >= deadline:
                 raise TimeoutError(

@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 import base64
+import binascii
+import logging
 from typing import Annotated
 
 from fastmcp import FastMCP
+from fastmcp.exceptions import ToolError
 from fastmcp_pvl_core import tool_boundary
 from mcp.types import ImageContent
 from pydantic import Field
@@ -235,7 +238,18 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
         custom_fields: list[int] | None = None,
     ) -> UploadTaskAcknowledgement:
         """Upload a document.  Returns the task UUID for polling via `get_task`."""
-        content = base64.b64decode(content_base64)
+        try:
+            # Whitespace is dropped first so line-wrapped base64 keeps working;
+            # validate=True then refuses any other stray character instead of
+            # silently skipping it and uploading a corrupted file.
+            content = base64.b64decode("".join(content_base64.split()), validate=True)
+        except binascii.Error as exc:
+            raise ToolError(
+                "content_base64 passed to upload_document is not valid base64. "
+                "Encode the file's bytes as standard base64 and call "
+                "upload_document again.",
+                log_level=logging.INFO,
+            ) from exc
         return await client.documents.upload(
             filename=filename,
             content=content,

@@ -5,16 +5,19 @@ External contracts: ``docs/design/reference/core-transfer-links.md``.
 
 from __future__ import annotations
 
+import logging
 import time
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, TypeVar
 from uuid import uuid4
 
+from fastmcp.exceptions import ToolError
 from fastmcp_pvl_core import (
     TransferReadResult,
     TransferSinkError,
     build_kv_store,
     register_transfer_routes,
 )
+from pydantic import ValidationError as PydanticValidationError
 
 from paperless_mcp._transfer_models import (
     DownloadHandle,
@@ -24,7 +27,7 @@ from paperless_mcp._transfer_models import (
 )
 from paperless_mcp._transfer_uploads import UploadReceiver
 from paperless_mcp.client._errors import PaperlessAPIError
-from paperless_mcp.tools._errors import paperless_errors
+from paperless_mcp.tools._errors import raise_classified
 
 if TYPE_CHECKING:
     from fastmcp import FastMCP
@@ -32,6 +35,8 @@ if TYPE_CHECKING:
     from paperless_mcp.config import ProjectConfig
     from paperless_mcp.tools._context import ToolContext
 
+
+_RefT = TypeVar("_RefT", DownloadHandle, UploadReference)
 
 _DOWNLOAD_TOOL = "create_download_link"
 _UPLOAD_TOOL = "create_upload_link"
@@ -116,6 +121,53 @@ def _transfer_error(exc: PaperlessAPIError) -> TransferSinkError:
     return TransferSinkError(status)
 
 
+def _parse_ref(model: type[_RefT], ref: str, tool: str) -> _RefT:
+    """Parse the model's ref; a bad one is the model's to fix (INFO).
+
+    Only the ref is parsed here, so a pydantic error from Paperless's own reply,
+    raised later, is not mistaken for a mistake in the ref: it reaches the tool
+    boundary as a server fault instead.
+    """
+    try:
+        return model.model_validate_json(ref)
+    except PydanticValidationError as exc:
+        first = exc.errors()[0]
+        where = ".".join(str(part) for part in first.get("loc", ())) or "ref"
+        raise ToolError(
+            f"The ref passed to {tool} is not valid at {where}: {first.get('msg')}. "
+            f"Correct the ref and call {tool} again.",
+            log_level=logging.INFO,
+        ) from exc
+
+
+async def _validate_download(ctx: ToolContext, ref: str) -> str:
+    download = _parse_ref(DownloadHandle, ref, _DOWNLOAD_TOOL)
+    try:
+        document = await ctx.client.documents.get(download.document_id)
+    except PaperlessAPIError as exc:
+        raise_classified(exc, _DOWNLOAD_TOOL, {"ref.document_id": download.document_id})
+    if download.variant == "archive" and not document.archived_file_name:
+        raise ToolError(
+            f"Document {document.id} has no archived PDF, so there is nothing to "
+            "download for variant archive. Call create_download_link again with "
+            'variant "original".',
+            log_level=logging.INFO,
+        )
+    return download.model_dump_json()
+
+
+def _validate_upload(ref: str, ttl_max_s: float) -> str:
+    destination = _parse_ref(UploadReference, ref, _UPLOAD_TOOL)
+    # Core's validator does not receive ttl_s. Retain receipts for the
+    # maximum possible link lifetime; core alone resolves the actual TTL.
+    upload = UploadHandle(
+        **destination.model_dump(),
+        operation_id=uuid4().hex,
+        expires_at=time.time() + ttl_max_s,
+    )
+    return upload.model_dump_json()
+
+
 def register_transfers(mcp: FastMCP, ctx: ToolContext, config: ProjectConfig) -> None:
     """Register core transfer tools with Paperless reference validation.
 
@@ -125,7 +177,6 @@ def register_transfers(mcp: FastMCP, ctx: ToolContext, config: ProjectConfig) ->
         config: Server and transfer configuration.
     """
 
-    @paperless_errors
     async def validate(ref: str, kind: str) -> str:
         """Resolve a JSON reference into a server-owned Paperless handle.
 
@@ -137,18 +188,8 @@ def register_transfers(mcp: FastMCP, ctx: ToolContext, config: ProjectConfig) ->
             Validated serialized handle for the transfer sink.
         """
         if kind == "download":
-            download = DownloadHandle.model_validate_json(ref)
-            await ctx.client.documents.get(download.document_id)
-            return download.model_dump_json()
-        destination = UploadReference.model_validate_json(ref)
-        # Core's validator does not receive ttl_s. Retain receipts for the
-        # maximum possible link lifetime; core alone resolves the actual TTL.
-        upload = UploadHandle(
-            **destination.model_dump(),
-            operation_id=uuid4().hex,
-            expires_at=time.time() + config.transfer.ttl_max_s,
-        )
-        return upload.model_dump_json()
+            return await _validate_download(ctx, ref)
+        return _validate_upload(ref, config.transfer.ttl_max_s)
 
     register_transfer_routes(
         mcp,
