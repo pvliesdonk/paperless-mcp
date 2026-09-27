@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Annotated
 
 from fastmcp import FastMCP
+from fastmcp_pvl_core import tool_boundary
 from pydantic import Field
 
 from paperless_mcp.models.common import Paginated
@@ -29,6 +30,7 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
             link.share_url = f"{ctx.public_url}/share/{link.slug}"
 
     @mcp.tool(**tool_metadata("list_share_links"))
+    @tool_boundary
     @paperless_errors
     async def list_share_links(
         page: Annotated[int, Field(ge=1)] = 1,
@@ -44,6 +46,7 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
         return result
 
     @mcp.tool(**tool_metadata("get_share_link"))
+    @tool_boundary
     @paperless_errors
     async def get_share_link(share_link_id: int) -> ShareLink:
         """Fetch a share link by ID."""

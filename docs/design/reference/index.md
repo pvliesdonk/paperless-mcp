@@ -8,11 +8,26 @@ These pages record external behavior, with source markers and review dates.
 Read the relevant page before relying on its claims; research it again when
 its `stale_after` date passes. Project decisions belong in `docs/design/`.
 
+- [GitHub and git behaviour behind integration branches](github-integration-branches.md) —
+  up-to-date requirements, merge queue, workflow branch filters, closing
+  keywords, retargeting, merge methods, knope's commit walk and git's
+  review tools, as the integration-branch workflow relies on them.
 - [GitHub planning objects](github-planning-objects.md) — milestones,
   issue relationships, and PR design material used by roadmapping and releases.
 - [GitHub repository security settings](github-repository-security-settings.md) —
   private vulnerability reporting, Dependabot alerts, push protection and the
   security policy file, as `bootstrap.yml` and `SECURITY.md` rely on them.
+- [MCP model-facing text](mcp-model-facing-text.md) — who reads each
+  description field, how clients cut and index it, how FastMCP builds it from
+  a docstring, and what the vendors say it should carry; the evidence behind
+  the `writing-model-facing-text` skill.
+- [MCP tool outcomes and errors](mcp-tool-outcomes-and-errors.md) — what the
+  spec, FastMCP, the Python SDK, pvl-core, model vendors and published servers
+  say and do about a tool's negative outcome versus a tool error, on the wire
+  (`isError`) and in the logs.
+- [Negative outcomes and faults outside MCP](negative-outcomes-and-faults.md) —
+  how HTTP, gRPC, OpenTelemetry, GraphQL, JSON-RPC and five language error
+  models separate a valid "no" from a fault; the companion to the MCP page.
 - [Core tool registration composition](core-tool-registration.md) — metadata,
   icon helpers and Jobs error boundaries.
 - [Core transfer links and Paperless text ingestion](core-transfer-links.md) —

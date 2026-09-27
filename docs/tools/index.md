@@ -2,14 +2,14 @@
 
 The tools registered in this server are listed below.
 
+<!-- DOMAIN-TOOLS-LIST-START -->
+
 Every tool also carries a human-readable title, which clients that support
 titles show in place of the machine name. A few titles say what the tool does
 rather than restating its name: `get_remote_version` is titled **Check for
 Paperless Updates**, and `get_document_metadata` is titled **Get Document File
 Details**. The tables below list machine names, which is what you pass when
 calling a tool.
-
-<!-- DOMAIN-TOOLS-LIST-START -->
 
 ## Document tools
 

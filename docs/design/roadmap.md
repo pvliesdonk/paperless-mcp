@@ -207,15 +207,16 @@ backlog that predates this index.
   This entry stays rather than disappearing, because what it settles is narrow:
   warranted for one tool, in one usage shape, while the calls that will be slow
   *by design* are still unbuilt.
-- **Whether a required domain configuration field becomes expressible upstream,
-  and whether the resolved config can reach tool registration.** `evidenced`:
-  both are worked around in this repository and filed as
-  pvliesdonk/fastmcp-server-template#621 and
-  pvliesdonk/fastmcp-server-template#622. Resolved by those issues. Recording
-  them is enough; neither blocks anything here, and the workarounds are
-  documented in `config.md` beside this file.
 
 ## Revisions
+
+### 2026-09-27 (template v10.3)
+
+- `evidenced`: the last open configuration unknown is settled upstream.
+  Template v10.3 and fastmcp-pvl-core 10.1 make a required variable
+  expressible (`required=True`, pvliesdonk/fastmcp-server-template#621), and
+  the resolved config already reached registration
+  (pvliesdonk/fastmcp-server-template#622). The known-unknown is removed.
 
 ### 2026-09-20 (bounded document output)
 

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from fastmcp import FastMCP
+from fastmcp_pvl_core import tool_boundary
 
 from paperless_mcp.models.system import RemoteVersion, Statistics
 from paperless_mcp.tools._context import ToolContext
@@ -20,12 +21,14 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
     client = ctx.client
 
     @mcp.tool(**tool_metadata("get_statistics"))
+    @tool_boundary
     @paperless_errors
     async def get_statistics() -> Statistics:
         """Fetch collection-level statistics."""
         return await client.system.statistics()
 
     @mcp.tool(**tool_metadata("get_remote_version"))
+    @tool_boundary
     @paperless_errors
     async def get_remote_version() -> RemoteVersion:
         """Check whether a newer release of Paperless-NGX exists upstream.

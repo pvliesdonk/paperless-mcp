@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Annotated
 
 from fastmcp import FastMCP
+from fastmcp_pvl_core import tool_boundary
 from pydantic import Field
 
 from paperless_mcp.models.common import Paginated
@@ -24,6 +25,7 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
     client = ctx.client
 
     @mcp.tool(**tool_metadata("list_saved_views"))
+    @tool_boundary
     @paperless_errors
     async def list_saved_views(
         page: Annotated[int, Field(ge=1)] = 1,
@@ -36,6 +38,7 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
         return await client.saved_views.list(page=page, page_size=page_size)
 
     @mcp.tool(**tool_metadata("get_saved_view"))
+    @tool_boundary
     @paperless_errors
     async def get_saved_view(view_id: int) -> SavedView:
         """Fetch a saved view by ID.

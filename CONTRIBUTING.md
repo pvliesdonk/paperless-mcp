@@ -102,6 +102,16 @@ about open items (issues and PRs) in the current package and open atomic
 epics. It does not block a deliberate cut. Keep the release PR itself out
 of the package.
 
+An atomic epic of many pull requests can run on an integration branch,
+`integration/<epic>`, instead of holding up trunk. Children target and
+squash merge into it, `main` is merged in rather than rebased onto, and one
+final pull request brings the epic to `main` with a merge commit, never a
+squash. Children write `Part of #<epic>`, because a closing keyword only
+acts when a pull request merges into the default branch; the final pull
+request carries the `Closes` lines. It is optional, and the
+`docs/deployment/integration-branches.md` page covers the workflow and how to
+review the final pull request.
+
 After a stable default-branch release, the workflow records the computed
 version in the package title, removes open items to backlog with a job
 summary, then closes the milestone. Failures warn and leave it open for
@@ -169,12 +179,17 @@ or the public library interface, assessed against the **last stable
 release**, not the previous commit. MCP-surface changes (tools, resources,
 prompts) are not breaking on their own.
 
+Squash-merge issue and feature PRs; merge an integration branch's final PR
+with a merge commit. Either way, roughly every issue and PR maps to one
+commit on `main`: the squash commit, or the child's squash commit that the
+merge commit brings in.
+
 State what the PR deliberately does **not** do, with each deferral's tracking
 issue. A change that says what it left out is easier to trust than one that
 appears to have found nothing.
 
-Run a local code-review pass on the cumulative diff before `gh pr create` —
-the `code-review` skill (`.agents/skills/code-review/SKILL.md`) is the
+Run a local self-review of the cumulative diff before `gh pr create` —
+the `self-reviewing` skill (`.agents/skills/self-reviewing/SKILL.md`) is the
 procedure, and it works with any coding agent. Code without matching docs is
 incomplete; check `README.md`, the `docs/` site, `docs/design/`, and inline
 docstrings.

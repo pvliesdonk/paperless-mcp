@@ -14,6 +14,7 @@ authors = [{ name = "Peter van Liesdonk", email = "peter@liesdonk.nl" }]
 # The template knows the terms that are true of every server it generates and
 # the project's own names; it cannot know the domain terms, which go in the
 # seam.  An empty list was not a decision, just nobody's job (#583).
+# bootstrap.yml also sets these as the GitHub repository's topics.
 keywords = [
     "mcp",
     "model-context-protocol",
@@ -22,14 +23,23 @@ keywords = [
     "pvliesdonk-paperless-mcp",
     # PROJECT-KEYWORDS-START — add this project's domain terms below (what it
     # is *about*: "vault", "ocr", "patents"); kept across copier update.
+    "paperless-ngx",
+    "document-management",
     # PROJECT-KEYWORDS-END
 ]
 classifiers = [
+    # PROJECT-CLASSIFIERS-START — kept across copier update: this project's
+    # development status, and any audience/topic/framework classifiers.
     "Development Status :: 3 - Alpha",
+    # PROJECT-CLASSIFIERS-END
+    # The Python versions are the ones ci.yml's matrix requires (its
+    # non-experimental entries); scripts/tests/test_python_classifiers.py in
+    # the template keeps the two equal.
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     # PROJECT-LICENSE-CLASSIFIER-START — kept across copier update; the trove
     # name is not the SPDX id (Apache-2.0 is "Apache Software License"), which
     # is one reason this is a separate edit rather than a derived one.
@@ -37,8 +47,26 @@ classifiers = [
     # PROJECT-LICENSE-CLASSIFIER-END
 ]
 dependencies = [
-    # >=9.0.0 for the operator-input contract and the reworded config help.
-    # Every config-driven builder (build_kv_store / build_event_store,
+    # >=10.1.0 for env(..., required=True) and env_int / env_float's
+    # required keyword, and for domain_env_surface reporting such a read as
+    # required: config.py's CONFIG-FROM-ENV example, the template-ci
+    # required-var variant and test_config_contract.py's
+    # every-required-var guard depend on both.
+    #
+    # 10.0.0 was the floor before that, for tool_boundary and
+    # is_tool_boundary (pvl-core ADR 0005):
+    # tools.py wraps every tool in the boundary instead of copying it, and
+    # tests/test_tool_outcomes.py fails a registered tool that is not
+    # wrapped (#678).  The request-logging middleware now logs
+    # tool_call_failed at the ToolError's log_level, so an INFO outcome no
+    # longer produces an ERROR line (pvl-core #363).  The major is for two
+    # contract changes in pvl-core's own tools: a transfer validate hook
+    # rejects only with ToolError, and a register_long_running_tool
+    # coroutine that raises anything else ends as a server fault (pvl-core
+    # #375, #376).
+    #
+    # 9.0.0 was the previous floor, for the operator-input contract and the
+    # reworded config help.  Every config-driven builder (build_kv_store / build_event_store,
     # build_jobs, register_health_routes, register_transfer_routes /
     # build_transfer_links) raises ConfigurationError where 8.x raised
     # ValueError or ImportError, so a malformed
@@ -116,7 +144,7 @@ dependencies = [
     # this whole constraint rather than the floor alone (#335), but a floor
     # naming a release nobody can install is still a trap for anyone pinning
     # to it.
-    "fastmcp-pvl-core>=9.0.0,<10",
+    "fastmcp-pvl-core>=10.1.0,<11",
     "typer>=0.12",
 
     # PROJECT-DEPS-START — add domain dependencies below; kept across copier update
@@ -270,6 +298,7 @@ ignore = ["E501"]
 "scripts/migrate_agent_instructions.py" = ["S603", "S607"]
 "scripts/check_pins.py" = ["S310"]  # urlopen on a validated api.github.com URL
 "scripts/report_seeded_changes.py" = ["S603", "S606", "S607"]
+"scripts/check_template_conformance.py" = ["S603", "S606", "S607"]
 
 # PROJECT-RUFF-IGNORES-START — replace, extend, or override the entries below
 # for your project's real source/test paths (split _server_apps.py into

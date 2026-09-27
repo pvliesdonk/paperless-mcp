@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Annotated
 
 from fastmcp import FastMCP
+from fastmcp_pvl_core import tool_boundary
 from pydantic import Field
 
 from paperless_mcp.models.common import Paginated
@@ -28,6 +29,7 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
     client = ctx.client
 
     @mcp.tool(**tool_metadata("list_custom_fields"))
+    @tool_boundary
     @paperless_errors
     async def list_custom_fields(
         page: Annotated[int, Field(ge=1)] = 1,
@@ -40,12 +42,14 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
         )
 
     @mcp.tool(**tool_metadata("get_custom_field"))
+    @tool_boundary
     @paperless_errors
     async def get_custom_field(field_id: int) -> CustomField:
         """Fetch a custom field by ID."""
         return await client.custom_fields.get(field_id)
 
     @mcp.tool(**tool_metadata("create_custom_field"))
+    @tool_boundary
     @paperless_errors
     async def create_custom_field(body: CustomFieldCreate) -> CustomField:
         """Create a new custom field.
@@ -64,6 +68,7 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
         return await client.custom_fields.create(body)
 
     @mcp.tool(**tool_metadata("update_custom_field"))
+    @tool_boundary
     @paperless_errors
     async def update_custom_field(
         field_id: int, patch: CustomFieldPatch
@@ -87,6 +92,7 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
         return await client.custom_fields.update(field_id, patch)
 
     @mcp.tool(**tool_metadata("delete_custom_field"))
+    @tool_boundary
     @paperless_errors
     async def delete_custom_field(field_id: int) -> None:
         """Delete a custom field."""

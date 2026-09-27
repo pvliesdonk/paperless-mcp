@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Annotated
 
 from fastmcp import FastMCP
+from fastmcp_pvl_core import tool_boundary
 from pydantic import Field
 
 from paperless_mcp.models.common import BulkEditResult, Paginated
@@ -28,6 +29,7 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
     client = ctx.client
 
     @mcp.tool(**tool_metadata("list_correspondents"))
+    @tool_boundary
     @paperless_errors
     async def list_correspondents(
         page: Annotated[int, Field(ge=1)] = 1,
@@ -48,18 +50,21 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
         )
 
     @mcp.tool(**tool_metadata("get_correspondent"))
+    @tool_boundary
     @paperless_errors
     async def get_correspondent(correspondent_id: int) -> Correspondent:
         """Fetch a correspondent by ID."""
         return await client.correspondents.get(correspondent_id)
 
     @mcp.tool(**tool_metadata("create_correspondent"))
+    @tool_boundary
     @paperless_errors
     async def create_correspondent(body: CorrespondentCreate) -> Correspondent:
         """Create a new correspondent."""
         return await client.correspondents.create(body)
 
     @mcp.tool(**tool_metadata("update_correspondent"))
+    @tool_boundary
     @paperless_errors
     async def update_correspondent(
         correspondent_id: int, patch: CorrespondentPatch
@@ -68,12 +73,14 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
         return await client.correspondents.update(correspondent_id, patch)
 
     @mcp.tool(**tool_metadata("delete_correspondent"))
+    @tool_boundary
     @paperless_errors
     async def delete_correspondent(correspondent_id: int) -> None:
         """Delete a correspondent."""
         await client.correspondents.delete(correspondent_id)
 
     @mcp.tool(**tool_metadata("bulk_edit_correspondents"))
+    @tool_boundary
     @paperless_errors
     async def bulk_edit_correspondents(
         operation: str,

@@ -28,13 +28,13 @@ before any registrar runs. `tool_context_for` reads the bound object, so a
 caller-supplied config reaches the Paperless client and schema-time defaults
 without a second environment read.
 
-## Three constraints that shaped the result
+## How the template contract shapes it
 
 ### `env_int` / `env_float` are not importable
 
 `config.py` is re-rendered by `copier update` and only its three sentinel blocks
-survive. The template's import block brings in `ServerConfig` and `env` and
-nothing else, so adding `env_int` / `env_float` — or importing a parsing helper
+survive. The template's import block brings in `ServerConfig`,
+`TransferConfig`, `env` and `ConfigurationError` and nothing else, so adding `env_int` / `env_float` — or importing a parsing helper
 from another module — would be an edit outside every seam. The numeric reads are
 therefore parsed inline (`float(env(...) or 30.0)`) and their bounds are
 enforced in `__post_init__`, which is where the config contract wants invariants
@@ -44,22 +44,19 @@ anyway: `env_float`'s bounds check only the env-sourced value, so a direct
 The cost: a malformed value now raises `float()`'s or `int()`'s own message,
 which does not name the variable, where `env_float(strict=True)` would have.
 
-### A required field cannot be expressed
+### Required variables
 
-`_is_required` in the generator marks a domain variable required when its field
-declares neither a `default` nor a `default_factory`. A dataclass field with no
-default cannot follow fields that have one unless it is `kw_only`, and either
-way `ProjectConfig()` stops being constructible — which the template's own
-`tests/test_config_contract.py` does four times. So the two genuinely required
-variables carry `default=""`, and the requirement is enforced in
-`domain.build_tool_context`, which raises `ValueError` naming whichever is
-unset. The failure point is unchanged from v1.0.2: registration is the first
-thing `make_server` does that needs a client.
+`PAPERLESS_URL` and `API_TOKEN` are read with `env(..., required=True)` in
+`from_env` (template v10.3, fastmcp-pvl-core 10.1). An unset one raises
+`ConfigurationError`, which `serve` prints as one line, and the generated
+tables mark both required. The fields keep `default=""` only for dataclass
+field ordering, so a direct `ProjectConfig()` still constructs; tests get the
+pair from `config_contract_env` in `tests/conftest.py`.
 
-The visible cost: the `Required` column in `README.md` and `docs/configuration.md`
-reads `No` for both, so their descriptions and the hand-written prose above the
-table carry the requirement instead. Filed upstream as
-pvliesdonk/fastmcp-server-template#621.
+`domain.build_tool_context` keeps its own check, now a `ConfigurationError`,
+for the one path `from_env` does not cover: a config built by hand and passed
+to `make_server`. `CONFIG-VALIDATE` raises `ConfigurationError` too, for the
+same one-line exit.
 
 ### Registration reads the bound config
 

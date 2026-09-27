@@ -6,6 +6,7 @@ import base64
 from typing import Annotated
 
 from fastmcp import FastMCP
+from fastmcp_pvl_core import tool_boundary
 from mcp.types import ImageContent
 from pydantic import Field
 
@@ -44,6 +45,7 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
             doc.web_url = f"{ctx.public_url}/documents/{doc.id}/"
 
     @mcp.tool(**tool_metadata("list_documents"))
+    @tool_boundary
     @paperless_errors
     async def list_documents(
         page: Annotated[int, Field(ge=1)] = 1,
@@ -82,6 +84,7 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
         return result
 
     @mcp.tool(**tool_metadata("search_documents"))
+    @tool_boundary
     @paperless_errors
     async def search_documents(
         query: str,
@@ -110,6 +113,7 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
         return result
 
     @mcp.tool(**tool_metadata("get_document"))
+    @tool_boundary
     @paperless_errors
     async def get_document(document_id: int) -> Document:
         """Fetch one document by ID.
@@ -124,6 +128,7 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
         return doc
 
     @mcp.tool(**tool_metadata("get_document_content"))
+    @tool_boundary
     @paperless_errors
     async def get_document_content(
         document_id: int,
@@ -152,6 +157,7 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
         return slice_content(text, max_chars=max_chars, offset=offset)
 
     @mcp.tool(**tool_metadata("get_document_thumbnail"))
+    @tool_boundary
     @paperless_errors
     async def get_document_thumbnail(document_id: int) -> ImageContent:
         """Return the document's thumbnail as inline image content."""
@@ -163,30 +169,35 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
         )
 
     @mcp.tool(**tool_metadata("get_document_metadata"))
+    @tool_boundary
     @paperless_errors
     async def get_document_metadata(document_id: int) -> DocumentMetadata:
         """Return technical metadata for a document (checksums, filenames, etc.)."""
         return await client.documents.get_metadata(document_id)
 
     @mcp.tool(**tool_metadata("get_document_notes"))
+    @tool_boundary
     @paperless_errors
     async def get_document_notes(document_id: int) -> list[DocumentNote]:
         """Return notes attached to a document."""
         return await client.documents.get_notes(document_id)
 
     @mcp.tool(**tool_metadata("get_document_history"))
+    @tool_boundary
     @paperless_errors
     async def get_document_history(document_id: int) -> list[DocumentHistoryEntry]:
         """Return the audit history for a document."""
         return await client.documents.get_history(document_id)
 
     @mcp.tool(**tool_metadata("get_document_suggestions"))
+    @tool_boundary
     @paperless_errors
     async def get_document_suggestions(document_id: int) -> DocumentSuggestions:
         """Return Paperless's classifier suggestions for a document."""
         return await client.documents.get_suggestions(document_id)
 
     @mcp.tool(**tool_metadata("update_document"))
+    @tool_boundary
     @paperless_errors
     async def update_document(
         document_id: int,
@@ -203,12 +214,14 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
         return doc
 
     @mcp.tool(**tool_metadata("delete_document"))
+    @tool_boundary
     @paperless_errors
     async def delete_document(document_id: int) -> None:
         """Delete a document."""
         await client.documents.delete(document_id)
 
     @mcp.tool(**tool_metadata("upload_document"))
+    @tool_boundary
     @paperless_errors
     async def upload_document(
         filename: str,
@@ -236,6 +249,7 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
         )
 
     @mcp.tool(**tool_metadata("bulk_edit_documents"))
+    @tool_boundary
     @paperless_errors
     async def bulk_edit_documents(
         operation: BulkEditOperation,
@@ -258,12 +272,14 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
         )
 
     @mcp.tool(**tool_metadata("add_document_note"))
+    @tool_boundary
     @paperless_errors
     async def add_document_note(document_id: int, note: str) -> DocumentNote:
         """Append a note to a document."""
         return await client.documents.add_note(document_id, note)
 
     @mcp.tool(**tool_metadata("delete_document_note"))
+    @tool_boundary
     @paperless_errors
     async def delete_document_note(document_id: int, note_id: int) -> None:
         """Remove a note from a document."""
