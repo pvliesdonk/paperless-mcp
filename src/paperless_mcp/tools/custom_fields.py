@@ -2,11 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Annotated
-
 from fastmcp import FastMCP
 from fastmcp_pvl_core import tool_boundary
-from pydantic import Field
 
 from paperless_mcp.models.common import Paginated
 from paperless_mcp.models.custom_field import (
@@ -17,6 +14,7 @@ from paperless_mcp.models.custom_field import (
 from paperless_mcp.tools._context import ToolContext
 from paperless_mcp.tools._errors import paperless_errors
 from paperless_mcp.tools._metadata import tool_metadata
+from paperless_mcp.tools._params import Ordering, Page, PageSize
 
 
 def register(mcp: FastMCP, ctx: ToolContext) -> None:
@@ -32,11 +30,11 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
     @tool_boundary
     @paperless_errors
     async def list_custom_fields(
-        page: Annotated[int, Field(ge=1)] = 1,
-        page_size: Annotated[int, Field(ge=1, le=100)] = ctx.default_page_size,
-        ordering: str | None = None,
+        page: Page = 1,
+        page_size: PageSize = ctx.default_page_size,
+        ordering: Ordering = None,
     ) -> Paginated[CustomField]:
-        """List custom fields."""
+        """List custom field definitions; returns one page with their ids, names and types."""
         return await client.custom_fields.list(
             page=page, page_size=page_size, ordering=ordering
         )
@@ -45,25 +43,17 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
     @tool_boundary
     @paperless_errors
     async def get_custom_field(field_id: int) -> CustomField:
-        """Fetch a custom field by ID."""
+        """Get one custom field definition by id, with its select options."""
         return await client.custom_fields.get(field_id)
 
     @mcp.tool(**tool_metadata("create_custom_field"))
     @tool_boundary
     @paperless_errors
     async def create_custom_field(body: CustomFieldCreate) -> CustomField:
-        """Create a new custom field.
+        """Define a new custom field; returns it with its id.
 
-        ``extra_data`` depends on ``data_type``:
-
-        - ``string``, ``longtext``, ``integer``, ``boolean``, ``float``,
-          ``date``, ``url``, ``documentlink`` — unused; omit or pass ``null``.
-        - ``monetary`` — optional ``{"default_currency": "USD"}`` (ISO-4217).
-        - ``select`` — ``extra_data`` **required**:
-          ``{"select_options": [{"label": "Low"}, {"label": "Medium"}]}``.
-          Paperless assigns each option a stable ``id`` on creation.
-
-        Unknown shapes are rejected by Paperless with a 400.
+        Args:
+            body: The field's name, type and, for select or monetary, extra_data.
         """
         return await client.custom_fields.create(body)
 
@@ -73,21 +63,10 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
     async def update_custom_field(
         field_id: int, patch: CustomFieldPatch
     ) -> CustomField:
-        """Patch selected fields on a custom field definition.
+        """Rename a custom field or change its options; returns the updated field.
 
-        ``extra_data`` shape depends on ``data_type``:
-
-        - ``monetary`` — optional ``{"default_currency": "USD"}`` (ISO-4217).
-        - ``select`` — ``extra_data.select_options`` replaces the current list
-          wholesale.  To preserve existing values, include each existing option
-          with its server-assigned ``id``:
-          ``{"select_options": [{"id": "abc", "label": "Low"}, ...]}``.
-          Omitting an option's ``id`` creates a new option; dropping an option
-          from the list deletes it and any document values referencing it.
-          A patch without ``extra_data``, such as a rename, keeps the current
-          options: the server reads them and sends them back with their ids.
-
-        See ``create_custom_field`` for the full ``extra_data`` shape table.
+        Args:
+            patch: Only the fields to change.
         """
         return await client.custom_fields.update(field_id, patch)
 
@@ -95,5 +74,5 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
     @tool_boundary
     @paperless_errors
     async def delete_custom_field(field_id: int) -> None:
-        """Delete a custom field."""
+        """Delete a custom field and its value on every document."""
         await client.custom_fields.delete(field_id)

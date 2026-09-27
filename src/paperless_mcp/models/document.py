@@ -59,17 +59,39 @@ class Document(BaseModel):
 
 
 class DocumentPatch(BaseModel):
+    """Fields to change on a document; every field left out keeps its value."""
+
     model_config = ConfigDict(extra="forbid")
-    title: str | None = None
-    correspondent: int | None = None
-    document_type: int | None = None
-    storage_path: int | None = None
-    tags: list[int] | None = None
-    content: str | None = None
-    archive_serial_number: str | int | None = None
-    created: datetime | None = None
-    created_date: date | None = None
-    custom_fields: list[CustomFieldInstance] | None = None
+    title: str | None = Field(default=None, description="Document title.")
+    correspondent: int | None = Field(default=None, description="Correspondent id.")
+    document_type: int | None = Field(default=None, description="Document type id.")
+    storage_path: int | None = Field(default=None, description="Storage path id.")
+    tags: list[int] | None = Field(
+        default=None,
+        description=(
+            "Tag ids; replaces all of the document's tags. Include the current "
+            "ones to keep them, or use bulk_edit_documents to add or remove one."
+        ),
+    )
+    content: str | None = Field(
+        default=None, description="Replacement for the document's full searchable text."
+    )
+    archive_serial_number: str | int | None = Field(
+        default=None, description="Archive serial number, a whole number."
+    )
+    created: datetime | None = Field(
+        default=None, description="Creation date and time, ISO 8601."
+    )
+    created_date: date | None = Field(
+        default=None, description="Creation date, YYYY-MM-DD."
+    )
+    custom_fields: list[CustomFieldInstance] | None = Field(
+        default=None,
+        description=(
+            'Custom field values as [{"field": id, "value": ...}]; replaces all '
+            "of the document's custom fields, so include the ones to keep."
+        ),
+    )
 
 
 class DocumentMetadata(BaseModel):

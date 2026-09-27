@@ -123,11 +123,11 @@ class DocumentsClient:
             page: Page number (1-based).
             page_size: Number of results per page.
             ordering: Field name to order by (prefix with ``-`` for descending).
-            tags: Filter to documents containing all of these tag IDs.
+            tags: Filter to documents carrying any of these tag IDs.
             correspondent: Filter by correspondent ID.
             document_type: Filter by document type ID.
             storage_path: Filter by storage path ID.
-            custom_field: Filter by custom field ID.
+            custom_field: Filter to documents that have this custom field ID.
             include_content: When ``False`` (default), the OCR ``content``
                 field is left out of the request, so Paperless never sends it.
                 Set to ``True`` to retrieve the full text.  ``notes[].note``
@@ -150,7 +150,7 @@ class DocumentsClient:
         if storage_path is not None:
             params["storage_path__id"] = storage_path
         if custom_field is not None:
-            params["custom_fields__id"] = custom_field
+            params["custom_fields__id__in"] = custom_field
         params.update(_projection(include_content=include_content))
         body = await self._http.get_json("/api/documents/", params=params)
         result = Paginated[Document].model_validate(body)

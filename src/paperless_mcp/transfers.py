@@ -198,21 +198,19 @@ def register_transfers(mcp: FastMCP, ctx: ToolContext, config: ProjectConfig) ->
         sink=PaperlessTransferSink(ctx, config),
         validate=validate,
         download_note=(
-            'Paperless ref is a JSON string, e.g. {"document_id":42,"variant":"content"}. '
-            "variant is original (default), archive, preview, or content. "
-            "content exports full unchanged OCR as Markdown with metadata front matter; "
-            "archive fails when no archived PDF exists. Access is checked at minting "
-            "and redemption; downloads fetch current data."
+            "ref is a JSON string naming a document and the file to serve, e.g. "
+            '{"document_id":42,"variant":"content"}. variant is original (the '
+            "file as uploaded, the default), archive (the searchable PDF), "
+            "preview (the rendition Paperless displays) or content (the full "
+            "text as Markdown, with the metadata as front matter)."
         ),
         upload_note=(
-            "Paperless ref is a JSON string, e.g. "
-            '{"filename":"notes.md","metadata":{"title":"Notes","tags":[2]}}. '
-            "filename must be a plain filename. Optional metadata fields are title, "
-            "correspondent, document_type, tags, created, archive_serial_number and "
-            "custom_fields. PUT raw file bytes, including Markdown, to the URL. "
-            "Front matter stays file content, not Paperless metadata. The HTTP "
-            "response contains task_id; get_task tracks ingestion. Identical retries "
-            "return the same task ID; HTTP 409 requires inspecting Paperless tasks "
-            "before another submission."
+            "ref is a JSON string with a plain file name and optional metadata, e.g. "
+            '{"filename":"scan.pdf","metadata":{"title":"Scan","tags":[2]}}; '
+            "metadata takes title, correspondent, document_type, tags, created, "
+            "archive_serial_number and custom_fields. PUT the file's raw bytes to "
+            "the url; the answer carries the consume task_id for wait_for_task, "
+            "and resending the same bytes returns the same task_id. Front matter "
+            "in a Markdown file stays part of the file, not the metadata."
         ),
     )

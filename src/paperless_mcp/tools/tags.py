@@ -2,17 +2,24 @@
 
 from __future__ import annotations
 
-from typing import Annotated, Literal
+from typing import Literal
 
 from fastmcp import FastMCP
 from fastmcp_pvl_core import tool_boundary
-from pydantic import Field
 
 from paperless_mcp.models.common import BulkEditResult, Paginated
 from paperless_mcp.models.tag import Tag, TagCreate, TagPatch
 from paperless_mcp.tools._context import ToolContext
 from paperless_mcp.tools._errors import check_object_bulk_parameters, paperless_errors
 from paperless_mcp.tools._metadata import tool_metadata
+from paperless_mcp.tools._params import (
+    BulkIds,
+    NameContains,
+    ObjectBulkParameters,
+    Ordering,
+    Page,
+    PageSize,
+)
 
 
 def register(mcp: FastMCP, ctx: ToolContext) -> None:
@@ -28,12 +35,12 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
     @tool_boundary
     @paperless_errors
     async def list_tags(
-        page: Annotated[int, Field(ge=1)] = 1,
-        page_size: Annotated[int, Field(ge=1, le=100)] = ctx.default_page_size,
-        ordering: str | None = None,
-        name__icontains: str | None = None,
+        page: Page = 1,
+        page_size: PageSize = ctx.default_page_size,
+        ordering: Ordering = None,
+        name__icontains: NameContains = None,
     ) -> Paginated[Tag]:
-        """List tags."""
+        """List tags; returns one page with their ids and names."""
         return await client.tags.list(
             page=page,
             page_size=page_size,
@@ -45,28 +52,32 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
     @tool_boundary
     @paperless_errors
     async def get_tag(tag_id: int) -> Tag:
-        """Fetch a tag by ID."""
+        """Get one tag by id."""
         return await client.tags.get(tag_id)
 
     @mcp.tool(**tool_metadata("create_tag"))
     @tool_boundary
     @paperless_errors
     async def create_tag(body: TagCreate) -> Tag:
-        """Create a new tag."""
+        """Create a tag; returns it with its id."""
         return await client.tags.create(body)
 
     @mcp.tool(**tool_metadata("update_tag"))
     @tool_boundary
     @paperless_errors
     async def update_tag(tag_id: int, patch: TagPatch) -> Tag:
-        """Patch selected fields on a tag."""
+        """Change a tag's name, colour, inbox flag or matching rule; returns the tag.
+
+        Args:
+            patch: Only the fields to change.
+        """
         return await client.tags.update(tag_id, patch)
 
     @mcp.tool(**tool_metadata("delete_tag"))
     @tool_boundary
     @paperless_errors
     async def delete_tag(tag_id: int) -> None:
-        """Delete a tag."""
+        """Delete a tag and remove it from every document that carries it."""
         await client.tags.delete(tag_id)
 
     @mcp.tool(**tool_metadata("bulk_edit_tags"))
@@ -74,10 +85,14 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
     @paperless_errors
     async def bulk_edit_tags(
         operation: Literal["set_permissions", "delete"],
-        ids: list[int],
-        parameters: dict[str, object] | None = None,
+        ids: BulkIds,
+        parameters: ObjectBulkParameters = None,
     ) -> BulkEditResult:
-        """Apply a bulk operation to a set of tags."""
+        """Set the owner and permissions of many tags, or delete them; returns OK when applied.
+
+        Args:
+            operation: set_permissions or delete.
+        """
         check_object_bulk_parameters("bulk_edit_tags", operation, parameters)
         return await client.tags.bulk_edit(
             operation=operation, ids=ids, parameters=parameters

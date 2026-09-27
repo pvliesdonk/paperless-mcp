@@ -31,6 +31,13 @@ from paperless_mcp.models.document import (
 from paperless_mcp.tools._context import ToolContext
 from paperless_mcp.tools._errors import paperless_errors
 from paperless_mcp.tools._metadata import tool_metadata
+from paperless_mcp.tools._params import (
+    BulkIds,
+    DocumentId,
+    DocumentOrdering,
+    Page,
+    PageSize,
+)
 
 
 def register(mcp: FastMCP, ctx: ToolContext) -> None:
@@ -51,25 +58,27 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
     @tool_boundary
     @paperless_errors
     async def list_documents(
-        page: Annotated[int, Field(ge=1)] = 1,
-        page_size: Annotated[int, Field(ge=1, le=100)] = ctx.default_page_size,
-        ordering: str | None = None,
+        page: Page = 1,
+        page_size: PageSize = ctx.default_page_size,
+        ordering: DocumentOrdering = None,
         tags: list[int] | None = None,
         correspondent: int | None = None,
         document_type: int | None = None,
         storage_path: int | None = None,
         custom_field: int | None = None,
     ) -> Paginated[Document]:
-        """List documents with optional filters.  Returns one page.
+        """List documents filtered by their metadata; returns one page of metadata.
 
-        Per-document OCR ``content`` is stripped to keep results small. Use
-        ``get_document_content`` for a bounded preview of one result.
+        Use search_documents to find documents by the words in them. Results
+        leave out each document's text, note text and custom field values;
+        get_document_content and get_document return them.
 
-        ``notes[].note`` and ``custom_fields[].value`` are **always** stripped
-        from listings. The metadata refs
-        (note ids, timestamps, custom-field ids) are retained so callers can
-        detect presence; use ``get_document`` or ``get_document_notes`` to read
-        those values.
+        Args:
+            tags: Keep documents that carry any of these tag ids.
+            correspondent: Keep documents from this correspondent id.
+            document_type: Keep documents of this document type id.
+            storage_path: Keep documents in this storage path id.
+            custom_field: Keep documents that have this custom field.
         """
         result = await client.documents.list(
             page=page,
@@ -91,18 +100,22 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
     @paperless_errors
     async def search_documents(
         query: str,
-        page: Annotated[int, Field(ge=1)] = 1,
-        page_size: Annotated[int, Field(ge=1, le=100)] = ctx.default_page_size,
+        page: Page = 1,
+        page_size: PageSize = ctx.default_page_size,
         more_like: int | None = None,
     ) -> Paginated[Document]:
-        """Full-text search documents.
+        """Search the full text and metadata of documents; returns one page, best match first.
 
-        Per-hit OCR ``content`` is stripped. Use ``get_document_content`` for a
-        bounded preview of one hit. Use *more_like* for similarity search.
+        Use list_documents to filter by tag, correspondent or type alone.
+        Results leave out each document's text, note text and custom field
+        values; get_document_content and get_document return them.
 
-        ``notes[].note`` and ``custom_fields[].value`` are **always** stripped
-        from search hits; fetch them via ``get_document`` or
-        ``get_document_notes`` when needed.
+        Args:
+            query: Words that must all appear, in any order, in a document's
+                text, title, correspondent, type or tags. Also accepts AND and
+                OR, field terms such as tag:unpaid or created:[2024 to 2025],
+                and notes.note:word for note text. Pass "" with more_like.
+            more_like: Document id; return documents similar to it instead.
         """
         result = await client.documents.search(
             query,
@@ -118,12 +131,10 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
     @mcp.tool(**tool_metadata("get_document"))
     @tool_boundary
     @paperless_errors
-    async def get_document(document_id: int) -> Document:
-        """Fetch one document by ID.
+    async def get_document(document_id: DocumentId) -> Document:
+        """Get one document's metadata, notes and custom field values, without its text.
 
-        OCR ``content`` is stripped to keep responses small. Call
-        ``get_document_content`` for a bounded preview, or use
-        ``create_download_link`` with the content variant when available.
+        Use get_document_content for the text.
         """
         doc = await client.documents.get(document_id)
         doc.content = None
@@ -134,27 +145,20 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
     @tool_boundary
     @paperless_errors
     async def get_document_content(
-        document_id: int,
+        document_id: DocumentId,
         max_chars: Annotated[int, Field(gt=0, le=CONTENT_CHAR_CAP)] = CONTENT_CHAR_CAP,
         offset: Annotated[int, Field(ge=0)] = 0,
     ) -> str:
-        """Return the OCR'd text content of a document.
+        """Read a document's text, up to 20,000 characters per call.
 
-        Documents such as books and technical standards can run to millions of
-        characters, so each call is capped at 20,000. A partial result opens
-        with a marker naming the character range returned, the document's full
-        length, and the ``offset`` to pass to read the next section; text that
-        fits under the cap is returned whole with no marker.
+        A longer document comes back in sections: each opens with a marker
+        naming the range returned, the full length and the offset of the next
+        section. Text that fits is returned whole, with no marker.
 
         Args:
-            document_id: ID of the document to read.
-            max_chars: Maximum number of characters to return, up to 20,000.
-            offset: Character position to start reading from.  Pass the value
-                named in a truncation marker to continue from where it stopped.
-
-        Returns:
-            The document's text, prefixed with a marker when the returned
-            section is not the whole document.
+            max_chars: Most characters to return in this call.
+            offset: Character position to start from; pass the offset a marker
+                names to read the next section.
         """
         text = await client.documents.get_content(document_id)
         return slice_content(text, max_chars=max_chars, offset=offset)
@@ -162,8 +166,8 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
     @mcp.tool(**tool_metadata("get_document_thumbnail"))
     @tool_boundary
     @paperless_errors
-    async def get_document_thumbnail(document_id: int) -> ImageContent:
-        """Return the document's thumbnail as inline image content."""
+    async def get_document_thumbnail(document_id: DocumentId) -> ImageContent:
+        """Get a small image of a document's first page."""
         data, content_type = await client.documents.get_thumbnail(document_id)
         return ImageContent(
             type="image",
@@ -174,42 +178,46 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
     @mcp.tool(**tool_metadata("get_document_metadata"))
     @tool_boundary
     @paperless_errors
-    async def get_document_metadata(document_id: int) -> DocumentMetadata:
-        """Return technical metadata for a document (checksums, filenames, etc.)."""
+    async def get_document_metadata(document_id: DocumentId) -> DocumentMetadata:
+        """Get a document's file details: original and archived file names, sizes, checksums and MIME type."""
         return await client.documents.get_metadata(document_id)
 
     @mcp.tool(**tool_metadata("get_document_notes"))
     @tool_boundary
     @paperless_errors
-    async def get_document_notes(document_id: int) -> list[DocumentNote]:
-        """Return notes attached to a document."""
+    async def get_document_notes(document_id: DocumentId) -> list[DocumentNote]:
+        """List the notes on a document, with their full text."""
         return await client.documents.get_notes(document_id)
 
     @mcp.tool(**tool_metadata("get_document_history"))
     @tool_boundary
     @paperless_errors
-    async def get_document_history(document_id: int) -> list[DocumentHistoryEntry]:
-        """Return the audit history for a document."""
+    async def get_document_history(
+        document_id: DocumentId,
+    ) -> list[DocumentHistoryEntry]:
+        """List the changes made to a document: who changed which field, and when."""
         return await client.documents.get_history(document_id)
 
     @mcp.tool(**tool_metadata("get_document_suggestions"))
     @tool_boundary
     @paperless_errors
-    async def get_document_suggestions(document_id: int) -> DocumentSuggestions:
-        """Return Paperless's classifier suggestions for a document."""
+    async def get_document_suggestions(document_id: DocumentId) -> DocumentSuggestions:
+        """Get Paperless's suggested tags, correspondent, document type and dates for a document."""
         return await client.documents.get_suggestions(document_id)
 
     @mcp.tool(**tool_metadata("update_document"))
     @tool_boundary
     @paperless_errors
     async def update_document(
-        document_id: int,
+        document_id: DocumentId,
         patch: DocumentPatch,
     ) -> Document:
-        """Patch selected fields on a document.
+        """Change a document's metadata; returns the updated document without its text.
 
-        The response strips OCR ``content``. Use ``get_document_content`` or a
-        transfer link when the updated text is needed.
+        Use bulk_edit_documents to change many documents at once.
+
+        Args:
+            patch: Only the fields to change.
         """
         doc = await client.documents.update(document_id, patch)
         doc.content = None
@@ -219,8 +227,8 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
     @mcp.tool(**tool_metadata("delete_document"))
     @tool_boundary
     @paperless_errors
-    async def delete_document(document_id: int) -> None:
-        """Delete a document."""
+    async def delete_document(document_id: DocumentId) -> None:
+        """Move a document to Paperless's trash, where a user can restore it until the trash is emptied."""
         await client.documents.delete(document_id)
 
     @mcp.tool(**tool_metadata("upload_document"))
@@ -237,7 +245,23 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
         archive_serial_number: str | None = None,
         custom_fields: list[int] | None = None,
     ) -> UploadTaskAcknowledgement:
-        """Upload a document.  Returns the task UUID for polling via `get_task`."""
+        """Upload a file for Paperless to consume; returns the consume task's id.
+
+        The document appears once the task finishes; wait_for_task waits for
+        it and its result names the new document. For large files, use
+        create_upload_link where it is available.
+
+        Args:
+            filename: File name, with the extension that tells Paperless its type.
+            content_base64: The file's bytes, base64-encoded.
+            title: Title; omit to let Paperless derive one.
+            correspondent: Correspondent id.
+            document_type: Document type id.
+            tags: Tag ids to add.
+            created: Creation date, YYYY-MM-DD or ISO 8601.
+            archive_serial_number: Archive serial number, a whole number.
+            custom_fields: Custom field ids to attach, without values.
+        """
         try:
             # Whitespace is dropped first so line-wrapped base64 keeps working;
             # validate=True then refuses any other stray character instead of
@@ -267,19 +291,34 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
     @paperless_errors
     async def bulk_edit_documents(
         operation: BulkEditOperation,
-        ids: list[int],
+        ids: BulkIds,
         parameters: dict[str, object] | None = None,
     ) -> BulkEditResult:
-        """Apply a bulk operation to a set of documents.
+        """Apply one operation to many documents at once; returns OK once Paperless accepts it.
 
-        Paperless writes the change before answering ``OK``, then queues the
-        search-index rebuild as a background task.  A following
-        ``search_documents`` call can therefore miss the edited documents for
-        seconds to minutes, while ``list_documents`` and ``get_document``
-        reflect the change at once.  Metadata operations queue a
-        ``bulk_update`` task: find it with
-        ``list_tasks(task_type="bulk_update")`` and ``wait_for_task`` on its
-        ``task_id`` to wait for full-text search to catch up.
+        Metadata operations (set_*, add_tag, remove_tag, modify_tags,
+        modify_custom_fields, set_permissions) are applied before the reply:
+        list_documents and get_document show them at once, search_documents
+        only after the bulk_update reindex task in list_tasks. delete, reprocess
+        and the PDF operations run as their own background tasks.
+
+        Args:
+            operation: What to do to every document in ids.
+            parameters: Arguments for the operation: set_correspondent
+                {"correspondent": id}, set_document_type {"document_type": id},
+                set_storage_path {"storage_path": id}, add_tag and remove_tag
+                {"tag": id}, modify_tags {"add_tags": [ids], "remove_tags":
+                [ids]}, modify_custom_fields {"add_custom_fields": [ids] or
+                {"<id>": value}, "remove_custom_fields": [ids]}, set_permissions
+                {"set_permissions": {"view": {"users": [ids], "groups": [ids]},
+                "change": {...}}, "owner": id, "merge": bool}, rotate
+                {"degrees": 90}, merge {"metadata_document_id": id,
+                "delete_originals": bool}, and on a single document: split
+                {"pages": "1,2-3"}, delete_pages {"pages": [2, 3]}, edit_pdf
+                {"operations": [{"page": 1, "rotate": 90, "doc": 0}]} (pages
+                left out are dropped; doc numbers the output file),
+                remove_password {"password": text}. delete and reprocess take
+                none.
         """
         return await client.documents.bulk_edit(
             document_ids=ids, method=operation, parameters=parameters
@@ -288,13 +327,21 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
     @mcp.tool(**tool_metadata("add_document_note"))
     @tool_boundary
     @paperless_errors
-    async def add_document_note(document_id: int, note: str) -> DocumentNote:
-        """Append a note to a document."""
+    async def add_document_note(document_id: DocumentId, note: str) -> DocumentNote:
+        """Add a note to a document; returns the new note with its id.
+
+        Args:
+            note: Text of the note.
+        """
         return await client.documents.add_note(document_id, note)
 
     @mcp.tool(**tool_metadata("delete_document_note"))
     @tool_boundary
     @paperless_errors
-    async def delete_document_note(document_id: int, note_id: int) -> None:
-        """Remove a note from a document."""
+    async def delete_document_note(document_id: DocumentId, note_id: int) -> None:
+        """Delete one note from a document.
+
+        Args:
+            note_id: Id of the note, from get_document_notes.
+        """
         await client.documents.delete_note(document_id, note_id)

@@ -23,8 +23,8 @@ calling a tool.
 | `create_download_link` | Get an expiring HTTP link for an original file, archived PDF, preview or full OCR Markdown file |
 | `create_upload_link` | Get an expiring HTTP link to upload a file, including Markdown, with optional metadata |
 | `update_document` | Patch document metadata; the response omits OCR content and has the same shape as `get_document` |
-| `delete_document` | Permanently delete a document |
-| `bulk_edit_documents` | Apply one operation to many documents. Operations cover metadata (correspondent, type, storage path, tags, custom fields, permissions), deletion and reprocessing, and PDF changes (rotate, merge, split, delete pages, edit, remove a password). The change lands before the call returns, but Paperless queues the search-index rebuild, so `search_documents` may miss the edited documents for seconds to minutes while `list_documents` and `get_document` see them at once. Track the queued task with `list_tasks(task_type="bulk_update")` |
+| `delete_document` | Move a document to the Paperless trash, from which it can be restored until the trash is emptied |
+| `bulk_edit_documents` | Apply one operation to many documents. Operations cover metadata (correspondent, type, storage path, tags, custom fields, permissions), deletion and reprocessing, and PDF changes (rotate, merge, split, delete pages, edit, remove a password); the `parameters` description lists what each one takes. The change lands before the call returns, but Paperless queues the search-index rebuild, so `search_documents` may miss the edited documents for seconds to minutes while `list_documents` and `get_document` see them at once. Track the queued task with `list_tasks(task_type="bulk_update")` |
 | `get_document_metadata` | Retrieve file metadata: original filename, checksums, MIME type |
 | `get_document_thumbnail` | Retrieve the thumbnail image of a document |
 | `get_document_suggestions` | Retrieve the tags, correspondent and type Paperless suggests for a document |

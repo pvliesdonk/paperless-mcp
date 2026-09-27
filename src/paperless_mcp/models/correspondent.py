@@ -5,6 +5,7 @@ from __future__ import annotations
 from pydantic import BaseModel, ConfigDict, Field
 
 from paperless_mcp.models._compat import OptionalPaperlessDatetime, UserId
+from paperless_mcp.models._fields import IsInsensitive, Match, MatchingAlgorithm
 
 
 class Correspondent(BaseModel):
@@ -23,15 +24,21 @@ class Correspondent(BaseModel):
 
 class CorrespondentCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    name: str = Field(..., min_length=1)
-    match: str | None = None
-    matching_algorithm: int | None = None
-    is_insensitive: bool | None = None
+    name: str = Field(
+        ...,
+        min_length=1,
+        description="Correspondent name, as it should appear on documents.",
+    )
+    match: Match = None
+    matching_algorithm: MatchingAlgorithm = None
+    is_insensitive: IsInsensitive = None
 
 
 class CorrespondentPatch(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    name: str | None = None
-    match: str | None = None
-    matching_algorithm: int | None = None
-    is_insensitive: bool | None = None
+    name: str | None = Field(
+        default=None, description="New name; omit to keep the current one."
+    )
+    match: Match = None
+    matching_algorithm: MatchingAlgorithm = None
+    is_insensitive: IsInsensitive = None

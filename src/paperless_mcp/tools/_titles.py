@@ -37,7 +37,7 @@ TITLE_REGISTRY: dict[str, str] = {
     "get_document_suggestions": "Suggest Tags, Correspondent and Type",
     # Documents — writes
     "update_document": "Update Document",
-    "delete_document": "Delete Document Permanently",
+    "delete_document": "Move Document to Trash",
     "upload_document": "Upload Document",
     "bulk_edit_documents": "Bulk Edit Documents",
     "add_document_note": "Add Document Note",

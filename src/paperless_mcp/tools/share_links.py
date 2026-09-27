@@ -2,17 +2,15 @@
 
 from __future__ import annotations
 
-from typing import Annotated
-
 from fastmcp import FastMCP
 from fastmcp_pvl_core import tool_boundary
-from pydantic import Field
 
 from paperless_mcp.models.common import Paginated
 from paperless_mcp.models.share_link import ShareLink
 from paperless_mcp.tools._context import ToolContext
 from paperless_mcp.tools._errors import paperless_errors
 from paperless_mcp.tools._metadata import tool_metadata
+from paperless_mcp.tools._params import Page, PageSize
 
 
 def register(mcp: FastMCP, ctx: ToolContext) -> None:
@@ -33,11 +31,15 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
     @tool_boundary
     @paperless_errors
     async def list_share_links(
-        page: Annotated[int, Field(ge=1)] = 1,
-        page_size: Annotated[int, Field(ge=1, le=100)] = ctx.default_page_size,
+        page: Page = 1,
+        page_size: PageSize = ctx.default_page_size,
         document_id: int | None = None,
     ) -> Paginated[ShareLink]:
-        """List share links (optionally filtered by document)."""
+        """List public share links for documents; returns one page with each link's document, expiry and URL.
+
+        Args:
+            document_id: Keep only the links to this document.
+        """
         result = await client.share_links.list(
             page=page, page_size=page_size, document_id=document_id
         )
@@ -49,7 +51,7 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
     @tool_boundary
     @paperless_errors
     async def get_share_link(share_link_id: int) -> ShareLink:
-        """Fetch a share link by ID."""
+        """Get one share link by id, with its document, expiry and URL."""
         link = await client.share_links.get(share_link_id)
         _with_share_url(link)
         return link

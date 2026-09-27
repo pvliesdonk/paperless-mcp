@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
@@ -83,13 +84,17 @@ def test_read_write_registers_all(
 
 
 def test_custom_field_tool_descriptions_mention_select_options() -> None:
-    """Regression test: docstrings document extra_data.select_options shape."""
+    """Regression test: the extra_data argument documents the select_options shape.
+
+    The shape is a fact about one argument, so it lives in that argument's
+    schema description rather than in the tool description.
+    """
     mcp = FastMCP("test")
     ctx = ToolContext(client=_mock_client(), default_page_size=25, public_url="")
     custom_fields_mod.register(mcp, ctx)
     tools = {t.name: t for t in asyncio.run(mcp.list_tools())}
     for name in ("create_custom_field", "update_custom_field"):
-        desc = tools[name].description or ""
-        assert "select_options" in desc, (
-            f"Tool {name!r} description must mention 'select_options'; got: {desc!r}"
+        schema = json.dumps(tools[name].parameters)
+        assert "select_options" in schema, (
+            f"Tool {name!r} input schema must mention 'select_options'; got: {schema}"
         )

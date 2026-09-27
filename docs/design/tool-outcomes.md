@@ -69,3 +69,16 @@ no `tool_api_error`.
   no archived PDF when the link is minted, where the model sees it. Only the
   ref is parsed under that INFO rule; a reply from Paperless that fails
   validation reaches the tool boundary as a server fault.
+
+## Descriptions
+
+Descriptions state the contract only; how a call fails lives in the error text
+above (the `writing-model-facing-text` skill). Parameters shared by several
+tools carry their descriptions once, in `tools/_params.py` (paging, ordering,
+name filters, bulk arguments) and `models/_fields.py` (matching rules).
+
+The facts in the descriptions are sourced, not recalled: the query syntax
+`search_documents` teaches is the "Searching" section of Paperless 3.1.3's
+`docs/usage.md`; ordering fields, filters, bulk methods and their parameters
+come from 3.1.3's views, serialisers and the vendored OpenAPI document in
+`reference/`.
