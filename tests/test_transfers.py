@@ -250,6 +250,54 @@ async def test_missing_archive(
     ctx.client.documents.download.assert_not_awaited()  # type: ignore[attr-defined]
 
 
+async def test_missing_archive_is_refused_when_minting(
+    mcp: FastMCP, ctx: ToolContext, document: Document
+) -> None:
+    """The model hears about a missing archive, not whoever redeems the link."""
+    ctx.client.documents.get.return_value = document.model_copy(  # type: ignore[attr-defined]
+        update={"archived_file_name": None}
+    )
+    with pytest.raises(ToolError, match='variant "original"') as error:
+        await _mint(mcp, DOWNLOAD, {"document_id": document.id, "variant": "archive"})
+    assert "has no archived PDF" in str(error.value)
+
+
+async def test_malformed_paperless_reply_is_a_fault_not_a_bad_ref(
+    mcp: FastMCP, ctx: ToolContext, document: Document
+) -> None:
+    """Only the ref is the model's to fix; a bad reply is the server's problem."""
+    import logging
+
+    from pydantic import BaseModel
+
+    class _Strict(BaseModel):
+        id: int
+
+    async def bad_reply(_: int) -> Document:
+        _Strict.model_validate({"id": "x"})
+        return document
+
+    ctx.client.documents.get.side_effect = bad_reply  # type: ignore[attr-defined]
+    with pytest.raises(ToolError) as error:
+        await _mint(mcp, DOWNLOAD, {"document_id": document.id})
+    assert "is not valid at" not in str(error.value)
+    assert getattr(error.value, "log_level", logging.ERROR) != logging.INFO
+
+
+async def test_upstream_outage_while_minting_logs_the_detail(
+    mcp: FastMCP, ctx: ToolContext, caplog: pytest.LogCaptureFixture
+) -> None:
+    """The operator gets Paperless's detail for an outcome they may act on."""
+    import logging
+
+    ctx.client.documents.get.side_effect = PaperlessAPIError(503, "maintenance")  # type: ignore[attr-defined]
+    with caplog.at_level(logging.WARNING), pytest.raises(ToolError, match="retry"):
+        await _mint(mcp, DOWNLOAD, {"document_id": 1})
+    assert any(
+        r.args == ("create_download_link", 503, "maintenance") for r in caplog.records
+    )
+
+
 @pytest.mark.parametrize("use_allow", [True, False])
 async def test_visibility_rejects_existing_links(
     ctx: ToolContext, config: ProjectConfig, document: Document, use_allow: bool
@@ -297,7 +345,9 @@ async def test_invalid_document_and_metadata(mcp: FastMCP, ctx: ToolContext) -> 
     with pytest.raises(ValidationError):
         UploadMetadata(tags=[-1])
     ctx.client.documents.get.side_effect = PaperlessAPIError(404, "not found")  # type: ignore[attr-defined]
-    with pytest.raises(ToolError, match="404"):
+    with pytest.raises(
+        ToolError, match=r"nothing for ref\.document_id=1 in create_download_link"
+    ):
         await _mint(mcp, DOWNLOAD, {"document_id": 1})
 
 
@@ -391,5 +441,5 @@ async def test_core_transfer_surface(mcp: FastMCP) -> None:
 )
 async def test_invalid_core_refs(mcp: FastMCP, name: str, ref: str) -> None:
     async with Client(mcp) as client:
-        with pytest.raises(ToolError, match="Response validation failed"):
+        with pytest.raises(ToolError, match=f"The ref passed to {name} is not valid"):
             await client.call_tool(name, {"ref": ref})

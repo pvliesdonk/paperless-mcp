@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Annotated
 
 from fastmcp import FastMCP
+from fastmcp.exceptions import ToolError
 from fastmcp_pvl_core import tool_boundary
 from pydantic import Field
 
+from paperless_mcp.client.tasks import TERMINAL_STATUSES
 from paperless_mcp.models.common import Paginated
 from paperless_mcp.models.task import Task, TaskStatus, TaskType
 from paperless_mcp.tools._context import ToolContext
@@ -73,4 +76,26 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
         timeout_seconds: Annotated[float, Field(gt=0, le=600)] = 60.0,
     ) -> Task:
         """Poll until the task reaches a terminal state or times out."""
-        return await client.tasks.wait_for(task_uuid, timeout_seconds=timeout_seconds)
+        try:
+            return await client.tasks.wait_for(
+                task_uuid, timeout_seconds=timeout_seconds
+            )
+        except TimeoutError as exc:
+            # The poll ends the same way whether the task is still running or
+            # never existed; one more read tells the two apart for the model,
+            # and returns the task if it finished since the last poll.
+            task = await client.tasks.get(task_uuid)
+            if task is not None and task.status in TERMINAL_STATUSES:
+                return task
+            if task is None:
+                message = (
+                    f"Paperless has no task with id {task_uuid}. Find the id "
+                    "with list_tasks, then call wait_for_task again."
+                )
+            else:
+                message = (
+                    f"Task {task_uuid} has not finished after {timeout_seconds:g} "
+                    "seconds. Call wait_for_task again to keep waiting, or "
+                    "get_task to read its current status."
+                )
+            raise ToolError(message, log_level=logging.INFO) from exc

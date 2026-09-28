@@ -42,10 +42,11 @@ See [transfer configuration](../configuration.md#document-transfer-links).
 
 Call `create_download_link(ref='{"document_id":42,"variant":"content"}')` for
 full OCR text as a UTF-8 Markdown file. Other variants are `original` (the
-default), `archive` and `preview`. An archive request fails if no archived PDF
-exists. The tool returns `url` and `expires_in_s`; GET the URL from a file
-client or pass it to the intended recipient. Downloading reads the current
-file, so changes after link creation are reflected in the response.
+default), `archive` and `preview`. Asking for `archive` on a document without an
+archived PDF is refused when the link is created, not when it is used. The
+tool returns `url` and `expires_in_s`; GET the URL from a file client or pass
+it to the intended recipient. Downloading reads the current file, so changes
+after link creation are reflected in the response.
 
 Content exports have a YAML front-matter block with document ID, title, created
 timestamp, correspondent ID, document type ID and tag IDs. The OCR text follows
@@ -69,6 +70,22 @@ the bytes differ, or the earlier result is uncertain. Inspect Paperless tasks
 before creating another link. An oversized upload returns 413; the default
 limit is 100 MiB. Link lifetime defaults to one hour; `ttl_s` requests a
 lifetime up to the configured maximum of 24 hours.
+
+### Errors
+
+A tool that cannot deliver its result returns an MCP tool error whose text is
+written for the model: what went wrong and which call to make next. How it is
+logged depends on who has to act:
+
+| Paperless answered | The model is told | Logged at |
+|---|---|---|
+| 400, 403, another 4xx, or 404 for an id the call passed | what to change, or that the account may not do this | `INFO` |
+| 409 | to read the object again and retry with its current values | `INFO` |
+| 429, 5xx, or no answer | the request was fine; retry in a minute | `WARNING` |
+| 401, 404 for a call without an id, or a reply the server cannot parse | the request was fine; tell the user | `ERROR` |
+
+Only the last row needs an operator. Anything else that fails inside a tool is
+logged once as `tool_failed` at `ERROR` with its traceback.
 
 ### Pagination
 
@@ -165,7 +182,7 @@ Both tools include a `share_url` field of the form `<PAPERLESS_MCP_PAPERLESS_PUB
 |---|---|
 | `list_tasks` | List background Celery tasks, newest first. Paginates (`page`, `page_size` up to 100). Defaults to unacknowledged tasks only. Pass `include_acknowledged=True` to include acknowledged tasks, or `acknowledged=True` to return only acknowledged ones. Filter by kind of work with `task_type`, such as `task_type="bulk_update"` for the search-index rebuild `bulk_edit_documents` queues. |
 | `get_task` | Get a task by UUID |
-| `wait_for_task` | Poll until a task reaches a terminal state or times out |
+| `wait_for_task` | Wait up to `timeout_seconds` (600 at most) for a task to finish. A task still running at the deadline, or an id Paperless does not know, is reported as an error telling the model what to call next |
 
 Requests prefer Paperless payload version 10. An explicit version rejection
 switches that client session to version 9 for Paperless 2.x; authentication,
