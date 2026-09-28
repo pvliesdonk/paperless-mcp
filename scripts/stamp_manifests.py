@@ -45,6 +45,7 @@ inside those markers survives an update.
 from __future__ import annotations
 
 import json
+import os
 import re
 import subprocess
 import sys
@@ -57,11 +58,48 @@ class StampError(RuntimeError):
     """A required pin was missing or unstampable — the release must refuse."""
 
 
+# The only two shapes the release flow emits: knope's `X.Y.Z`, and
+# `X.Y.Z-rc.N` from `--prerelease-label rc` (release-prepare.yml).
+_RELEASE_VERSION = re.compile(r"(\d+)\.(\d+)\.(\d+)(?:-rc\.(\d+))?")
+
+
+def _release_version(raw: str) -> str:
+    """Return *raw* if it is a release version this flow emits, else refuse.
+
+    The value is written into uv.lock and every published manifest, so a
+    malformed invocation must stop before anything is rewritten (#694).  The
+    result is rebuilt from the matched digits rather than passed through.
+    """
+    match = _RELEASE_VERSION.fullmatch(raw)
+    if match is None:
+        raise StampError(
+            f"version {raw!r} is neither X.Y.Z nor X.Y.Z-rc.N — "
+            "the only shapes the release flow emits"
+        )
+    major, minor, patch, rc = match.groups()
+    return f"{major}.{minor}.{patch}" + (f"-rc.{rc}" if rc is not None else "")
+
+
 def _load(path: Path) -> Any:
     if not path.is_file():
         raise StampError(f"{path}: not found — run from the repository root")
     with path.open("r", encoding="utf-8") as fh:
         return json.load(fh)
+
+
+def _within_cwd(path: str | os.PathLike[str]) -> str:
+    """*path* canonicalised, refusing one outside the working directory (#694).
+
+    Every path this script touches lives in the checkout it runs from, so a
+    path that resolves elsewhere (``..``, an absolute path, a symlink) is a
+    broken or hostile invocation.  The realpath-then-prefix shape is the one
+    SonarCloud's path-injection rules recognise.
+    """
+    resolved = os.path.realpath(path)
+    base_dir = os.path.realpath(os.getcwd())  # noqa: PTH109 - the shape Sonar reads
+    if resolved != base_dir and not resolved.startswith(base_dir + os.sep):
+        raise StampError(f"path {path!r} is outside the working directory")
+    return resolved
 
 
 def _dump(path: Path, data: Any) -> None:
@@ -72,6 +110,7 @@ def _dump(path: Path, data: Any) -> None:
     created in the target's own directory so the final ``rename`` is atomic
     on the same filesystem.
     """
+    path = Path(_within_cwd(path))
     tmp = path.parent / f".{path.name}.stamp-tmp"
     try:
         tmp.write_text(
@@ -134,6 +173,7 @@ def _stamp_uv_lock(version: str) -> list[Path]:
         raise StampError(
             f"{path}: no 'name = \"{normalized}\"' entry with a version line to stamp"
         )
+    path = Path(_within_cwd(path))
     tmp = path.parent / f".{path.name}.stamp-tmp"
     try:
         tmp.write_text(new_text, encoding="utf-8")
@@ -247,7 +287,7 @@ def main(argv: list[str]) -> int:
             file=sys.stderr,
         )
         return 1
-    version = argv[1]
+    version = _release_version(argv[1])
 
     # uv.lock tracks pyproject.toml, not a published artifact, so its
     # self-version entry moves on EVERY release — before the pre-release
