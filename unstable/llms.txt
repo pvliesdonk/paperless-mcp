@@ -12,6 +12,7 @@
 ## Guides
 
 - [Authentication](https://pvliesdonk.github.io/paperless-mcp/unstable/guides/authentication/index.md)
+- [Security Model](https://pvliesdonk.github.io/paperless-mcp/unstable/guides/security-model/index.md)
 
 ## MCP Interface
 
@@ -23,6 +24,7 @@
 
 - [Claude Desktop](https://pvliesdonk.github.io/paperless-mcp/unstable/deployment/claude-desktop/index.md)
 - [Docker](https://pvliesdonk.github.io/paperless-mcp/unstable/deployment/docker/index.md)
+- [Integration Branches](https://pvliesdonk.github.io/paperless-mcp/unstable/deployment/integration-branches/index.md)
 - [OIDC Authentication](https://pvliesdonk.github.io/paperless-mcp/unstable/deployment/oidc/index.md)
 - [Release Process](https://pvliesdonk.github.io/paperless-mcp/unstable/deployment/release-process/index.md)
 - [Repository Protection](https://pvliesdonk.github.io/paperless-mcp/unstable/deployment/repository-protection/index.md)

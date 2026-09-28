@@ -13,7 +13,7 @@
         <link rel="canonical" href="https://pvliesdonk.github.io/paperless-mcp/unstable/tools/">
       
       
-        <link rel="prev" href="../guides/authentication/">
+        <link rel="prev" href="../guides/security-model/">
       
       
         <link rel="next" href="../resources/">
@@ -646,6 +646,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/security-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -793,6 +821,17 @@
     <span class="md-ellipsis">
       
         File transfer links
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Errors
       
     </span>
   </a>
@@ -1225,6 +1264,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../deployment/integration-branches/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Integration Branches
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1302,6 +1369,17 @@
     <span class="md-ellipsis">
       
         File transfer links
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Errors
       
     </span>
   </a>
@@ -1462,14 +1540,14 @@
 
 <h1 id="tools">Tools<a class="headerlink" href="#tools" title="Permanent link">&para;</a></h1>
 <p>The tools registered in this server are listed below.</p>
+<!-- DOMAIN-TOOLS-LIST-START -->
+
 <p>Every tool also carries a human-readable title, which clients that support
 titles show in place of the machine name. A few titles say what the tool does
 rather than restating its name: <code>get_remote_version</code> is titled <strong>Check for
 Paperless Updates</strong>, and <code>get_document_metadata</code> is titled <strong>Get Document File
 Details</strong>. The tables below list machine names, which is what you pass when
 calling a tool.</p>
-<!-- DOMAIN-TOOLS-LIST-START -->
-
 <h2 id="document-tools">Document tools<a class="headerlink" href="#document-tools" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -1513,11 +1591,11 @@ calling a tool.</p>
 </tr>
 <tr>
 <td><code>delete_document</code></td>
-<td>Permanently delete a document</td>
+<td>Move a document to the Paperless trash, from which it can be restored until the trash is emptied</td>
 </tr>
 <tr>
 <td><code>bulk_edit_documents</code></td>
-<td>Apply a bulk operation to multiple documents. The change lands before the call returns, but Paperless queues the search-index rebuild, so <code>search_documents</code> may miss the edited documents for seconds to minutes while <code>list_documents</code> and <code>get_document</code> see them at once. Track the queued task with <code>list_tasks(task_type="bulk_update")</code></td>
+<td>Apply one operation to many documents. Operations cover metadata (correspondent, type, storage path, tags, custom fields, permissions), deletion and reprocessing, and PDF changes (rotate, merge, split, delete pages, edit, remove a password); the <code>parameters</code> description lists what each one takes. Metadata operations land before the call returns, but Paperless then rebuilds the search index in the background, so <code>search_documents</code> may miss the edited documents for seconds to minutes while <code>list_documents</code> and <code>get_document</code> see them at once; track that rebuild with <code>list_tasks(task_type="bulk_update")</code>. Deletion, reprocessing and the PDF changes run as background tasks of their own.</td>
 </tr>
 <tr>
 <td><code>get_document_metadata</code></td>
@@ -1555,10 +1633,11 @@ calling a tool.</p>
 See <a href="../configuration/#document-transfer-links">transfer configuration</a>.</p>
 <p>Call <code>create_download_link(ref='{"document_id":42,"variant":"content"}')</code> for
 full OCR text as a UTF-8 Markdown file. Other variants are <code>original</code> (the
-default), <code>archive</code> and <code>preview</code>. An archive request fails if no archived PDF
-exists. The tool returns <code>url</code> and <code>expires_in_s</code>; GET the URL from a file
-client or pass it to the intended recipient. Downloading reads the current
-file, so changes after link creation are reflected in the response.</p>
+default), <code>archive</code> and <code>preview</code>. Asking for <code>archive</code> on a document without an
+archived PDF is refused when the link is created, not when it is used. The
+tool returns <code>url</code> and <code>expires_in_s</code>; GET the URL from a file client or pass
+it to the intended recipient. Downloading reads the current file, so changes
+after link creation are reflected in the response.</p>
 <p>Content exports have a YAML front-matter block with document ID, title, created
 timestamp, correspondent ID, document type ID and tag IDs. The OCR text follows
 unchanged. Short text remains available through <code>get_document_content</code>.</p>
@@ -1578,6 +1657,43 @@ the bytes differ, or the earlier result is uncertain. Inspect Paperless tasks
 before creating another link. An oversized upload returns 413; the default
 limit is 100 MiB. Link lifetime defaults to one hour; <code>ttl_s</code> requests a
 lifetime up to the configured maximum of 24 hours.</p>
+<h3 id="errors">Errors<a class="headerlink" href="#errors" title="Permanent link">&para;</a></h3>
+<p>A tool that cannot deliver its result returns an MCP tool error whose text is
+written for the model: what went wrong and which call to make next. How it is
+logged depends on who has to act:</p>
+<table>
+<thead>
+<tr>
+<th>Paperless answered</th>
+<th>The model is told</th>
+<th>Logged at</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>400, 403, another 4xx, or 404 for an id the call passed</td>
+<td>what to change, or that the account may not do this</td>
+<td><code>INFO</code></td>
+</tr>
+<tr>
+<td>409</td>
+<td>to read the object again and retry with its current values</td>
+<td><code>INFO</code></td>
+</tr>
+<tr>
+<td>429, 5xx, or no answer</td>
+<td>the request was fine; retry in a minute</td>
+<td><code>WARNING</code></td>
+</tr>
+<tr>
+<td>401, 404 for a call without an id, or a reply the server cannot parse</td>
+<td>the request was fine; tell the user</td>
+<td><code>ERROR</code></td>
+</tr>
+</tbody>
+</table>
+<p>Only the last row needs an operator. Anything else that fails inside a tool is
+logged once as <code>tool_failed</code> at <code>ERROR</code> with its traceback.</p>
 <h3 id="pagination">Pagination<a class="headerlink" href="#pagination" title="Permanent link">&para;</a></h3>
 <p>All paginated tools return <code>next</code>/<code>previous</code> as bare <code>page=N</code> markers (or <code>None</code>). Upstream Paperless URLs are normalised away so the internal hostname never leaks into MCP responses. Both server-paginated (documents, tags, and similar endpoints) and client-paginated (tasks) endpoints now share a single shape. Callers pass <code>page=N</code> explicitly to fetch subsequent pages.</p>
 <h2 id="tag-tools">Tag tools<a class="headerlink" href="#tag-tools" title="Permanent link">&para;</a></h2>
@@ -1611,7 +1727,7 @@ lifetime up to the configured maximum of 24 hours.</p>
 </tr>
 <tr>
 <td><code>bulk_edit_tags</code></td>
-<td>Bulk-add or remove tags across documents</td>
+<td>Set the owner and permissions of many tags, or delete them. To add or remove a tag on documents, use <code>bulk_edit_documents</code></td>
 </tr>
 </tbody>
 </table>
@@ -1646,7 +1762,7 @@ lifetime up to the configured maximum of 24 hours.</p>
 </tr>
 <tr>
 <td><code>bulk_edit_correspondents</code></td>
-<td>Apply a bulk operation across correspondents</td>
+<td>Set the owner and permissions of many correspondents, or delete them</td>
 </tr>
 </tbody>
 </table>
@@ -1681,7 +1797,7 @@ lifetime up to the configured maximum of 24 hours.</p>
 </tr>
 <tr>
 <td><code>bulk_edit_document_types</code></td>
-<td>Apply a bulk operation across document types</td>
+<td>Set the owner and permissions of many document types, or delete them</td>
 </tr>
 </tbody>
 </table>
@@ -1820,7 +1936,7 @@ consumers that assumed these fields were always <code>bool</code> must handle <c
 <tbody>
 <tr>
 <td><code>list_tasks</code></td>
-<td>List background Celery tasks, newest first. Paginates (<code>page</code>, <code>page_size</code> up to 100). Defaults to unacknowledged tasks only. Pass <code>include_acknowledged=True</code> to include acknowledged tasks, or <code>acknowledged=True</code> to return only acknowledged ones. Filter by kind of work with <code>task_type</code>, such as <code>task_type="bulk_update"</code> for the search-index rebuild <code>bulk_edit_documents</code> queues.</td>
+<td>List background Celery tasks, newest first. Paginates (<code>page</code>, <code>page_size</code> up to 100). Defaults to unacknowledged tasks only. Pass <code>include_acknowledged=True</code> to include acknowledged tasks, or <code>acknowledged=True</code> to return only acknowledged ones. Filter by kind of work with <code>task_type</code>, such as <code>task_type="bulk_update"</code> for the search-index rebuild that <code>bulk_edit_documents</code>' metadata operations queue.</td>
 </tr>
 <tr>
 <td><code>get_task</code></td>
@@ -1828,7 +1944,7 @@ consumers that assumed these fields were always <code>bool</code> must handle <c
 </tr>
 <tr>
 <td><code>wait_for_task</code></td>
-<td>Poll until a task reaches a terminal state or times out</td>
+<td>Wait up to <code>timeout_seconds</code> (600 at most) for a task to finish. A task still running at the deadline, or an id Paperless does not know, is reported as an error telling the model what to call next</td>
 </tr>
 </tbody>
 </table>

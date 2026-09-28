@@ -58,8 +58,6 @@ Transport, identity, and tool visibility. `PAPERLESS_MCP_SERVER_NAME` identifies
 
 Generated guidance targets 1,536 UTF-16 units, reserving 512 units for normal operator routing and policy within Claude Code's known 2,048-unit limit. Crossing either threshold logs a warning; startup continues and the server does not truncate the instructions.
 
-The generated guidance names the Paperless instance this deployment fronts, taking the URL from `PAPERLESS_MCP_PAPERLESS_PUBLIC_URL` or, unset, from `PAPERLESS_MCP_PAPERLESS_URL`. A model can then recognise a link to that instance and read the document id out of it.
-
 `PAPERLESS_MCP_TOOLS_ALLOW` and `PAPERLESS_MCP_TOOLS_DENY` trim which tools an instance exposes. Hidden tools disappear from `tools/list` and are rejected on `tools/call`; resources and prompts are unaffected. Setting both variables, or setting one to a value with no names in it, is a startup error. A name matching no registered tool is ignored, but an allowlist that matches nothing logs a startup warning, since the instance then exposes zero tools. See `fastmcp-pvl-core`'s README for the full semantics.
 
 `PAPERLESS_MCP_HEALTH_DETAIL` decides how much the unauthenticated `/health` and `/health/ready` bodies say, since anyone who can reach the port can read them: `status` alone, the default `standard` with the server name, version and a verdict per readiness check, or `full` with a redacted reason for each check that raised. See [Docker deployment](https://pvliesdonk.github.io/paperless-mcp/unstable/deployment/docker/#health) for the routes themselves.
@@ -166,7 +164,9 @@ Development only; the image must be built with `--build-arg DEBUG=true`, and the
 
 ## Domain variables
 
-`PAPERLESS_MCP_PAPERLESS_URL` and `PAPERLESS_MCP_API_TOKEN` are the two variables the server cannot start without: leave either unset and startup stops with a message naming it. The table below still shows them under `Required: No`, because that column reports whether the underlying field declares a default rather than whether the server runs without a value; read the description column for these two. `PAPERLESS_MCP_PAPERLESS_PUBLIC_URL` lets you name a different base URL for user-visible links than the internal API URL the server calls; unset, it defaults to `PAPERLESS_MCP_PAPERLESS_URL`, and trailing slashes are stripped from both.
+The generated guidance names the Paperless instance this deployment fronts, taking the URL from `PAPERLESS_MCP_PAPERLESS_PUBLIC_URL` or, unset, from `PAPERLESS_MCP_PAPERLESS_URL`. A model can then recognise a link to that instance and read the document id out of it.
+
+`PAPERLESS_MCP_PAPERLESS_URL` and `PAPERLESS_MCP_API_TOKEN` are the two variables the server cannot start without: leave either unset and startup stops with one line naming it. `PAPERLESS_MCP_PAPERLESS_PUBLIC_URL` lets you name a different base URL for user-visible links than the internal API URL the server calls; unset, it defaults to `PAPERLESS_MCP_PAPERLESS_URL`, and trailing slashes are stripped from both.
 
 A minimal `.env`:
 
@@ -191,14 +191,14 @@ See [file transfer links](https://pvliesdonk.github.io/paperless-mcp/unstable/to
 
 ### Paperless
 
-| Variable                             | Default | Required | Description                                                                                               |
-| ------------------------------------ | ------- | -------- | --------------------------------------------------------------------------------------------------------- |
-| `PAPERLESS_MCP_PAPERLESS_URL`        | (none)  | No       | Base URL of the Paperless-NGX REST API, without a trailing slash. The server refuses to start without it. |
-| `PAPERLESS_MCP_API_TOKEN`            | (none)  | No       | Paperless service-account token used for outbound API requests. The server refuses to start without it.   |
-| `PAPERLESS_MCP_HTTP_TIMEOUT_SECONDS` | `30.0`  | No       | Per-request HTTP timeout in seconds.                                                                      |
-| `PAPERLESS_MCP_HTTP_RETRIES`         | `2`     | No       | Retries for idempotent requests after network errors or 5xx responses.                                    |
-| `PAPERLESS_MCP_DEFAULT_PAGE_SIZE`    | `25`    | No       | Default page size for list tools, from 1 through 100.                                                     |
-| `PAPERLESS_MCP_PAPERLESS_PUBLIC_URL` | (none)  | No       | Public Paperless UI URL for user-visible links; defaults to PAPERLESS_URL.                                |
+| Variable                             | Default | Required | Description                                                                |
+| ------------------------------------ | ------- | -------- | -------------------------------------------------------------------------- |
+| `PAPERLESS_MCP_PAPERLESS_URL`        | (none)  | **Yes**  | Base URL of the Paperless-NGX REST API, without a trailing slash.          |
+| `PAPERLESS_MCP_API_TOKEN`            | (none)  | **Yes**  | Paperless service-account token used for outbound API requests.            |
+| `PAPERLESS_MCP_HTTP_TIMEOUT_SECONDS` | `30.0`  | No       | Per-request HTTP timeout in seconds.                                       |
+| `PAPERLESS_MCP_HTTP_RETRIES`         | `2`     | No       | Retries for idempotent requests after network errors or 5xx responses.     |
+| `PAPERLESS_MCP_DEFAULT_PAGE_SIZE`    | `25`    | No       | Default page size for list tools, from 1 through 100.                      |
+| `PAPERLESS_MCP_PAPERLESS_PUBLIC_URL` | (none)  | No       | Public Paperless UI URL for user-visible links; defaults to PAPERLESS_URL. |
 
 ### Transfer
 
@@ -229,13 +229,13 @@ Authentication only works with HTTP transport (`--transport http` or `sse`). It 
 
 The server supports five authentication modes:
 
-| Mode                  | When to use                                                                                                      | Configuration                                                                                       |
-| --------------------- | ---------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| **Multi-auth**        | Mixed clients, such as Claude web (OIDC) + Claude Code (bearer token) on the same server                         | Set both `PAPERLESS_MCP_BEARER_TOKEN` and the OIDC variables                                        |
-| **Bearer token**      | Simple deployments behind a VPN, Docker compose stacks, development                                              | Set `PAPERLESS_MCP_BEARER_TOKEN` only                                                               |
-| **OIDC (remote)**     | Production with user identity, SSO, multi-user access; local JWKS validation, no confidential client to register | Set `PAPERLESS_MCP_BASE_URL` + `PAPERLESS_MCP_OIDC_CONFIG_URL` only                                 |
-| **OIDC (oidc-proxy)** | The same, where the server should run the OAuth flow itself and manage sessions                                  | Set all four OIDC variables (`BASE_URL`, `OIDC_CONFIG_URL`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`) |
-| **No auth**           | Local stdio usage, trusted networks                                                                              | Default (nothing to configure)                                                                      |
+| Mode                  | When to use                                                                                                                                   | Configuration                                                                                       |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| **Multi-auth**        | Mixed clients, such as Claude web (OIDC) + Claude Code (bearer token) on the same server                                                      | Set both `PAPERLESS_MCP_BEARER_TOKEN` and the OIDC variables                                        |
+| **Bearer token**      | Simple deployments behind a VPN, Docker compose stacks, development                                                                           | Set `PAPERLESS_MCP_BEARER_TOKEN` only                                                               |
+| **OIDC (remote)**     | Production with user identity, SSO, multi-user access; local JWKS validation, no confidential client to register                              | Set `PAPERLESS_MCP_BASE_URL` + `PAPERLESS_MCP_OIDC_CONFIG_URL` only                                 |
+| **OIDC (oidc-proxy)** | The same, where the server should run the OAuth flow itself and manage sessions                                                               | Set all four OIDC variables (`BASE_URL`, `OIDC_CONFIG_URL`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`) |
+| **No auth**           | Local stdio usage, trusted networks; see [Security model](https://pvliesdonk.github.io/paperless-mcp/unstable/guides/security-model/index.md) | Default (nothing to configure)                                                                      |
 
 When both bearer token and OIDC are configured, the server accepts **either** credential: a valid bearer token or a valid OIDC session. This is useful when different clients require different authentication flows against the same server instance.
 
@@ -465,6 +465,61 @@ These upstream issues are actively tracked:
 - [modelcontextprotocol/python-sdk#1326](https://github.com/modelcontextprotocol/python-sdk/issues/1326): SSE refresh deadlock
 
 When these are resolved, OIDC sessions should persist indefinitely via automatic token refresh with no changes needed server-side.
+
+# Security model
+
+This page states what paperless-mcp protects and what it leaves to the operator. [Authentication](https://pvliesdonk.github.io/paperless-mcp/unstable/guides/authentication/index.md) covers how to configure each mode, and `SECURITY.md` in the repository covers how to report a vulnerability.
+
+## Authentication is the boundary
+
+Over HTTP, authentication is the only access control: a bearer token, a mapped bearer token file, or OIDC. A request without a valid credential is refused before it reaches a tool. It is the same model as any other MCP server reached over HTTP.
+
+## Running without authentication
+
+With no authentication variables set, the server starts in mode `none` and logs `auth_mode_resolved` at warning level with `mode=none`. Every client that can open a connection to the port then has the full tool surface. Turning authentication off is a decision to trust everything that can reach the port.
+
+The bind address decides which machines reach the port, and nothing more. Binding to `127.0.0.1` keeps other machines out. It does not keep out other processes on the host, nor a web page in a browser on the host that uses DNS rebinding. Without authentication, run the server only where everything that reaches the port is trusted, such as a single-user workstation or a private network you control.
+
+## stdio
+
+Over stdio there is no network listener and no authentication. The MCP client starts the server as a child process, and the server trusts that client. Authentication variables have no effect there, and the server logs `auth_configured_but_stdio_skips_enforcement` when they are set.
+
+## What an authenticated caller can reach
+
+An authenticated caller has every tool the instance exposes. Each tool runs with the server's own privileges: its filesystem and network access, and any credential in its configuration. `PAPERLESS_MCP_TOOLS_ALLOW` and `PAPERLESS_MCP_TOOLS_DENY` trim that set for an instance; see [Configuration](https://pvliesdonk.github.io/paperless-mcp/unstable/configuration/index.md).
+
+Every tool acts on one Paperless-NGX instance, the one at `PAPERLESS_MCP_PAPERLESS_URL`, and sends every request with the single API token in `PAPERLESS_MCP_API_TOKEN`. The tools make no other outbound requests; the server itself also connects to the OIDC provider in the OIDC modes, and to the network store a `PAPERLESS_MCP_KV_STORE_URL` or `PAPERLESS_MCP_TASKS_URL` names (Redis, DynamoDB or MongoDB). An authenticated caller acts as the Paperless user that owns that token, and the permissions Paperless grants that user are the only limit on what the tools can do:
+
+- **Read** documents, their OCR text, thumbnails, file metadata, notes, history and suggestions, as well as tags, correspondents, document types, storage paths, custom fields, saved views, share links, tasks and instance statistics.
+- **Change** document metadata, notes, tags, correspondents, document types and custom fields, one at a time or in bulk.
+- **Delete** documents, notes, tags, correspondents, document types and custom fields.
+- **Upload** new documents for Paperless to consume.
+
+A service-account token with only the permissions the deployment needs is the way to narrow this set. Hiding the delete tools with `PAPERLESS_MCP_TOOLS_DENY` changes the tool list the model sees. The token's permissions stay the same.
+
+Over HTTP with `PAPERLESS_MCP_BASE_URL` set, `create_download_link` and `create_upload_link` issue single-use links. A link needs no credential: whoever holds it can use it once, before it expires. The server re-checks the document against Paperless when a download link is redeemed.
+
+## What answers without a credential
+
+Some routes answer anyone who can reach the port, with authentication on or off:
+
+- `/health` and `/health/ready`. `PAPERLESS_MCP_HEALTH_DETAIL` decides how much they say; see [Health](https://pvliesdonk.github.io/paperless-mcp/unstable/deployment/docker/#health).
+- In the OIDC modes, the OAuth metadata and sign-in routes a client uses before it holds a token.
+
+## What the operator is responsible for
+
+- **TLS.** The server speaks plain HTTP. Terminate TLS at a reverse proxy in front of it.
+- **Exposure.** Which interfaces and networks can reach the port. [Ports](https://pvliesdonk.github.io/paperless-mcp/unstable/deployment/docker/#ports) covers the published port of the Docker deployment.
+- **Secrets.** Bearer tokens, OIDC client secrets and the credentials the tools use live in the environment or in files you control. Anyone who can read them can act as the server.
+- **The debugger port.** A debug build's debugger port grants code execution to anyone who reaches it; see [Remote debugging](https://pvliesdonk.github.io/paperless-mcp/unstable/deployment/docker/#remote-debugging).
+
+## Host and Origin validation
+
+FastMCP can refuse requests whose `Host` or `Origin` header does not name the server, which blocks DNS rebinding against a server running without authentication. It is off by default, and the model above does not depend on it. To turn it on, set `FASTMCP_HTTP_HOST_ORIGIN_PROTECTION` to `auto`, which checks requests that reach the server on a local address, or to `true`, which checks every request against `FASTMCP_HTTP_ALLOWED_HOSTS` (a JSON list of host names). Behind a reverse proxy, test it before relying on it: a request whose headers do not match is refused.
+
+## Reporting a vulnerability
+
+Read this page before reporting. A finding that depends on authentication being off describes the configuration above rather than a flaw in the server. `SECURITY.md` covers the reporting channel, scope and response targets.
 # MCP Interface
 
 # Tools
@@ -475,25 +530,25 @@ Every tool also carries a human-readable title, which clients that support title
 
 ## Document tools
 
-| Tool                       | Description                                                                                                                                                                                                                                                                                                                                    |
-| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `list_documents`           | List documents with optional filters. OCR `content`, `notes[].note`, and `custom_fields[].value` are stripped; fetch text through a single-document endpoint.                                                                                                                                                                                  |
-| `search_documents`         | Full-text and filtered document search. OCR `content`, `notes[].note`, and `custom_fields[].value` are stripped from hits.                                                                                                                                                                                                                     |
-| `get_document`             | Retrieve document metadata by ID without OCR content                                                                                                                                                                                                                                                                                           |
-| `get_document_content`     | Retrieve up to 20,000 characters of plain-text OCR content. A partial result names the range, the next `offset`, and the transfer-link route when available.                                                                                                                                                                                   |
-| `upload_document`          | Upload a new document for ingestion                                                                                                                                                                                                                                                                                                            |
-| `create_download_link`     | Get an expiring HTTP link for an original file, archived PDF, preview or full OCR Markdown file                                                                                                                                                                                                                                                |
-| `create_upload_link`       | Get an expiring HTTP link to upload a file, including Markdown, with optional metadata                                                                                                                                                                                                                                                         |
-| `update_document`          | Patch document metadata; the response omits OCR content and has the same shape as `get_document`                                                                                                                                                                                                                                               |
-| `delete_document`          | Permanently delete a document                                                                                                                                                                                                                                                                                                                  |
-| `bulk_edit_documents`      | Apply a bulk operation to multiple documents. The change lands before the call returns, but Paperless queues the search-index rebuild, so `search_documents` may miss the edited documents for seconds to minutes while `list_documents` and `get_document` see them at once. Track the queued task with `list_tasks(task_type="bulk_update")` |
-| `get_document_metadata`    | Retrieve file metadata: original filename, checksums, MIME type                                                                                                                                                                                                                                                                                |
-| `get_document_thumbnail`   | Retrieve the thumbnail image of a document                                                                                                                                                                                                                                                                                                     |
-| `get_document_suggestions` | Retrieve the tags, correspondent and type Paperless suggests for a document                                                                                                                                                                                                                                                                    |
-| `get_document_notes`       | List notes attached to a document                                                                                                                                                                                                                                                                                                              |
-| `add_document_note`        | Add a note to a document                                                                                                                                                                                                                                                                                                                       |
-| `delete_document_note`     | Delete a note from a document                                                                                                                                                                                                                                                                                                                  |
-| `get_document_history`     | Retrieve audit log for a document                                                                                                                                                                                                                                                                                                              |
+| Tool                       | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `list_documents`           | List documents with optional filters. OCR `content`, `notes[].note`, and `custom_fields[].value` are stripped; fetch text through a single-document endpoint.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `search_documents`         | Full-text and filtered document search. OCR `content`, `notes[].note`, and `custom_fields[].value` are stripped from hits.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `get_document`             | Retrieve document metadata by ID without OCR content                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `get_document_content`     | Retrieve up to 20,000 characters of plain-text OCR content. A partial result names the range, the next `offset`, and the transfer-link route when available.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `upload_document`          | Upload a new document for ingestion                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `create_download_link`     | Get an expiring HTTP link for an original file, archived PDF, preview or full OCR Markdown file                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `create_upload_link`       | Get an expiring HTTP link to upload a file, including Markdown, with optional metadata                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `update_document`          | Patch document metadata; the response omits OCR content and has the same shape as `get_document`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `delete_document`          | Move a document to the Paperless trash, from which it can be restored until the trash is emptied                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `bulk_edit_documents`      | Apply one operation to many documents. Operations cover metadata (correspondent, type, storage path, tags, custom fields, permissions), deletion and reprocessing, and PDF changes (rotate, merge, split, delete pages, edit, remove a password); the `parameters` description lists what each one takes. Metadata operations land before the call returns, but Paperless then rebuilds the search index in the background, so `search_documents` may miss the edited documents for seconds to minutes while `list_documents` and `get_document` see them at once; track that rebuild with `list_tasks(task_type="bulk_update")`. Deletion, reprocessing and the PDF changes run as background tasks of their own. |
+| `get_document_metadata`    | Retrieve file metadata: original filename, checksums, MIME type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `get_document_thumbnail`   | Retrieve the thumbnail image of a document                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `get_document_suggestions` | Retrieve the tags, correspondent and type Paperless suggests for a document                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `get_document_notes`       | List notes attached to a document                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `add_document_note`        | Add a note to a document                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `delete_document_note`     | Delete a note from a document                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `get_document_history`     | Retrieve audit log for a document                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 
 `get_document`, `list_documents`, `search_documents`, and `update_document` include a `web_url` field pointing to the document in the Paperless UI, such as `https://paperless.example.com/documents/42/`. Set `PAPERLESS_MCP_PAPERLESS_PUBLIC_URL` if the public URL differs from the API URL; otherwise the API URL is used.
 
@@ -501,7 +556,7 @@ Every tool also carries a human-readable title, which clients that support title
 
 The two link tools require HTTP or SSE transport and `PAPERLESS_MCP_BASE_URL`. See [transfer configuration](https://pvliesdonk.github.io/paperless-mcp/unstable/configuration/#document-transfer-links).
 
-Call `create_download_link(ref='{"document_id":42,"variant":"content"}')` for full OCR text as a UTF-8 Markdown file. Other variants are `original` (the default), `archive` and `preview`. An archive request fails if no archived PDF exists. The tool returns `url` and `expires_in_s`; GET the URL from a file client or pass it to the intended recipient. Downloading reads the current file, so changes after link creation are reflected in the response.
+Call `create_download_link(ref='{"document_id":42,"variant":"content"}')` for full OCR text as a UTF-8 Markdown file. Other variants are `original` (the default), `archive` and `preview`. Asking for `archive` on a document without an archived PDF is refused when the link is created, not when it is used. The tool returns `url` and `expires_in_s`; GET the URL from a file client or pass it to the intended recipient. Downloading reads the current file, so changes after link creation are reflected in the response.
 
 Content exports have a YAML front-matter block with document ID, title, created timestamp, correspondent ID, document type ID and tag IDs. The OCR text follows unchanged. Short text remains available through `get_document_content`.
 
@@ -511,20 +566,33 @@ The upload tool also accepts PDF files and other file types your Paperless insta
 
 Links expire and allow a short retry window after success. An identical upload retry returns the original task ID. HTTP 409 means an upload is in progress, the bytes differ, or the earlier result is uncertain. Inspect Paperless tasks before creating another link. An oversized upload returns 413; the default limit is 100 MiB. Link lifetime defaults to one hour; `ttl_s` requests a lifetime up to the configured maximum of 24 hours.
 
+### Errors
+
+A tool that cannot deliver its result returns an MCP tool error whose text is written for the model: what went wrong and which call to make next. How it is logged depends on who has to act:
+
+| Paperless answered                                                    | The model is told                                          | Logged at |
+| --------------------------------------------------------------------- | ---------------------------------------------------------- | --------- |
+| 400, 403, another 4xx, or 404 for an id the call passed               | what to change, or that the account may not do this        | `INFO`    |
+| 409                                                                   | to read the object again and retry with its current values | `INFO`    |
+| 429, 5xx, or no answer                                                | the request was fine; retry in a minute                    | `WARNING` |
+| 401, 404 for a call without an id, or a reply the server cannot parse | the request was fine; tell the user                        | `ERROR`   |
+
+Only the last row needs an operator. Anything else that fails inside a tool is logged once as `tool_failed` at `ERROR` with its traceback.
+
 ### Pagination
 
 All paginated tools return `next`/`previous` as bare `page=N` markers (or `None`). Upstream Paperless URLs are normalised away so the internal hostname never leaks into MCP responses. Both server-paginated (documents, tags, and similar endpoints) and client-paginated (tasks) endpoints now share a single shape. Callers pass `page=N` explicitly to fetch subsequent pages.
 
 ## Tag tools
 
-| Tool             | Description                              |
-| ---------------- | ---------------------------------------- |
-| `list_tags`      | List all tags                            |
-| `get_tag`        | Get a tag by ID                          |
-| `create_tag`     | Create a new tag                         |
-| `update_tag`     | Update a tag                             |
-| `delete_tag`     | Delete a tag                             |
-| `bulk_edit_tags` | Bulk-add or remove tags across documents |
+| Tool             | Description                                                                                                                |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `list_tags`      | List all tags                                                                                                              |
+| `get_tag`        | Get a tag by ID                                                                                                            |
+| `create_tag`     | Create a new tag                                                                                                           |
+| `update_tag`     | Update a tag                                                                                                               |
+| `delete_tag`     | Delete a tag                                                                                                               |
+| `bulk_edit_tags` | Set the owner and permissions of many tags, or delete them. To add or remove a tag on documents, use `bulk_edit_documents` |
 
 ## Correspondent tools
 
@@ -535,18 +603,18 @@ All paginated tools return `next`/`previous` as bare `page=N` markers (or `None`
 | `create_correspondent`     | Create a new correspondent                                                                                              |
 | `update_correspondent`     | Update a correspondent                                                                                                  |
 | `delete_correspondent`     | Delete a correspondent                                                                                                  |
-| `bulk_edit_correspondents` | Apply a bulk operation across correspondents                                                                            |
+| `bulk_edit_correspondents` | Set the owner and permissions of many correspondents, or delete them                                                    |
 
 ## Document type tools
 
-| Tool                       | Description                                  |
-| -------------------------- | -------------------------------------------- |
-| `list_document_types`      | List all document types                      |
-| `get_document_type`        | Get a document type by ID                    |
-| `create_document_type`     | Create a new document type                   |
-| `update_document_type`     | Update a document type                       |
-| `delete_document_type`     | Delete a document type                       |
-| `bulk_edit_document_types` | Apply a bulk operation across document types |
+| Tool                       | Description                                                          |
+| -------------------------- | -------------------------------------------------------------------- |
+| `list_document_types`      | List all document types                                              |
+| `get_document_type`        | Get a document type by ID                                            |
+| `create_document_type`     | Create a new document type                                           |
+| `update_document_type`     | Update a document type                                               |
+| `delete_document_type`     | Delete a document type                                               |
+| `bulk_edit_document_types` | Set the owner and permissions of many document types, or delete them |
 
 ## Custom field tools
 
@@ -597,11 +665,11 @@ Both tools include a `share_url` field of the form `<PAPERLESS_MCP_PAPERLESS_PUB
 
 ## Task tools
 
-| Tool            | Description                                                                                                                                                                                                                                                                                                                                                                                  |
-| --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `list_tasks`    | List background Celery tasks, newest first. Paginates (`page`, `page_size` up to 100). Defaults to unacknowledged tasks only. Pass `include_acknowledged=True` to include acknowledged tasks, or `acknowledged=True` to return only acknowledged ones. Filter by kind of work with `task_type`, such as `task_type="bulk_update"` for the search-index rebuild `bulk_edit_documents` queues. |
-| `get_task`      | Get a task by UUID                                                                                                                                                                                                                                                                                                                                                                           |
-| `wait_for_task` | Poll until a task reaches a terminal state or times out                                                                                                                                                                                                                                                                                                                                      |
+| Tool            | Description                                                                                                                                                                                                                                                                                                                                                                                                           |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `list_tasks`    | List background Celery tasks, newest first. Paginates (`page`, `page_size` up to 100). Defaults to unacknowledged tasks only. Pass `include_acknowledged=True` to include acknowledged tasks, or `acknowledged=True` to return only acknowledged ones. Filter by kind of work with `task_type`, such as `task_type="bulk_update"` for the search-index rebuild that `bulk_edit_documents`' metadata operations queue. |
+| `get_task`      | Get a task by UUID                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `wait_for_task` | Wait up to `timeout_seconds` (600 at most) for a task to finish. A task still running at the deadline, or an id Paperless does not know, is reported as an error telling the model what to call next                                                                                                                                                                                                                  |
 
 Requests prefer Paperless payload version 10. An explicit version rejection switches that client session to version 9 for Paperless 2.x; authentication, permission and other failures do not trigger fallback. Restart the MCP server after upgrading a connected 2.x instance to select version 10 again.
 
@@ -782,7 +850,7 @@ cp .env.example .env
 docker compose up -d
 ```
 
-The server listens on port 8000 with HTTP transport, published on the host as `8000:8000`. No reverse proxy, TLS terminator, or external network is assumed.
+The server listens on port 8000 with HTTP transport, published on the host as `127.0.0.1:8000:8000`, so only the host itself can connect. No reverse proxy, TLS terminator, or external network is assumed. Authentication is off, since every auth variable in `.env.example` is commented out; [Ports](#ports) covers serving other machines.
 
 Copying `.env.example` first is the step to keep. Every variable in it arrives commented out, so the server starts on its defaults and the copy changes no behaviour by itself. It is the file you edit next, and `compose.yml` names it.
 
@@ -803,7 +871,18 @@ The `env_file:` entry is marked `required: false`, so a checkout with no `.env` 
 
 ### Ports
 
-The image pins its own listener: `CMD` passes `--host 0.0.0.0 --port 8000`, so `PAPERLESS_MCP_HOST` and `PAPERLESS_MCP_PORT` in a `.env` do not move it. To serve on a different host port, change the left-hand side of the mapping (`"9000:8000"`) rather than the server's port.
+The image pins its own listener: `CMD` passes `--host 0.0.0.0 --port 8000`, so `PAPERLESS_MCP_HOST` and `PAPERLESS_MCP_PORT` in a `.env` do not move it. To serve on a different host port, change the host port in the mapping (`"127.0.0.1:9000:8000"`) rather than the server's port.
+
+`compose.yml` publishes on `127.0.0.1` because the quick start runs without authentication. The bind address limits which machines can connect; it does not replace authentication. To serve other machines, first configure a bearer token or OIDC ([Authentication](https://pvliesdonk.github.io/paperless-mcp/unstable/guides/authentication/index.md)), then either put a reverse proxy in front ([Behind a reverse proxy](#behind-a-reverse-proxy)) or publish on every interface from `compose.override.yml`:
+
+```
+services:
+  paperless-mcp:
+    ports: !override
+      - "8000:8000"
+```
+
+`!override` replaces the mapping instead of appending to it. The override file leaves `compose.yml` unedited, so a template update does not conflict with the change.
 
 ### Domain content and `copier update`
 
@@ -967,7 +1046,7 @@ Production images ship without `debugpy` to keep the image lean. To attach a rem
      -e PAPERLESS_MCP_DEBUG_PORT=5678 \
      -e PAPERLESS_MCP_DEBUG_WAIT=true \
      -p 127.0.0.1:5678:5678 \
-     -p 8000:8000 \
+     -p 127.0.0.1:8000:8000 \
      paperless-mcp:debug
    ```
 
@@ -994,6 +1073,77 @@ Never publish the debug port on a public network
 The debug listener binds `0.0.0.0` inside the container so the IDE can reach it from the host, but **debugpy's DAP protocol is unauthenticated**: any peer that can reach the port has arbitrary code execution as the server process. Always bind the port mapping to localhost (`-p 127.0.0.1:5678:5678`) or tunnel via `kubectl port-forward` / SSH. Production images should be built with default `DEBUG=false`.
 
 When the helper is invoked but `debugpy` isn't installed (say, someone sets `DEBUG_PORT` on a non-debug image), it logs a WARNING and continues; this is the safe failure mode.
+
+# Integration Branches
+
+An integration branch parks an epic's pull requests until the whole epic is done, then brings it to `main` in one pull request. It is optional. Most work merges straight to `main`, and an epic whose children can ship one at a time needs no integration branch at all.
+
+Reach for one when an epic spans many pull requests that must ship together, while unrelated fixes keep landing on `main`. Without it, the release model in the `releasing` skill treats an open atomic epic as a dirty trunk: a release waits, or needs a `release/X.Y` branch cut from before the epic started. With the epic parked on `integration/<epic>`, trunk stays releasable throughout.
+
+## What the template provides
+
+- `integration/*` branches are protected: child pull requests need a green `CI Success`, and force pushes are blocked. Checks a project adds through `extra_required_checks` are required only on the final pull request to `main`. See [Repository Protection](https://pvliesdonk.github.io/paperless-mcp/unstable/deployment/repository-protection/index.md).
+- `ci.yml`, `docs.yml`, `codeql.yml` and the automatic review run on pull requests that target an `integration/*` branch, and CI also runs on every push to one.
+- The local structural and template-conformance gates measure a child branch against the integration branch it was cut from, not against `main`.
+- The release workflows ignore integration branches. Nothing is released from one, and merging a child pull request releases nothing.
+
+## Running an epic on an integration branch
+
+1. **Create the branch** from `main` and push it. Status checks are not enforced on branch creation.
+
+   ```
+   git switch -c integration/<epic> origin/main
+   git push -u origin integration/<epic>
+   ```
+
+1. **Open the final pull request early**, as a draft from `integration/<epic>` to `main`. Its CI runs against `main` on every push, so a conflict or a broken build shows up while it is small, and its diff is the epic's running total.
+
+1. **Target each child pull request at the integration branch** and squash merge it, as you would into `main`. The pull request title still has to be a conventional commit: the squash commit carries it to `main` later, where the changelog reads it.
+
+   Write `Part of #<epic>` or `Refs #N` in a child's body, not `Closes #N`. GitHub closes linked issues only when a pull request merges into the default branch, so a closing keyword in a child does nothing. Collect the `Closes` lines in the final pull request instead.
+
+1. **Merge `main` in; never rebase.** Bring `main` into the integration branch after each release and whenever a conflict appears:
+
+   ```
+   git switch integration/<epic>
+   git pull --ff-only
+   git merge origin/main
+   git push
+   ```
+
+   A rebase rewrites every child commit already on the branch, so each open child pull request would suddenly show its siblings' changes as its own, and the reviewed commits would no longer exist. A merge keeps them, and it records any conflict resolution where a reviewer can find it. Pushing the merge directly relies on the ruleset bypass that the repository admin role holds; anyone else opens a pull request from `main` into the integration branch and merges it with a merge commit.
+
+1. **Finish with a merge commit.** Before merging the final pull request, check that no child pull request is still open: once the base branch is deleted, GitHub retargets open children to `main`. Then merge with **Create a merge commit**, never with squash.
+
+   knope computes the next version and the changelog from every commit reachable from `main` since the last release, including the ones a merge commit brings in, and counts each commit once. With a merge commit, the changelog keeps one entry per child, and any child's `!` still decides the version bump. A squash would collapse the whole epic into the final pull request's single title. It also keeps the project's rule that roughly every issue and pull request maps to one commit on `main`.
+
+1. **Delete the branch** through GitHub, or let automatic head-branch deletion do it. Deleting it with `git push --delete` while a child pull request is still open closes that pull request instead of retargeting it.
+
+## Reviewing the final pull request
+
+Every child was reviewed when it merged into the integration branch. The final review covers what those reviews could not see:
+
+- **Conflict resolutions.** Each merge of `main` into the branch may have resolved conflicts by hand. Git 2.36 and later shows exactly those resolutions, and nothing else:
+
+  ```
+  git log --remerge-diff --merges origin/main..origin/integration/<epic>
+  ```
+
+- **Semantic conflicts.** Changes on `main` that merged cleanly but break an assumption the epic relies on. The final pull request's CI is the mechanical check; the review is the other.
+
+- **The epic as a whole.** Whether the children fit together, and whether docs, configuration and migration notes describe the finished result rather than an intermediate step.
+
+- **Release impact.** The breaking markers among the children, and the `Closes` lines in the final pull request's body.
+
+The automatic review, where enabled, sees the whole diff against `main`. Its findings on code a child review already accepted can be dismissed with a pointer to that child pull request.
+
+If the branch was rebased after all, the reviewed commits no longer exist and GitHub's "changes since last review" view cannot be relied on. Compare the old series with the new one instead, using the branch tip from before the rebase:
+
+```
+git range-diff <old-base>..<old-tip> origin/main..origin/integration/<epic>
+```
+
+It pairs each old commit with its rewritten form and shows only the ones whose content changed, which is what needs a fresh look.
 
 # OIDC Authentication
 
@@ -1264,7 +1414,7 @@ The `mcp-wellknown` router above is the fix. In Traefik it also wins by default:
 
 One document still collides: `oauth-authorization-server`
 
-In proxy mode the server serves authorization-server metadata at `/.well-known/oauth-authorization-server`, at the **host root**, whatever prefix `BASE_URL` carries. FastMCP does contain an RFC 8414 path-aware override, `OAuthProvider.get_well_known_routes()`, which would serve it at `/.well-known/oauth-authorization-server/myservice`. Nothing reaches it: the HTTP app mounts `get_routes()` instead, leaving the path-aware form unreachable. (Verified against FastMCP 3.4.7.)
+In proxy mode the server serves authorization-server metadata at `/.well-known/oauth-authorization-server`, at the **host root**, whatever prefix `BASE_URL` carries. FastMCP does contain an RFC 8414 path-aware override, `OAuthProvider.get_well_known_routes()`, which would serve it at `/.well-known/oauth-authorization-server/myservice`. Nothing reaches it: the HTTP app mounts `get_routes()` instead, leaving the path-aware form unreachable. (Verified against FastMCP 4.0.9; the project's `tests/test_oidc_discovery_routes.py` fails if a FastMCP upgrade changes this.)
 
 Only this one document collides. Protected-resource metadata is path-namespaced, so several servers can share a hostname without contending for it.
 
@@ -1352,7 +1502,7 @@ The release pull request is an ordinary pull request: full CI runs on it, and th
 
 Two rules keep the flow sound:
 
-- Never press GitHub's "Update branch" button on a release pull request. If the base branch moves while the pull request is open, dispatch Release Prepare again: it recreates the preparation branch from the base and refreshes the same pull request in place.
+- Never press GitHub's "Update branch" button on a release pull request. If the base branch moves while the pull request is open, dispatch Release Prepare again: it recreates the preparation branch from the base and refreshes the same pull request in place. Nothing blocks the merge of a stale release pull request, because the rulesets do not require branches to be up to date. Merged anyway, it ships the newer commits without counting them in its version or changelog, so check that the base has not moved before you merge.
 - A release candidate promotes through a plain `channel: stable` dispatch over the same commits. A guard verifies that nothing but release stamps and release-notes pages changed since the last candidate, first when the promotion is prepared (a drifted promotion refuses before its pull request even opens) and again before any tag is created; any other change forces a new candidate instead of a silently different stable.
 
 ## Releasing from trunk
@@ -1378,7 +1528,7 @@ Releases of this project and updates from its template are separate events; the 
 
 Each release is described in three places with distinct jobs:
 
-- **The GitHub release body** carries the release's notes summary, its machine-written changelog section, and pointers: the versioned docs, the compare view, and a deep link to the notes page.
+- **The GitHub release body** carries the release's notes summary, its machine-written changelog section, and pointers: the versioned docs, the compare view, and a deep link to the notes page. A pre-release deploys no versioned docs, so its body points at the rolling `unstable` version, which follows `main` rather than the tag.
 - **The release notes pages on this docs site** are the canonical human-facing narrative of what changed and why it matters.
 - **`CHANGELOG.md`** in the repository is the machine-written audit trail, generated from conventional commits into each release pull request.
 
@@ -1396,19 +1546,27 @@ The template ships GitHub repository rulesets that gate the branches a release c
 
 ## What ships
 
-Three rulesets, one file each:
+Four rulesets, one file each:
 
-| Ruleset                    | Targets              | Rules                                                                                                  |
-| -------------------------- | -------------------- | ------------------------------------------------------------------------------------------------------ |
-| `protect-main`             | the default branch   | pull request required (zero approvals), `CI Success` status check (strict), no deletion, no force push |
-| `protect-release-branches` | `release/*` branches | same gates as the default branch                                                                       |
-| `protect-release-tags`     | `v*` tags            | no deletion, no force move (creation stays open)                                                       |
+| Ruleset                        | Targets                  | Rules                                                                                         |
+| ------------------------------ | ------------------------ | --------------------------------------------------------------------------------------------- |
+| `protect-main`                 | the default branch       | pull request required (zero approvals), `CI Success` status check, no deletion, no force push |
+| `protect-release-branches`     | `release/*` branches     | same gates as the default branch                                                              |
+| `protect-integration-branches` | `integration/*` branches | pull request required (zero approvals), `CI Success` status check, no force push              |
+| `protect-release-tags`         | `v*` tags                | no deletion, no force move (creation stays open)                                              |
 
 The reasoning per branch class:
 
 - **`main`** requires a pull request and the aggregate `CI Success` check. Zero required approvals is deliberate: a solo-maintainer account has no second reviewer, and requiring one would deadlock the Renovate patch/minor auto-merge. The pull request requirement still routes every change through CI and the review tooling; the check requirement is what holds an auto-merge until CI is green.
 - **`release/*`** stabilisation branches carry a shipped release for their lifetime, so backports get the same gate class as `main`: pull request plus `CI Success`, with the CI structural gate measuring the diff against the release branch itself rather than `main`. The generated `ci.yml` runs on pull requests targeting `release/*` for exactly this reason. Status checks are not enforced on branch creation, so cutting `release/X.Y` is a plain push.
+- **`integration/*`** branches park an epic's child pull requests until the whole epic goes to `main` at once; the [integration branches](https://pvliesdonk.github.io/paperless-mcp/unstable/deployment/integration-branches/index.md) page covers the workflow. Child pull requests need a pull request and `CI Success`, and force pushes are blocked because a rebase would rewrite the commits every open child is based on. Deletion stays open, so GitHub's automatic head-branch deletion can remove the branch once its final pull request merges. The checks listed in `extra_required_checks` (below) are not required here: they come from workflows the project owns, which may not run on `integration/*`, and the final pull request to `main` has to pass them anyway.
 - **`v*` tags** are the identity of every shipped release: package registries, Docker tags, and install instructions all point at them. The ruleset blocks deleting or force-moving them. Creating tags stays unrestricted because the release workflow creates one per release.
+
+### Branches need not be up to date
+
+The required checks are not *strict*: a pull request whose checks passed can merge even after its base branch has moved on. The strict setting, GitHub's **Require branches to be up to date before merging**, makes every merge to `main` turn each open pull request's green check stale, so each one waits for an **Update branch** round trip and a full CI re-run before it can merge. On a busy trunk that happens once per sibling merge.
+
+The cost of turning it off is the semantic conflict: two pull requests that each pass alone and break together. CI runs on every push to `main`, `release/*` and `integration/*`, so such a break shows up on the merged commit rather than slipping through unseen. A release pull request is the one place this needs care: nothing stops it merging after its base moved on, so re-dispatch Release Prepare first (see the release process page). GitHub's merge queue is the tool that closes the gap without the update chore, but it needs a `merge_group` trigger in every required workflow and is not available on repositories owned by a personal account.
 
 ## Who bypasses, and how
 
@@ -1445,7 +1603,7 @@ extra_required_checks:
   - SPA sources
 ```
 
-Each name renders into the `required_status_checks` array of both branch rulesets, alongside `CI Success`, and applies to `main` and `release/*` alike. The answer is the project's own, so the rulesets stay template-owned and a `copier update` re-renders them with the project's checks intact. An empty answer, the default, renders exactly the single-context form every project already had.
+Each name renders into the `required_status_checks` array of both release branch rulesets, alongside `CI Success`, and applies to `main` and `release/*` alike. Integration branches require `CI Success` alone. The answer is the project's own, so the rulesets stay template-owned and a `copier update` re-renders them with the project's checks intact. An empty answer, the default, renders exactly the single-context form every project already had.
 
 Write each name as the check appears on the pull request. That is the job's `name:` when it has one and the job id otherwise, not the workflow's name, and not the file it lives in.
 
@@ -1506,28 +1664,37 @@ GitHub enforces rulesets on public repositories on every plan; private repositor
 
 This project is generated from [fastmcp-server-template](https://github.com/pvliesdonk/fastmcp-server-template) and tracks it. Once a week the `copier-update` workflow runs `copier update --trust` and opens a pull request on the `copier/update` branch. Automated runs advance one template major at a time, so a project several majors behind sees one pull request per major, each with its own upgrade notes; a manual dispatch with an explicit `vcs_ref` jumps straight to a chosen release. This page is the procedure for that pull request, whether you work through it yourself or hand it to a coding agent (the `applying-template-updates` skill under `.agents/skills/` is the same procedure in agent-invocable form).
 
+## What an update is for
+
+In most copier projects an update is a merge: you accept the template's changes and settle the conflicts. Here the template is authoritative. In every file `copier update` re-renders, each line outside a sentinel block belongs to the template, and the update brings this project back to the template at the target version.
+
+Conflict markers show only where a template change and a local change collide. Local content written into template-owned lines that the template did not change in this jump carries forward silently, so an update with no conflicts can still leave the project forked. That drift comes from this project's own earlier commits, not from the template. An update is done when every template-owned file either conforms or has a Decay issue in this project that says why it does not yet.
+
 ## What the pull request carries
 
 - The version delta (`vA.B.C` → `vX.Y.Z`) and a compare link on the template repository.
 - The template's release notes for the target version, collapsed.
 - The `UPGRADING.md` sections that apply to the jump, collapsed, with a link to the full file at the target ref. This is the template's record of the work `copier update` cannot do.
 - The list of files that carry conflict markers, if any.
+- The drift report, `.copier-template-drift.md`: every template-owned file that differed from the template outside its sentinel blocks before this update, with the diff and the commits that last touched those lines.
 - The resolution policy: the template side wins everywhere outside the regions this project owns.
 
 ## The order of work
 
 1. **Read the upgrade notes first.** Every `UPGRADING.md` section in the body names something a person must do: rename a variable, add a secret, rewrite a seeded test, add a `.gitignore` line. Do those steps on the `copier/update` branch before touching anything else; a note that is skipped now is a failure later, on a run nobody connects to this update.
+1. **Read the drift report.** `.copier-template-drift.md` is the list of work; the conflict markers are the part of it the template also touched. Where a drifted file carries a conflict marker, the report shows which side of the hunk is local drift. If the report is missing or could not be computed, run `python scripts/check_template_conformance.py --rev origin/main --ref <previous version>` to produce it.
 1. **Resolve conflict markers.** `copier update` runs a three-way merge and leaves diff3-style markers where a template change and a local change collide: `<<<<<<< before updating` (the local side), `||||||| last update` (the common base), `=======`, and `>>>>>>> after updating` (the template side). Resolving a hunk means keeping one side and deleting all four marker lines and the base block between `|||||||` and `=======`. Which side wins turns on whether the hunk is inside a sentinel block, and on what kind of block it is:
 1. **Inside a sentinel block that invites your content, the local side is yours and stays.** These are the `DOMAIN-*`, `CONFIG-*`, `PROJECT-*` and `DOCKERFILE-*` families. Some of them wrap template-shipped content you extend rather than replace (`PROJECT-EXTRAS`, `DOCKERFILE-UV-EXTRAS`), so a template change inside one is possible: read both sides and keep your additions.
 1. **Inside a `GENERATED-*` region the template side wins**, and you do not resolve it by hand. Those regions are written by `scripts/gen_config_surface.py`, which re-runs at the end of the update and rewrites them from your own config.
-1. **Outside every sentinel block the template side is correct by policy**: a local edit to a template-owned region is drift, and the fix is to move that content into a sentinel block or upstream it.
+1. **Outside every sentinel block the template side is correct by policy**: a local edit to a template-owned region is drift, and the displaced content is handled as in the next step.
+1. **Conform every drifted file.** For each file in the drift report, restore the template's lines and move this project's content into the sentinel block the file declares for it, or into a module or page the template does not render. When that needs design work beyond the update, keep the local lines in that file and open a Decay issue in this project naming the file and the hunks; that issue is the only reason a file stays drifted.
 1. **Check the seeded-once files.** Copier's `_skip_if_exists` list names files that are written on the first `copier copy` and never touched again by `copier update`. They are absent from the diff even when the template changed them. The update writes `.copier-seeded-changes.md` at the repository root (the pull request body embeds it): a diff of every seeded path between the previous and target template versions, or an explicit statement that no seeded file changed. Work through that file and apply what applies by hand, keeping your local content. When the report says it could not be computed, fall back to the compare link and the "Before every upgrade" recipe in the template's `UPGRADING.md`. The seeded paths, for reference:
 
 `.claude-plugin/**`, `src/paperless_mcp/tools.py`, `src/paperless_mcp/resources.py`, `src/paperless_mcp/prompts.py`, `src/paperless_mcp/domain.py`, `tests/conftest.py`, `tests/test_smoke.py`, `tests/test_cli.py`, `tests/public_import_surface.txt`, `CHANGELOG.md`, `docs/releases/**`, `LICENSE`, `packaging/mcpb/manifest.json.in`, `packaging/mcpb/pyproject.toml.in`, `packaging/mcpb/src/server.py`, `packaging/mcpb/build.sh`, `.gitignore`, `.vale.ini`, `.vale/styles/config/vocabularies/Base/accept.txt`, `config-presentation.domain.yml`, `tests/test_config_wizard_domain.py`, `src/paperless_mcp/static/app.src.html`.
 
 Four more skip-listed paths are generated, not seeded: `.env.example`, `packaging/env.example`, `examples/*.env` and `docs/javascripts/config-wizard/wizard-spec.json`. The update regenerates them from the config surface at its end, so never edit them by hand; `scripts/gen_config_surface.py --check` in CI catches a stale copy.
 
-The list above is a snapshot; the authoritative one is `_skip_if_exists` in the template's `copier.yml` at the target ref. Treat a template change to a seeded file as a change to apply, never as noise to ignore: the template ships these files as complete starting points, and corrections to them reach this project only this way. 4. **Refresh the lock file.** `uv lock` after any floor change (the upgrade notes say when), then `uv sync --all-extras --all-groups --locked`. 5. **Run the update gate.** This is wider than the everyday gate, because an update can leave drift that only these checks see:
+The list above is a snapshot; the authoritative one is `_skip_if_exists` in the template's `copier.yml` at the target ref. Treat a template change to a seeded file as a change to apply, never as noise to ignore: the template ships these files as complete starting points, and corrections to them reach this project only this way. 6. **Refresh the lock file.** `uv lock` after any floor change (the upgrade notes say when), then `uv sync --all-extras --all-groups --locked`. 7. **Run the update gate.** This is wider than the everyday gate, because an update can leave drift that only these checks see:
 
 ```
 git diff --check
@@ -1541,17 +1708,29 @@ uv run mypy src/ tests/
 uv run pytest -x -q
 uv run mkdocs build --strict
 uv run pre-commit run --all-files
+python scripts/check_template_conformance.py
 ```
 
-An MCP Apps project also runs `uv run python scripts/vendor_spa.py --check`. CI runs the same checks on the pull request. 6. **Merge.** The branch is recreated on the next weekly run, so leave nothing uncommitted on it.
+An MCP Apps project also runs `uv run python scripts/vendor_spa.py --check`. The last command lists every template-owned file that still differs from the template outside its sentinel blocks; each one must have a Decay issue from step 4. CI runs the other checks on the pull request. 8. **Merge.** The branch is recreated on the next weekly run, so leave nothing uncommitted on it.
 
 ## Working with a coding agent
 
-Give the agent the pull request number and ask it to invoke the `applying-template-updates` skill. The skill walks the six steps above and stops where a decision is yours: a conflict inside a sentinel block, an upgrade note it cannot perform (a secret to add, a repository setting), and any seeded-file change it is not certain applies to this project. It reports what it applied, what it skipped and why. Review that report against the pull request body before merging.
+Give the agent the pull request number and ask it to invoke the `applying-template-updates` skill. The skill walks the steps above and stops where a decision is yours: a conflict inside a sentinel block, an upgrade note it cannot perform (a secret to add, a repository setting), and any seeded-file change it is not certain applies to this project. It reports what it applied and what it skipped (with reasons), plus the outcome for every file in the drift report. Review that report against the pull request body before merging.
 
-## When the update is not wanted
+## When the template looks wrong
 
-A template change can be wrong for this project. Do not resolve that by editing a template-owned region; the next update reverts it. Either move the divergence into a sentinel block the template preserves, or open an issue on the template repository so the change gains a switch or a sentinel. `FORKING.md` covers the last resort of detaching from the template altogether.
+It sometimes is. Tell a template defect from this project's drift by reproducing without this project's content: render the target version with this project's answers and run the failing check there.
+
+```
+copier copy --trust --defaults --data-file .copier-answers.yml \
+  --vcs-ref <target version> <template source> /tmp/pristine
+```
+
+- **The fault shows in that render**: a template defect. Open an issue on the template repository with the reproduction.
+- **The fault shows only with this project's content in template-owned lines**: this project's debt. Conform the file, or open a Decay issue here.
+- **This project needs room the template does not give**: a template feature request. State the need, not the content it would let this project keep, and file it once the update conforms.
+
+None of these resolves the update. The update does not wait for them either. `FORKING.md` covers the last resort of detaching from the template altogether.
 # Release Notes
 
 # 1.0

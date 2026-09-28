@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://pvliesdonk.github.io/paperless-mcp/unstable/deployment/release-process/">
+        <link rel="canonical" href="https://pvliesdonk.github.io/paperless-mcp/unstable/guides/security-model/">
       
       
-        <link rel="prev" href="../claude-desktop/">
+        <link rel="prev" href="../authentication/">
       
       
-        <link rel="next" href="../template-updates/">
+        <link rel="next" href="../../tools/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>Release Process - paperless-mcp</title>
+        <title>Security Model - paperless-mcp</title>
       
     
     
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#release-process" class="md-skip">
+        <a href="#security-model" class="md-skip">
           Skip to content
         </a>
       
@@ -120,7 +120,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Release Process
+              Security Model
             
           </span>
         </div>
@@ -270,11 +270,13 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../../guides/authentication/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../authentication/" class="md-tabs__link">
           
   
   
@@ -310,13 +312,11 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="../docker/" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../../deployment/docker/" class="md-tabs__link">
           
   
   
@@ -568,28 +568,31 @@
       
   
   
+    
   
   
+  
     
     
     
     
+      
+        
+        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
         
           
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
-        
-          
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
             
   
   
@@ -607,7 +610,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             
@@ -625,7 +628,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guides/authentication/" class="md-nav__link">
+      <a href="../authentication/" class="md-nav__link">
         
   
   
@@ -650,10 +653,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../guides/security-model/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security Model
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -669,6 +699,114 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#authentication-is-the-boundary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Authentication is the boundary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#running-without-authentication" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Running without authentication
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#stdio" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        stdio
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-an-authenticated-caller-can-reach" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What an authenticated caller can reach
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-answers-without-a-credential" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What answers without a credential
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-the-operator-is-responsible-for" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What the operator is responsible for
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#host-and-origin-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Host and Origin validation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reporting-a-vulnerability" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reporting a vulnerability
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -830,31 +968,28 @@
       
   
   
-    
   
   
-  
     
     
     
     
-      
-        
-        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
         
           
-          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
             
   
   
@@ -872,7 +1007,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             
@@ -890,7 +1025,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../docker/" class="md-nav__link">
+      <a href="../../deployment/docker/" class="md-nav__link">
         
   
   
@@ -918,7 +1053,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../oidc/" class="md-nav__link">
+      <a href="../../deployment/oidc/" class="md-nav__link">
         
   
   
@@ -946,7 +1081,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../claude-desktop/" class="md-nav__link">
+      <a href="../../deployment/claude-desktop/" class="md-nav__link">
         
   
   
@@ -971,37 +1106,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Release Process
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../deployment/release-process/" class="md-nav__link">
         
   
   
@@ -1017,131 +1125,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#cutting-a-release-step-by-step" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Cutting a release, step by step
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#channels" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Channels
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#testing-a-candidates-claude-code-plugin" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Testing a candidate's Claude Code plugin
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#the-release-pull-request" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        The release pull request
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#releasing-from-trunk" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Releasing from trunk
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#stabilisation-branches" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Stabilisation branches
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#template-updates" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Template updates
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#where-to-read-about-a-release" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Where to read about a release
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Where to read about a release">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#how-the-notes-pages-are-produced" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        How the notes pages are produced
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1154,7 +1137,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../template-updates/" class="md-nav__link">
+      <a href="../../deployment/template-updates/" class="md-nav__link">
         
   
   
@@ -1182,7 +1165,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../repository-protection/" class="md-nav__link">
+      <a href="../../deployment/repository-protection/" class="md-nav__link">
         
   
   
@@ -1210,7 +1193,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../integration-branches/" class="md-nav__link">
+      <a href="../../deployment/integration-branches/" class="md-nav__link">
         
   
   
@@ -1292,10 +1275,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#cutting-a-release-step-by-step" class="md-nav__link">
+  <a href="#authentication-is-the-boundary" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Cutting a release, step by step
+        Authentication is the boundary
       
     </span>
   </a>
@@ -1303,10 +1286,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#channels" class="md-nav__link">
+  <a href="#running-without-authentication" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Channels
+        Running without authentication
       
     </span>
   </a>
@@ -1314,10 +1297,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#testing-a-candidates-claude-code-plugin" class="md-nav__link">
+  <a href="#stdio" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Testing a candidate's Claude Code plugin
+        stdio
       
     </span>
   </a>
@@ -1325,10 +1308,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#the-release-pull-request" class="md-nav__link">
+  <a href="#what-an-authenticated-caller-can-reach" class="md-nav__link">
     <span class="md-ellipsis">
       
-        The release pull request
+        What an authenticated caller can reach
       
     </span>
   </a>
@@ -1336,10 +1319,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#releasing-from-trunk" class="md-nav__link">
+  <a href="#what-answers-without-a-credential" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Releasing from trunk
+        What answers without a credential
       
     </span>
   </a>
@@ -1347,10 +1330,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#stabilisation-branches" class="md-nav__link">
+  <a href="#what-the-operator-is-responsible-for" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Stabilisation branches
+        What the operator is responsible for
       
     </span>
   </a>
@@ -1358,10 +1341,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#template-updates" class="md-nav__link">
+  <a href="#host-and-origin-validation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Template updates
+        Host and Origin validation
       
     </span>
   </a>
@@ -1369,30 +1352,13 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#where-to-read-about-a-release" class="md-nav__link">
+  <a href="#reporting-a-vulnerability" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Where to read about a release
+        Reporting a vulnerability
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Where to read about a release">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#how-the-notes-pages-are-produced" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        How the notes pages are produced
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -1416,247 +1382,49 @@
   
 
 
-<h1 id="release-process">Release Process<a class="headerlink" href="#release-process" title="Permanent link">&para;</a></h1>
-<p><code>main</code> is trunk: every change merges there, and merging a feature is not
-releasing. A merge feeds the rolling <code>edge</code> channel and nothing else. A
-release is a separate, deliberate event: a maintainer dispatches the
-<strong>Release Prepare</strong> workflow, reviews the release pull request it opens,
-and merges it. The merge is what tags and publishes. This page describes
-that flow, what each kind of release publishes, and where releases come
-from.</p>
-<h2 id="cutting-a-release-step-by-step">Cutting a release, step by step<a class="headerlink" href="#cutting-a-release-step-by-step" title="Permanent link">&para;</a></h2>
-<p>The checklist a maintainer follows; each step links the section that
-explains it.</p>
-<ol>
-<li><strong>Draft the release notes.</strong> Invoke the <code>writing-release-notes</code> skill
-   with your coding agent (it lives at
-   <code>.agents/skills/writing-release-notes/SKILL.md</code>). It researches the
-   range through the GitHub API, writes <code>docs/releases/next.md</code>, runs
-   Vale and a strict MkDocs build, and opens an ordinary pull request.
-   Review and merge that pull request first; Release Prepare refuses to
-   run when reviewed notes are missing. When user-visible behaviour lands
-   after a first release candidate, invoke the skill's
-   <code>refresh-known-target</code> mode and merge its pull request before the next
-   dispatch. See <a href="#how-the-notes-pages-are-produced">How the notes pages are produced</a>.</li>
-<li><strong>Dispatch Release Prepare.</strong> In the Actions tab, run <strong>Release
-   Prepare</strong> on <code>main</code> (or on a <code>release/X.Y</code> branch for a stabilisation
-   release). Leave <code>channel</code> on <code>auto</code> unless you are promoting a
-   candidate to stable. See <a href="#the-release-pull-request">The release pull request</a>.</li>
-<li><strong>Review the release pull request.</strong> Check the computed version against
-   the breaking-change policy in <code>AGENTS.md</code>, read the changelog section,
-   confirm the promoted notes page is the one you merged in step 1, and
-   compare its <code>notes-range-end</code> with the release delta so the notes cover
-   every commit being released. Never press GitHub's "Update branch" on
-   it; dispatch Release Prepare again instead.</li>
-<li><strong>Merge it.</strong> The merge is the release: the <strong>Release</strong> workflow tags
-   the commit, creates the GitHub release and publishes every channel.</li>
-<li><strong>Verify the fan-out.</strong> Each publish runs as its own job in the Release
-   workflow: <code>publish-pypi</code>, <code>publish-docker</code>, <code>publish-linux-packages</code> and
-   <code>publish-mcpb</code> on every release; <code>publish-plugin-zip</code> when the project
-   ships the Claude Code plugin channel; <code>publish-claude-plugin</code> and
-   <code>publish-registry</code> only for a stable release that is the newest one
-   (a release candidate, or a patch to an older series, skips both by
-   design). The documentation site deploys for the new version. A failed
-   publish job can be re-run from the workflow run; the tag and release
-   already exist, and every job derives from the reviewed version string,
-   so a re-run publishes the same artefacts.</li>
-<li><strong>If the release was cut from a <code>release/X.Y</code> branch</strong>, expect the
-   automated pull request that ports the release back to <code>main</code>, and
-   merge it with a merge commit. See
-   <a href="#stabilisation-branches">Stabilisation branches</a>.</li>
-</ol>
-<h2 id="channels">Channels<a class="headerlink" href="#channels" title="Permanent link">&para;</a></h2>
-<table>
-<thead>
-<tr>
-<th>Channel</th>
-<th>Version identity</th>
-<th>What it promises</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>edge</code></td>
-<td>None; the commit is the identity</td>
-<td>The newest merged code. Every merge to <code>main</code> rebuilds the rolling Docker tag plus an <code>.mcpb</code> bundle and a Claude Code plugin <code>.zip</code> as workflow artifacts, and the rolling <code>unstable</code> docs version deploys from the same trigger. It leaves no git tag, GitHub release, or PyPI entry behind.</td>
-</tr>
-<tr>
-<td>Pre-release</td>
-<td><code>vX.Y.Z-rc.N</code>, computed and reviewed in its release pull request</td>
-<td>A stabilisation step toward exactly that version, normally cut from a <code>release/X.Y</code> branch. Publishes a GitHub release with wheels, <code>sdist</code>, <code>.deb</code>/<code>.rpm</code> packages, <code>.mcpb</code> bundle, plugin <code>.zip</code>, and SBOM attached, plus the wheel on PyPI and a Docker image under its immutable version tag and the rolling <code>rc</code> tag. Skips the marketplace and registry entries and the docs deploy.</td>
-</tr>
-<tr>
-<td>Stable</td>
-<td><code>vX.Y.Z</code></td>
-<td>The full artifact set: PyPI, Docker, Linux packages, GitHub release assets (wheels, <code>sdist</code>, <code>.mcpb</code> bundle, SBOM), marketplace and registry entries, versioned docs.</td>
-</tr>
-</tbody>
-</table>
-<p>Pre-releases do reach PyPI, and that does not put them in front of
-ordinary installers. A PEP 440 resolver skips pre-releases unless the
-requirement pins one or you pass <code>--pre</code>, so <code>pip install pvliesdonk-paperless-mcp</code>
-and <code>uv add pvliesdonk-paperless-mcp</code> still resolve to the newest stable. Ask for a
-candidate by name to get one:</p>
-<div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>pvliesdonk-paperless-mcp<span class="o">==</span>X.Y.ZrcN
-</code></pre></div>
-<p>Note the spelling. Tags and the changelog use SemVer (<code>vX.Y.Z-rc.N</code>);
-PyPI uses the PEP 440 canonical form (<code>X.Y.ZrcN</code>).</p>
-<p>Candidates need PyPI because the <code>.mcpb</code> bundle points there rather than
-carrying the code. Its manifest launches <code>uvx --from pvliesdonk-paperless-mcp[all]==&lt;version&gt;</code>,
-so a candidate absent from PyPI ships a bundle that fails on the tester's
-machine at install time. <code>edge</code> still publishes nothing to PyPI: it has no
-version identity to publish under.</p>
-<p>Rolling pointers are ordering-aware. The Docker <code>latest</code>, <code>vX</code>, and <code>vX.Y</code>
-tags, the GitHub latest-release pointer, the docs <code>latest</code> alias, and the
-marketplace and registry entries follow a release only when it is the
-newest in the relevant series, so a patch release cut from an old
-<code>release/X.Y</code> branch never moves them back to older content. The Docker
-<code>rc</code> tag follows the same rule on the pre-release side: it moves only
-while the candidate's version is still ahead of the newest stable. This holds
-even when two releases overlap: each rolling channel checks the tag
-ordering again inside its own publish job. See
-<a href="../docker/#image-tags">Image tags</a> for the Docker tag list.</p>
-<h2 id="testing-a-candidates-claude-code-plugin">Testing a candidate's Claude Code plugin<a class="headerlink" href="#testing-a-candidates-claude-code-plugin" title="Permanent link">&para;</a></h2>
-<p>Every release attaches <code>paperless-mcp-plugin-&lt;version&gt;.zip</code>, and every
-merge to <code>main</code> produces the same archive as the <code>plugin-zip-edge</code> workflow
-artifact. Load one without installing anything:</p>
-<div class="highlight"><pre><span></span><code>claude<span class="w"> </span>--plugin-url<span class="w"> </span>https://github.com/pvliesdonk/paperless-mcp/releases/download/vX.Y.Z-rc.N/paperless-mcp-plugin-X.Y.Z-rc.N.zip
-</code></pre></div>
-<p>The plugin loads for that session only and leaves no install record, so this
-is the way to try a candidate without disturbing the installed copy. Check it
-came up with <code>/plugin</code>, or from the shell:</p>
-<div class="highlight"><pre><span></span><code>claude<span class="w"> </span>--plugin-url<span class="w"> </span>&lt;url&gt;<span class="w"> </span>plugin<span class="w"> </span>details<span class="w"> </span>paperless-mcp
-</code></pre></div>
-<p>The zip carries its own wheel and launches it from <code>${CLAUDE_PLUGIN_ROOT}</code>,
-so it works at versions no index serves: every candidate, and the <code>edge</code>
-build, whose constant <code>0.0.0-dev</code> could never be published. Its
-dependencies still resolve normally at launch, so the machine needs network
-access the first time the server starts.</p>
-<p>The marketplace entry is the other half of the channel and works
-differently: it is a thin pointer that installs <code>pvliesdonk-paperless-mcp</code> from PyPI,
-it is what <code>/plugin install</code> reads, and it follows stable releases only.
-Claude Code has no marketplace-free way to install a plugin permanently, so
-a candidate is something you load per session rather than install.</p>
-<h2 id="the-release-pull-request">The release pull request<a class="headerlink" href="#the-release-pull-request" title="Permanent link">&para;</a></h2>
-<p>Dispatching <strong>Release Prepare</strong> on the branch to release from has the
-release tool, <a href="https://knope.tech/">knope</a>, compute the next version from
-the conventional commits since the last release in that branch's history.
-It stamps the version-coupled files (<code>pyproject.toml</code> and <code>CHANGELOG.md</code>
-natively; <code>uv.lock</code>'s self-version entry on every prepare and the
-install-channel manifests on stable prepares, both through
-<code>scripts/stamp_manifests.py</code>) and opens a release pull request against
-the dispatched branch. The dispatch's <code>channel</code> input
-picks the release kind: <code>auto</code> prepares a release candidate on
-<code>release/X.Y</code> branches and a stable elsewhere, and an explicit <code>rc</code> or
-<code>stable</code> choice overrides that. The optional <code>override_version</code> input
-replaces the computed version with an explicit one, for the rare range
-whose commits the tool counts nothing in; the workflow refuses a
-dispatch on any branch other than the default branch or <code>release/X.Y</code>,
-and refuses a computed version whose tag already exists, or a release
-candidate whose stable version is already tagged.</p>
-<p>The release pull request is an ordinary pull request: full CI runs on it,
-and the reviewer checks the computed version against the breaking-change
-policy and reads the changelog section in the diff. Merging it is the
-release decision. On merge, the <strong>Release</strong> workflow tags the merge
-commit and creates the GitHub release, then hands off to the publish
-fan-out; every publish gate derives from the reviewed version string.</p>
-<p>Two rules keep the flow sound:</p>
+<h1 id="security-model">Security model<a class="headerlink" href="#security-model" title="Permanent link">&para;</a></h1>
+<p>This page states what paperless-mcp protects and what it leaves to the operator. <a href="../authentication/">Authentication</a> covers how to configure each mode, and <code>SECURITY.md</code> in the repository covers how to report a vulnerability.</p>
+<h2 id="authentication-is-the-boundary">Authentication is the boundary<a class="headerlink" href="#authentication-is-the-boundary" title="Permanent link">&para;</a></h2>
+<p>Over HTTP, authentication is the only access control: a bearer token, a mapped bearer token file, or OIDC. A request without a valid credential is refused before it reaches a tool. It is the same model as any other MCP server reached over HTTP.</p>
+<h2 id="running-without-authentication">Running without authentication<a class="headerlink" href="#running-without-authentication" title="Permanent link">&para;</a></h2>
+<p>With no authentication variables set, the server starts in mode <code>none</code> and logs <code>auth_mode_resolved</code> at warning level with <code>mode=none</code>. Every client that can open a connection to the port then has the full tool surface. Turning authentication off is a decision to trust everything that can reach the port.</p>
+<p>The bind address decides which machines reach the port, and nothing more. Binding to <code>127.0.0.1</code> keeps other machines out. It does not keep out other processes on the host, nor a web page in a browser on the host that uses DNS rebinding. Without authentication, run the server only where everything that reaches the port is trusted, such as a single-user workstation or a private network you control.</p>
+<h2 id="stdio">stdio<a class="headerlink" href="#stdio" title="Permanent link">&para;</a></h2>
+<p>Over stdio there is no network listener and no authentication. The MCP client starts the server as a child process, and the server trusts that client. Authentication variables have no effect there, and the server logs <code>auth_configured_but_stdio_skips_enforcement</code> when they are set.</p>
+<h2 id="what-an-authenticated-caller-can-reach">What an authenticated caller can reach<a class="headerlink" href="#what-an-authenticated-caller-can-reach" title="Permanent link">&para;</a></h2>
+<p>An authenticated caller has every tool the instance exposes. Each tool runs with the server's own privileges: its filesystem and network access, and any credential in its configuration. <code>PAPERLESS_MCP_TOOLS_ALLOW</code> and <code>PAPERLESS_MCP_TOOLS_DENY</code> trim that set for an instance; see <a href="../../configuration/">Configuration</a>.</p>
+<!-- DOMAIN-SECURITY-MODEL-SURFACE-START — what THIS server's tools reach; kept across copier update -->
+<p>Every tool acts on one Paperless-NGX instance, the one at <code>PAPERLESS_MCP_PAPERLESS_URL</code>, and sends every request with the single API token in <code>PAPERLESS_MCP_API_TOKEN</code>. The tools make no other outbound requests; the server itself also connects to the OIDC provider in the OIDC modes, and to the network store a <code>PAPERLESS_MCP_KV_STORE_URL</code> or <code>PAPERLESS_MCP_TASKS_URL</code> names (Redis, DynamoDB or MongoDB). An authenticated caller acts as the Paperless user that owns that token, and the permissions Paperless grants that user are the only limit on what the tools can do:</p>
 <ul>
-<li>Never press GitHub's "Update branch" button on a release pull request.
-  If the base branch moves while the pull request is open, dispatch
-  Release Prepare again: it recreates the preparation branch from the
-  base and refreshes the same pull request in place. Nothing blocks the
-  merge of a stale release pull request, because the rulesets do not
-  require branches to be up to date. Merged anyway, it ships the newer
-  commits without counting them in its version or changelog, so check
-  that the base has not moved before you merge.</li>
-<li>A release candidate promotes through a plain <code>channel: stable</code> dispatch
-  over the same commits. A guard verifies that nothing but release stamps
-  and release-notes pages changed since the last candidate, first when
-  the promotion is prepared (a drifted promotion refuses before its pull
-  request even opens) and again before any tag is created; any other
-  change forces a new candidate instead of a silently different stable.</li>
+<li><strong>Read</strong> documents, their OCR text, thumbnails, file metadata, notes, history and suggestions, as well as tags, correspondents, document types, storage paths, custom fields, saved views, share links, tasks and instance statistics.</li>
+<li><strong>Change</strong> document metadata, notes, tags, correspondents, document types and custom fields, one at a time or in bulk.</li>
+<li><strong>Delete</strong> documents, notes, tags, correspondents, document types and custom fields.</li>
+<li><strong>Upload</strong> new documents for Paperless to consume.</li>
 </ul>
-<h2 id="releasing-from-trunk">Releasing from trunk<a class="headerlink" href="#releasing-from-trunk" title="Permanent link">&para;</a></h2>
-<p>The default release path is trunk. When trunk is quiescent (no epic that
-must ship whole is mid-flight), dispatch Release Prepare on <code>main</code> and
-merge the release pull request: no branch, no ceremony. The prepare
-workflow prints an advisory warning when a release-named milestone still
-has open issues, or when an open <code>ships-atomically</code> epic shows work in
-flight. It counts the epic's native sub-issues even when they live in
-another repository, which keeps a cross-repo epic visible. The warning
-never blocks: the cut may still be intentional.</p>
-<h2 id="stabilisation-branches">Stabilisation branches<a class="headerlink" href="#stabilisation-branches" title="Permanent link">&para;</a></h2>
-<p>A short-lived <code>release/X.Y</code> branch is the exception tool, for two cases:</p>
-<ol>
-<li><strong>Trunk carries unfinished work</strong> that the release must exclude. The
-   branch is cut from the last quiescent commit behind the head, release
-   candidates are cut there while fixes land, and a plain <code>channel:
-   stable</code> dispatch promotes the final <code>X.Y.Z</code>.</li>
-<li><strong>A shipped release needs a patch</strong> while <code>main</code> has moved on. The
-   branch can be created retroactively from the release tag, so no branch
-   needs to exist in advance of the need.</li>
-</ol>
-<p>Fixes flow from trunk to the branch: they land on <code>main</code> first and are
-cherry-picked over. After a stable release cut from a <code>release/X.Y</code>
-branch, an automated job opens an ordinary pull request back to <code>main</code>,
-reviewed and CI-gated like any other change, with no direct pushes to
-protected branches. When that release is the newest stable, the pull
-request is a merge of the release commit together with its version
-stamps, because the next release on <code>main</code> computes its version and its
-changelog range from the last stable in its own history. Merge it with a
-merge commit; the other merge methods discard that history, and the next
-Release Prepare on <code>main</code> refuses until the port has landed. If the
-merge hits a conflict outside the release's own files (its version
-stamps, its notes page, the notes index and the staging notes), the job
-opens the files-only pull request instead and its description names the
-conflicting files: merge the release commit by hand, with a merge
-commit, before the next release from <code>main</code>. When the release patches
-an older series, or a higher release has merged but not yet tagged, the
-pull request carries only the changelog section, the notes page and the
-index entry, and merges any way you like.
-Release candidates port nothing: the stable's changelog section covers
-the whole cycle.</p>
-<p>Release branches carry shipped releases, so they get the same protection
-as <code>main</code>: pull requests plus green CI, applied by the shipped rulesets.
-See <a href="../repository-protection/">Repository Protection</a>.</p>
-<!-- TEMPLATE-TRACKING-START -->
-<h2 id="template-updates">Template updates<a class="headerlink" href="#template-updates" title="Permanent link">&para;</a></h2>
-<p>Releases of this project and updates from its template are separate
-events; the weekly template update pull request is covered in
-<a href="../template-updates/">Working Through a Template Update</a>.</p>
-<!-- TEMPLATE-TRACKING-END -->
+<p>A service-account token with only the permissions the deployment needs is the way to narrow this set. Hiding the delete tools with <code>PAPERLESS_MCP_TOOLS_DENY</code> changes the tool list the model sees. The token's permissions stay the same.</p>
+<p>Over HTTP with <code>PAPERLESS_MCP_BASE_URL</code> set, <code>create_download_link</code> and <code>create_upload_link</code> issue single-use links. A link needs no credential: whoever holds it can use it once, before it expires. The server re-checks the document against Paperless when a download link is redeemed.</p>
+<!-- DOMAIN-SECURITY-MODEL-SURFACE-END -->
 
-<h2 id="where-to-read-about-a-release">Where to read about a release<a class="headerlink" href="#where-to-read-about-a-release" title="Permanent link">&para;</a></h2>
-<p>Each release is described in three places with distinct jobs:</p>
+<h2 id="what-answers-without-a-credential">What answers without a credential<a class="headerlink" href="#what-answers-without-a-credential" title="Permanent link">&para;</a></h2>
+<p>Some routes answer anyone who can reach the port, with authentication on or off:</p>
 <ul>
-<li><strong>The GitHub release body</strong> carries the release's notes summary, its
-  machine-written changelog section, and pointers: the versioned docs,
-  the compare view, and a deep link to the notes page. A pre-release
-  deploys no versioned docs, so its body points at the rolling
-  <code>unstable</code> version, which follows <code>main</code> rather than the tag.</li>
-<li><strong>The release notes pages on this docs site</strong> are the canonical
-  human-facing narrative of what changed and why it matters.</li>
-<li><strong><code>CHANGELOG.md</code></strong> in the repository is the machine-written audit
-  trail, generated from conventional commits into each release pull
-  request.</li>
+<li><code>/health</code> and <code>/health/ready</code>. <code>PAPERLESS_MCP_HEALTH_DETAIL</code> decides how much they say; see <a href="../../deployment/docker/#health">Health</a>.</li>
+<li>In the OIDC modes, the OAuth metadata and sign-in routes a client uses before it holds a token.</li>
 </ul>
-<h3 id="how-the-notes-pages-are-produced">How the notes pages are produced<a class="headerlink" href="#how-the-notes-pages-are-produced" title="Permanent link">&para;</a></h3>
-<p>The pages under <a href="../../releases/">Release Notes</a> cover one minor series
-each; patch releases add undated version headings to their series page. Humans
-prepare the narrative before release automation starts, as steps 1 to 4 of
-<a href="#cutting-a-release-step-by-step">Cutting a release, step by step</a> describe.</p>
-<p>The first release candidate for a stable identity consumes <code>next.md</code> into the
-canonical minor page. Later candidates and stable promotion reuse the same
-<code>vX.Y.Z</code> entry. When user-visible behavior lands after the first candidate,
-invoke <code>refresh-known-target</code> and merge the normal notes pull request before
-re-dispatching Release Prepare. Corrections and redrafts use the same ordinary
-pull-request path for shipped pages.</p>
-<p>No notes bypass exists. Missing or ambiguous staging makes deterministic
-promotion refuse the prepare. Every causal claim must cite a linked issue or
-pull request, and the skill runs Vale and strict MkDocs before opening its pull
-request. Later canonical-page edits redeploy that minor through the
-deterministic <strong>Release Notes Publish</strong> workflow.</p>
+<h2 id="what-the-operator-is-responsible-for">What the operator is responsible for<a class="headerlink" href="#what-the-operator-is-responsible-for" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>TLS.</strong> The server speaks plain HTTP. Terminate TLS at a reverse proxy in front of it.</li>
+<li><strong>Exposure.</strong> Which interfaces and networks can reach the port. <a href="../../deployment/docker/#ports">Ports</a> covers the published port of the Docker deployment.</li>
+<li><strong>Secrets.</strong> Bearer tokens, OIDC client secrets and the credentials the tools use live in the environment or in files you control. Anyone who can read them can act as the server.</li>
+<li><strong>The debugger port.</strong> A debug build's debugger port grants code execution to anyone who reaches it; see <a href="../../deployment/docker/#remote-debugging">Remote debugging</a>.</li>
+</ul>
+<h2 id="host-and-origin-validation">Host and Origin validation<a class="headerlink" href="#host-and-origin-validation" title="Permanent link">&para;</a></h2>
+<p>FastMCP can refuse requests whose <code>Host</code> or <code>Origin</code> header does not name the server, which blocks DNS rebinding against a server running without authentication. It is off by default, and the model above does not depend on it. To turn it on, set <code>FASTMCP_HTTP_HOST_ORIGIN_PROTECTION</code> to <code>auto</code>, which checks requests that reach the server on a local address, or to <code>true</code>, which checks every request against <code>FASTMCP_HTTP_ALLOWED_HOSTS</code> (a JSON list of host names). Behind a reverse proxy, test it before relying on it: a request whose headers do not match is refused.</p>
+<h2 id="reporting-a-vulnerability">Reporting a vulnerability<a class="headerlink" href="#reporting-a-vulnerability" title="Permanent link">&para;</a></h2>
+<p>Read this page before reporting. A finding that depends on authentication being off describes the configuration above rather than a flaw in the server. <code>SECURITY.md</code> covers the reporting channel, scope and response targets.</p>
+<!-- DOMAIN-SECURITY-MODEL-EXTRA-START -->
+<!-- Project-specific security notes go here; kept across copier update. -->
+<!-- DOMAIN-SECURITY-MODEL-EXTRA-END -->
 
 
 

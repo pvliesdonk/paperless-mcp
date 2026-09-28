@@ -834,6 +834,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/security-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1208,6 +1236,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../deployment/integration-branches/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Integration Branches
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1452,10 +1508,6 @@ ignores both additive variables, and logs a deprecation warning at startup.</p>
 operator routing and policy within Claude Code's known 2,048-unit limit.
 Crossing either threshold logs a warning; startup continues and the server does
 not truncate the instructions.</p>
-<p>The generated guidance names the Paperless instance this deployment fronts,
-taking the URL from <code>PAPERLESS_MCP_PAPERLESS_PUBLIC_URL</code> or, unset, from
-<code>PAPERLESS_MCP_PAPERLESS_URL</code>. A model can then recognise a link to that
-instance and read the document id out of it.</p>
 <p><code>PAPERLESS_MCP_TOOLS_ALLOW</code> and <code>PAPERLESS_MCP_TOOLS_DENY</code> trim which
 tools an instance exposes. Hidden tools disappear from <code>tools/list</code> and are
 rejected on <code>tools/call</code>; resources and prompts are unaffected. Setting both
@@ -1858,13 +1910,14 @@ the protocol is unauthenticated. See
 
 <h2 id="domain-variables">Domain variables<a class="headerlink" href="#domain-variables" title="Permanent link">&para;</a></h2>
 <!-- DOMAIN-CONFIG-VARS-START -->
+
+<p>The generated guidance names the Paperless instance this deployment fronts,
+taking the URL from <code>PAPERLESS_MCP_PAPERLESS_PUBLIC_URL</code> or, unset, from
+<code>PAPERLESS_MCP_PAPERLESS_URL</code>. A model can then recognise a link to that
+instance and read the document id out of it.</p>
 <p><code>PAPERLESS_MCP_PAPERLESS_URL</code> and <code>PAPERLESS_MCP_API_TOKEN</code> are the two
 variables the server cannot start without: leave either unset and startup
-stops with a message naming it. The table below still shows them under
-<code>Required: No</code>, because that column reports whether the underlying field
-declares a default rather than whether the server runs without a value; read
-the description column for these two.
-<code>PAPERLESS_MCP_PAPERLESS_PUBLIC_URL</code>
+stops with one line naming it. <code>PAPERLESS_MCP_PAPERLESS_PUBLIC_URL</code>
 lets you name a different base URL for user-visible links than the internal API
 URL the server calls; unset, it defaults to <code>PAPERLESS_MCP_PAPERLESS_URL</code>, and
 trailing slashes are stripped from both.</p>
@@ -1912,14 +1965,14 @@ Markdown uploads and task tracking.</p>
 <tr>
 <td><code>PAPERLESS_MCP_PAPERLESS_URL</code></td>
 <td>(none)</td>
-<td>No</td>
-<td>Base URL of the Paperless-NGX REST API, without a trailing slash. The server refuses to start without it.</td>
+<td><strong>Yes</strong></td>
+<td>Base URL of the Paperless-NGX REST API, without a trailing slash.</td>
 </tr>
 <tr>
 <td><code>PAPERLESS_MCP_API_TOKEN</code></td>
 <td>(none)</td>
-<td>No</td>
-<td>Paperless service-account token used for outbound API requests. The server refuses to start without it.</td>
+<td><strong>Yes</strong></td>
+<td>Paperless service-account token used for outbound API requests.</td>
 </tr>
 <tr>
 <td><code>PAPERLESS_MCP_HTTP_TIMEOUT_SECONDS</code></td>

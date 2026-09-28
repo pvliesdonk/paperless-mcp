@@ -10,8 +10,6 @@ Transport, identity, and tool visibility. `PAPERLESS_MCP_SERVER_NAME` identifies
 
 Generated guidance targets 1,536 UTF-16 units, reserving 512 units for normal operator routing and policy within Claude Code's known 2,048-unit limit. Crossing either threshold logs a warning; startup continues and the server does not truncate the instructions.
 
-The generated guidance names the Paperless instance this deployment fronts, taking the URL from `PAPERLESS_MCP_PAPERLESS_PUBLIC_URL` or, unset, from `PAPERLESS_MCP_PAPERLESS_URL`. A model can then recognise a link to that instance and read the document id out of it.
-
 `PAPERLESS_MCP_TOOLS_ALLOW` and `PAPERLESS_MCP_TOOLS_DENY` trim which tools an instance exposes. Hidden tools disappear from `tools/list` and are rejected on `tools/call`; resources and prompts are unaffected. Setting both variables, or setting one to a value with no names in it, is a startup error. A name matching no registered tool is ignored, but an allowlist that matches nothing logs a startup warning, since the instance then exposes zero tools. See `fastmcp-pvl-core`'s README for the full semantics.
 
 `PAPERLESS_MCP_HEALTH_DETAIL` decides how much the unauthenticated `/health` and `/health/ready` bodies say, since anyone who can reach the port can read them: `status` alone, the default `standard` with the server name, version and a verdict per readiness check, or `full` with a redacted reason for each check that raised. See [Docker deployment](https://pvliesdonk.github.io/paperless-mcp/unstable/deployment/docker/#health) for the routes themselves.
@@ -118,7 +116,9 @@ Development only; the image must be built with `--build-arg DEBUG=true`, and the
 
 ## Domain variables
 
-`PAPERLESS_MCP_PAPERLESS_URL` and `PAPERLESS_MCP_API_TOKEN` are the two variables the server cannot start without: leave either unset and startup stops with a message naming it. The table below still shows them under `Required: No`, because that column reports whether the underlying field declares a default rather than whether the server runs without a value; read the description column for these two. `PAPERLESS_MCP_PAPERLESS_PUBLIC_URL` lets you name a different base URL for user-visible links than the internal API URL the server calls; unset, it defaults to `PAPERLESS_MCP_PAPERLESS_URL`, and trailing slashes are stripped from both.
+The generated guidance names the Paperless instance this deployment fronts, taking the URL from `PAPERLESS_MCP_PAPERLESS_PUBLIC_URL` or, unset, from `PAPERLESS_MCP_PAPERLESS_URL`. A model can then recognise a link to that instance and read the document id out of it.
+
+`PAPERLESS_MCP_PAPERLESS_URL` and `PAPERLESS_MCP_API_TOKEN` are the two variables the server cannot start without: leave either unset and startup stops with one line naming it. `PAPERLESS_MCP_PAPERLESS_PUBLIC_URL` lets you name a different base URL for user-visible links than the internal API URL the server calls; unset, it defaults to `PAPERLESS_MCP_PAPERLESS_URL`, and trailing slashes are stripped from both.
 
 A minimal `.env`:
 
@@ -143,14 +143,14 @@ See [file transfer links](https://pvliesdonk.github.io/paperless-mcp/unstable/to
 
 ### Paperless
 
-| Variable                             | Default | Required | Description                                                                                               |
-| ------------------------------------ | ------- | -------- | --------------------------------------------------------------------------------------------------------- |
-| `PAPERLESS_MCP_PAPERLESS_URL`        | (none)  | No       | Base URL of the Paperless-NGX REST API, without a trailing slash. The server refuses to start without it. |
-| `PAPERLESS_MCP_API_TOKEN`            | (none)  | No       | Paperless service-account token used for outbound API requests. The server refuses to start without it.   |
-| `PAPERLESS_MCP_HTTP_TIMEOUT_SECONDS` | `30.0`  | No       | Per-request HTTP timeout in seconds.                                                                      |
-| `PAPERLESS_MCP_HTTP_RETRIES`         | `2`     | No       | Retries for idempotent requests after network errors or 5xx responses.                                    |
-| `PAPERLESS_MCP_DEFAULT_PAGE_SIZE`    | `25`    | No       | Default page size for list tools, from 1 through 100.                                                     |
-| `PAPERLESS_MCP_PAPERLESS_PUBLIC_URL` | (none)  | No       | Public Paperless UI URL for user-visible links; defaults to PAPERLESS_URL.                                |
+| Variable                             | Default | Required | Description                                                                |
+| ------------------------------------ | ------- | -------- | -------------------------------------------------------------------------- |
+| `PAPERLESS_MCP_PAPERLESS_URL`        | (none)  | **Yes**  | Base URL of the Paperless-NGX REST API, without a trailing slash.          |
+| `PAPERLESS_MCP_API_TOKEN`            | (none)  | **Yes**  | Paperless service-account token used for outbound API requests.            |
+| `PAPERLESS_MCP_HTTP_TIMEOUT_SECONDS` | `30.0`  | No       | Per-request HTTP timeout in seconds.                                       |
+| `PAPERLESS_MCP_HTTP_RETRIES`         | `2`     | No       | Retries for idempotent requests after network errors or 5xx responses.     |
+| `PAPERLESS_MCP_DEFAULT_PAGE_SIZE`    | `25`    | No       | Default page size for list tools, from 1 through 100.                      |
+| `PAPERLESS_MCP_PAPERLESS_PUBLIC_URL` | (none)  | No       | Public Paperless UI URL for user-visible links; defaults to PAPERLESS_URL. |
 
 ### Transfer
 
