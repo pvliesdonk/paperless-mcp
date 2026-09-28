@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastmcp import FastMCP
 from fastmcp_pvl_core import tool_boundary
@@ -11,7 +11,7 @@ from pydantic import Field
 from paperless_mcp.models.common import BulkEditResult, Paginated
 from paperless_mcp.models.tag import Tag, TagCreate, TagPatch
 from paperless_mcp.tools._context import ToolContext
-from paperless_mcp.tools._errors import paperless_errors
+from paperless_mcp.tools._errors import check_object_bulk_parameters, paperless_errors
 from paperless_mcp.tools._metadata import tool_metadata
 
 
@@ -73,11 +73,12 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
     @tool_boundary
     @paperless_errors
     async def bulk_edit_tags(
-        operation: str,
+        operation: Literal["set_permissions", "delete"],
         ids: list[int],
         parameters: dict[str, object] | None = None,
     ) -> BulkEditResult:
         """Apply a bulk operation to a set of tags."""
+        check_object_bulk_parameters("bulk_edit_tags", operation, parameters)
         return await client.tags.bulk_edit(
             operation=operation, ids=ids, parameters=parameters
         )

@@ -48,7 +48,7 @@ TITLE_REGISTRY: dict[str, str] = {
     "create_tag": "Create Tag",
     "update_tag": "Update Tag",
     "delete_tag": "Delete Tag",
-    "bulk_edit_tags": "Bulk Add or Remove Tags",
+    "bulk_edit_tags": "Bulk Edit Tags",
     # Correspondents
     "list_correspondents": "List Correspondents",
     "get_correspondent": "Get Correspondent",

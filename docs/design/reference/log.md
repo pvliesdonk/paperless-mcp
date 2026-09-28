@@ -1,5 +1,19 @@
 # Reference research log
 
+## 2026-09-27
+
+- Extended [bulk edit and deferred search indexing](paperless-bulk-edit-indexing.md)
+  with the methods and fields each endpoint accepts, read from Paperless 3.1.3
+  `serialisers.py` and `views.py`, 2.20.15 `serialisers.py` and the vendored
+  3.1.3 OpenAPI document. Found two project bugs: `redo_ocr` is not a 3.x
+  method (2.x aliased it to `reprocess`), and the object endpoint reads
+  `set_permissions` fields from the top level, ignoring a nested
+  `parameters`. Also recorded: eight document methods are legacy aliases of
+  `/api/documents/<action>/`, and the object endpoint's `all`/`filters` widen
+  the selection beyond the given ids. Source reads only; no live bulk edit
+  was sent.
+  Next review unchanged: 2027-03-18.
+
 ## 2026-09-26
 
 - Added [GitHub and git behaviour behind integration branches](github-integration-branches.md),

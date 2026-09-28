@@ -28,6 +28,7 @@ import httpx
 from fastmcp.exceptions import ToolError
 from pydantic import ValidationError as PydanticValidationError
 
+from paperless_mcp.client._bulk_objects import OBJECT_BULK_PARAMETERS
 from paperless_mcp.client._errors import PaperlessAPIError, error_from_response
 
 P = ParamSpec("P")
@@ -288,3 +289,37 @@ def _id_args(
     """The id-like arguments of one call, by name, for a not-found message."""
     bound = signature.bind_partial(*args, **kwargs).arguments
     return {k: v for k, v in bound.items() if _is_id_arg(k) and v is not None}
+
+
+def check_object_bulk_parameters(
+    tool: str, operation: str, parameters: Mapping[str, object] | None
+) -> None:
+    """Refuse keys the object bulk-edit endpoint would ignore or misuse.
+
+    ``set_permissions`` takes ``owner``, ``permissions`` and ``merge``;
+    ``delete`` takes nothing, so a key passed with it would be sent and ignored.
+
+    Args:
+        tool: The bulk tool being called, named in the message.
+        operation: The operation the model asked for.
+        parameters: The ``parameters`` argument the model passed.
+
+    Raises:
+        ToolError: At INFO, naming the unsupported keys and what the operation
+            takes.
+    """
+    allowed = set(OBJECT_BULK_PARAMETERS) if operation == "set_permissions" else set()
+    extra = sorted(set(parameters or {}) - allowed)
+    if not extra:
+        return
+    takes = (
+        "only owner, permissions and merge"
+        if allowed
+        else "no parameters; omit parameters"
+    )
+    raise ToolError(
+        f"parameters passed to {tool} has unsupported keys for {operation}: "
+        f"{', '.join(extra)}. {operation} takes {takes}; call {tool} again "
+        "with that.",
+        log_level=logging.INFO,
+    )

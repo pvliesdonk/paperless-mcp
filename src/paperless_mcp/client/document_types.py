@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
+from paperless_mcp.client._bulk_objects import object_bulk_payload
 from paperless_mcp.client._http import PaperlessHTTP
 from paperless_mcp.models.common import BulkEditResult, Paginated
 from paperless_mcp.models.document_type import (
@@ -111,16 +112,12 @@ class DocumentTypesClient:
         Args:
             operation: The operation to perform (e.g. ``"set_permissions"``).
             ids: List of document type IDs to act on.
-            parameters: Optional extra parameters for the operation.
+            parameters: ``owner``, ``permissions`` and ``merge`` for
+                ``set_permissions``, sent at the top level of the request.
 
         Returns:
             A :class:`BulkEditResult` with the operation result.
         """
-        payload: dict[str, object] = {
-            "object_type": self._OBJECT_TYPE,
-            "objects": ids,
-            "operation": operation,
-            "parameters": parameters or {},
-        }
+        payload = object_bulk_payload(self._OBJECT_TYPE, ids, operation, parameters)
         body = await self._http.post_json("/api/bulk_edit_objects/", json=payload)
         return BulkEditResult.model_validate(body)

@@ -66,13 +66,15 @@ class BulkEditOperation(StrEnum):
     REMOVE_TAG = "remove_tag"
     MODIFY_TAGS = "modify_tags"
     DELETE = "delete"
-    REDO_OCR = "redo_ocr"
+    REPROCESS = "reprocess"
     SET_PERMISSIONS = "set_permissions"
     MERGE = "merge"
     SPLIT = "split"
     ROTATE = "rotate"
     DELETE_PAGES = "delete_pages"
     MODIFY_CUSTOM_FIELDS = "modify_custom_fields"
+    EDIT_PDF = "edit_pdf"
+    REMOVE_PASSWORD = "remove_password"
 
 
 class BulkEditResult(BaseModel):

@@ -24,7 +24,7 @@ calling a tool.
 | `create_upload_link` | Get an expiring HTTP link to upload a file, including Markdown, with optional metadata |
 | `update_document` | Patch document metadata; the response omits OCR content and has the same shape as `get_document` |
 | `delete_document` | Permanently delete a document |
-| `bulk_edit_documents` | Apply a bulk operation to multiple documents. The change lands before the call returns, but Paperless queues the search-index rebuild, so `search_documents` may miss the edited documents for seconds to minutes while `list_documents` and `get_document` see them at once. Track the queued task with `list_tasks(task_type="bulk_update")` |
+| `bulk_edit_documents` | Apply one operation to many documents. Operations cover metadata (correspondent, type, storage path, tags, custom fields, permissions), deletion and reprocessing, and PDF changes (rotate, merge, split, delete pages, edit, remove a password). The change lands before the call returns, but Paperless queues the search-index rebuild, so `search_documents` may miss the edited documents for seconds to minutes while `list_documents` and `get_document` see them at once. Track the queued task with `list_tasks(task_type="bulk_update")` |
 | `get_document_metadata` | Retrieve file metadata: original filename, checksums, MIME type |
 | `get_document_thumbnail` | Retrieve the thumbnail image of a document |
 | `get_document_suggestions` | Retrieve the tags, correspondent and type Paperless suggests for a document |
@@ -100,7 +100,7 @@ All paginated tools return `next`/`previous` as bare `page=N` markers (or `None`
 | `create_tag` | Create a new tag |
 | `update_tag` | Update a tag |
 | `delete_tag` | Delete a tag |
-| `bulk_edit_tags` | Bulk-add or remove tags across documents |
+| `bulk_edit_tags` | Set the owner and permissions of many tags, or delete them. To add or remove a tag on documents, use `bulk_edit_documents` |
 
 ## Correspondent tools
 
@@ -111,7 +111,7 @@ All paginated tools return `next`/`previous` as bare `page=N` markers (or `None`
 | `create_correspondent` | Create a new correspondent |
 | `update_correspondent` | Update a correspondent |
 | `delete_correspondent` | Delete a correspondent |
-| `bulk_edit_correspondents` | Apply a bulk operation across correspondents |
+| `bulk_edit_correspondents` | Set the owner and permissions of many correspondents, or delete them |
 
 ## Document type tools
 
@@ -122,7 +122,7 @@ All paginated tools return `next`/`previous` as bare `page=N` markers (or `None`
 | `create_document_type` | Create a new document type |
 | `update_document_type` | Update a document type |
 | `delete_document_type` | Delete a document type |
-| `bulk_edit_document_types` | Apply a bulk operation across document types |
+| `bulk_edit_document_types` | Set the owner and permissions of many document types, or delete them |
 
 ## Custom field tools
 
