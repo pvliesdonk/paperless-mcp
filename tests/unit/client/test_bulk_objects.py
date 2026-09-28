@@ -83,10 +83,62 @@ async def test_tool_refuses_unsupported_keys_before_calling_paperless() -> None:
     tags_mod.register(
         mcp, ToolContext(client=client, default_page_size=25, public_url="")
     )
-    with pytest.raises(ToolError, match="unsupported keys: all") as excinfo:
+    with pytest.raises(ToolError, match="unsupported keys for delete: all") as excinfo:
         await mcp.call_tool(
             "bulk_edit_tags",
             {"operation": "delete", "ids": [1], "parameters": {"all": True}},
         )
     assert excinfo.value.log_level == logging.INFO
     client.tags.bulk_edit.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("operation", "parameters", "fragment"),
+    [
+        ("delete", {"owner": 3}, "delete takes no parameters"),
+        ("set_permissions", {"all": True}, "set_permissions takes only owner"),
+    ],
+)
+async def test_tool_checks_parameters_against_the_operation(
+    operation: str, parameters: dict[str, object], fragment: str
+) -> None:
+    """``delete`` takes nothing; ``set_permissions`` takes the three fields."""
+    from unittest.mock import AsyncMock, MagicMock
+
+    from paperless_mcp.tools import tags as tags_mod
+    from paperless_mcp.tools._context import ToolContext
+
+    client = MagicMock()
+    client.tags.bulk_edit = AsyncMock()
+    mcp = FastMCP("test")
+    tags_mod.register(
+        mcp, ToolContext(client=client, default_page_size=25, public_url="")
+    )
+    with pytest.raises(ToolError, match=fragment):
+        await mcp.call_tool(
+            "bulk_edit_tags",
+            {"operation": operation, "ids": [1], "parameters": parameters},
+        )
+    client.tags.bulk_edit.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_tool_lets_set_permissions_fields_through() -> None:
+    from unittest.mock import AsyncMock, MagicMock
+
+    from paperless_mcp.models.common import BulkEditResult
+    from paperless_mcp.tools import tags as tags_mod
+    from paperless_mcp.tools._context import ToolContext
+
+    client = MagicMock()
+    client.tags.bulk_edit = AsyncMock(return_value=BulkEditResult(result="OK"))
+    mcp = FastMCP("test")
+    tags_mod.register(
+        mcp, ToolContext(client=client, default_page_size=25, public_url="")
+    )
+    await mcp.call_tool(
+        "bulk_edit_tags",
+        {"operation": "set_permissions", "ids": [1], "parameters": {"owner": 3}},
+    )
+    client.tags.bulk_edit.assert_awaited_once()

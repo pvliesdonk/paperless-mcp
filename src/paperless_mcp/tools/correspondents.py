@@ -88,7 +88,7 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
         parameters: dict[str, object] | None = None,
     ) -> BulkEditResult:
         """Apply a bulk operation to a set of correspondents."""
-        check_object_bulk_parameters("bulk_edit_correspondents", parameters)
+        check_object_bulk_parameters("bulk_edit_correspondents", operation, parameters)
         return await client.correspondents.bulk_edit(
             operation=operation, ids=ids, parameters=parameters
         )

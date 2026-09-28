@@ -78,7 +78,7 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
         parameters: dict[str, object] | None = None,
     ) -> BulkEditResult:
         """Apply a bulk operation to a set of tags."""
-        check_object_bulk_parameters("bulk_edit_tags", parameters)
+        check_object_bulk_parameters("bulk_edit_tags", operation, parameters)
         return await client.tags.bulk_edit(
             operation=operation, ids=ids, parameters=parameters
         )

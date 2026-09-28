@@ -292,22 +292,34 @@ def _id_args(
 
 
 def check_object_bulk_parameters(
-    tool: str, parameters: Mapping[str, object] | None
+    tool: str, operation: str, parameters: Mapping[str, object] | None
 ) -> None:
     """Refuse keys the object bulk-edit endpoint would ignore or misuse.
 
+    ``set_permissions`` takes ``owner``, ``permissions`` and ``merge``;
+    ``delete`` takes nothing, so a key passed with it would be sent and ignored.
+
     Args:
         tool: The bulk tool being called, named in the message.
+        operation: The operation the model asked for.
         parameters: The ``parameters`` argument the model passed.
 
     Raises:
-        ToolError: At INFO, naming the unsupported keys and the accepted ones.
+        ToolError: At INFO, naming the unsupported keys and what the operation
+            takes.
     """
-    extra = sorted(set(parameters or {}) - set(OBJECT_BULK_PARAMETERS))
-    if extra:
-        raise ToolError(
-            f"parameters passed to {tool} has unsupported keys: {', '.join(extra)}. "
-            "It takes only owner, permissions and merge, for set_permissions; "
-            f"call {tool} again with those.",
-            log_level=logging.INFO,
-        )
+    allowed = set(OBJECT_BULK_PARAMETERS) if operation == "set_permissions" else set()
+    extra = sorted(set(parameters or {}) - allowed)
+    if not extra:
+        return
+    takes = (
+        "only owner, permissions and merge"
+        if allowed
+        else "no parameters; omit parameters"
+    )
+    raise ToolError(
+        f"parameters passed to {tool} has unsupported keys for {operation}: "
+        f"{', '.join(extra)}. {operation} takes {takes}; call {tool} again "
+        "with that.",
+        log_level=logging.INFO,
+    )

@@ -84,7 +84,7 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
         parameters: dict[str, object] | None = None,
     ) -> BulkEditResult:
         """Apply a bulk operation to a set of document types."""
-        check_object_bulk_parameters("bulk_edit_document_types", parameters)
+        check_object_bulk_parameters("bulk_edit_document_types", operation, parameters)
         return await client.document_types.bulk_edit(
             operation=operation, ids=ids, parameters=parameters
         )
