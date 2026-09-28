@@ -33,7 +33,10 @@ from fastmcp_pvl_core import (
 )
 
 from paperless_mcp._server_apps import register_apps
-from paperless_mcp._server_deps import bind_config, server_lifespan
+from paperless_mcp._server_deps import (
+    bind_config,
+    server_lifespan,
+)
 from paperless_mcp.config import ProjectConfig
 from paperless_mcp.prompts import register_prompts
 from paperless_mcp.resources import register_resources

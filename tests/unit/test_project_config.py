@@ -3,13 +3,14 @@
 These used to test a separate ``pydantic-settings`` ``DomainConfig``; the six
 variables are now ordinary ``CONFIG-FIELDS`` on ``ProjectConfig``, so the same
 behaviours are asserted against that class and against
-:func:`paperless_mcp.domain.build_tool_context`, which is where the
-"required but not set" contract moved.
+:func:`paperless_mcp.domain.build_tool_context`, which guards a config built
+by hand the way ``from_env`` guards the environment.
 """
 
 from __future__ import annotations
 
 import pytest
+from fastmcp_pvl_core import ConfigurationError
 
 from paperless_mcp.config import ProjectConfig
 from paperless_mcp.domain import build_tool_context
@@ -58,7 +59,7 @@ def test_out_of_range_values_are_rejected(
     monkeypatch: pytest.MonkeyPatch, var: str, value: str, message: str
 ) -> None:
     monkeypatch.setenv(var, value)
-    with pytest.raises(ValueError, match=message):
+    with pytest.raises(ConfigurationError, match=message):
         ProjectConfig.from_env()
 
 
@@ -66,11 +67,11 @@ def test_bounds_also_hold_for_direct_construction() -> None:
     """The invariants live in ``__post_init__``, so ``from_env`` is not the only
     path they cover — which is the whole reason the config contract puts them
     there rather than on the ``env_*`` readers."""
-    with pytest.raises(ValueError, match="DEFAULT_PAGE_SIZE"):
+    with pytest.raises(ConfigurationError, match="DEFAULT_PAGE_SIZE"):
         ProjectConfig(default_page_size=0)
-    with pytest.raises(ValueError, match="HTTP_TIMEOUT_SECONDS"):
+    with pytest.raises(ConfigurationError, match="HTTP_TIMEOUT_SECONDS"):
         ProjectConfig(http_timeout_seconds=0.0)
-    with pytest.raises(ValueError, match="HTTP_RETRIES"):
+    with pytest.raises(ConfigurationError, match="HTTP_RETRIES"):
         ProjectConfig(http_retries=-1)
 
 
@@ -124,16 +125,25 @@ def test_public_url_inherits_stripped_paperless_url(
 def test_missing_required_var_names_itself(
     monkeypatch: pytest.MonkeyPatch, unset: str, expected: str
 ) -> None:
-    """``build_tool_context`` is where the fail-fast startup contract lives now.
-
-    ``ProjectConfig`` cannot enforce it: the template's own config-contract
-    tests construct ``ProjectConfig()`` with no arguments, so a field without a
-    default — or a ``__post_init__`` that rejects the empty one — would break
-    them (pvliesdonk/fastmcp-server-template#621).
-    """
+    """``from_env`` refuses an unset URL or token (``required=True``)."""
     monkeypatch.delenv(unset, raising=False)
-    with pytest.raises(ValueError, match=expected):
-        build_tool_context(ProjectConfig.from_env())
+    with pytest.raises(ConfigurationError, match=expected):
+        ProjectConfig.from_env()
+
+
+@pytest.mark.parametrize(
+    ("config", "missing"),
+    [
+        (ProjectConfig(api_token="t"), "PAPERLESS_MCP_PAPERLESS_URL"),
+        (ProjectConfig(paperless_url="http://x"), "PAPERLESS_MCP_API_TOKEN"),
+    ],
+)
+def test_hand_built_config_missing_a_value_is_refused_at_registration(
+    config: ProjectConfig, missing: str
+) -> None:
+    """A config passed to ``make_server`` skips ``from_env``; the guard stays."""
+    with pytest.raises(ConfigurationError, match=missing):
+        build_tool_context(config)
 
 
 @pytest.mark.asyncio

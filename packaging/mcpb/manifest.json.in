@@ -65,16 +65,14 @@
     "paperless_url": {
       "type": "string",
       "title": "Paperless API URL",
-      "description": "Base URL of the Paperless-NGX REST API, without a trailing slash. The server refuses to start without it.",
-      "required": true,
-      "default": ""
+      "description": "Base URL of the Paperless-NGX REST API, without a trailing slash.",
+      "required": true
     },
     "api_token": {
       "type": "string",
       "title": "Paperless API token",
-      "description": "Paperless service-account token used for outbound API requests. The server refuses to start without it.",
+      "description": "Paperless service-account token used for outbound API requests.",
       "required": true,
-      "default": "",
       "sensitive": true
     },
     "http_timeout_seconds": {

@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Annotated
 
 from fastmcp import FastMCP
+from fastmcp_pvl_core import tool_boundary
 from pydantic import Field
 
 from paperless_mcp.models.common import Paginated
@@ -24,6 +25,7 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
     client = ctx.client
 
     @mcp.tool(**tool_metadata("list_storage_paths"))
+    @tool_boundary
     @paperless_errors
     async def list_storage_paths(
         page: Annotated[int, Field(ge=1)] = 1,
@@ -36,6 +38,7 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
         )
 
     @mcp.tool(**tool_metadata("get_storage_path"))
+    @tool_boundary
     @paperless_errors
     async def get_storage_path(storage_path_id: int) -> StoragePath:
         """Fetch a storage path by ID."""

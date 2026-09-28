@@ -1,5 +1,76 @@
 # Reference research log
 
+## 2026-09-26
+
+- Added [GitHub and git behaviour behind integration branches](github-integration-branches.md),
+  checked against GitHub.com documentation, the git 2.36 release notes and
+  the knope 0.23.0 source. Covered up-to-date requirements, merge queue
+  availability, workflow branch filters, closing keywords, retargeting,
+  merge methods, knope's commit walk, `--remerge-diff` and `range-diff`.
+  Single pass; the merge-queue availability claim was re-checked against the
+  page. Draft until a first epic runs through it. Next review: 2027-03-26.
+
+## 2026-09-25
+
+- Recorded a departure in [MCP model-facing text](mcp-model-facing-text.md):
+  Anthropic's "caveats or limitations" is read as limits that hold for
+  every call by design, and failures that depend on one call's state stay
+  out of descriptions for the error text. No claim changed. Next review unchanged: 2027-03-23.
+- Revised [MCP tool outcomes and errors](mcp-tool-outcomes-and-errors.md)
+  for fastmcp-pvl-core 10.0.0 by source and by re-running the in-memory
+  probe on FastMCP 4.0.9. The request-logging middleware now logs
+  `tool_call_failed` at a `ToolError`'s `log_level`, and a new claim
+  records pvl-core's `tool_boundary`: one ERROR `tool_failed` record with
+  the traceback and a fixed "the request itself was fine" message for any
+  exception that is not a FastMCP error. The other table rows are unchanged
+  from 9.0.1. Next review unchanged: 2027-03-25.
+- Revised [MCP model-facing text](mcp-model-facing-text.md): markdown-vault-mcp
+  removed `tests/test_client_surface_budget.py` and its aggregate ceilings
+  (markdown-vault-mcp#1600, #1601). The 2026-09 baseline now cites the last
+  commit that carried the test and the design text, and a new claim records
+  that no source derives an aggregate ceiling; only the per-item client
+  limits stay. Next review unchanged: 2027-03-23.
+- Added [MCP tool outcomes and errors](mcp-tool-outcomes-and-errors.md),
+  checked against the MCP 2026-07-28, 2025-11-25 and 2025-06-18 schema and
+  tools pages at commit ab3a39c1, FastMCP 4.0.9, the MCP Python SDK 2.2.0 and
+  fastmcp-pvl-core 9.0.1 source plus an in-memory probe, the Anthropic, OpenAI
+  and Gemini tool-result docs, and the reference, GitHub, Sentry and Notion
+  servers' source. Found that the spec never says whether "not found" or
+  "permission denied" sets `isError`, that the Python SDK logs an anticipated
+  `ToolError` at INFO while FastMCP defaults it to ERROR, and that pvl-core's
+  middleware logs every raised `ToolError` as `tool_call_failed` at ERROR.
+  Refute pass re-read the schema, the issue 199 ruling, the SDK and FastMCP
+  docstrings, Anthropic's `is_error` wording and the Sentry and filesystem
+  sources; host-side handling of `isError` stays unverified. Next review:
+  2027-03-25.
+- Added [Negative outcomes and faults outside MCP](negative-outcomes-and-faults.md),
+  widening the same question beyond MCP: RFC 9110 and 9457, gRPC status codes,
+  google.rpc.Code, AIP-193/194, the SRE Workbook, OpenTelemetry semconv v1.44.0
+  (HTTP, gRPC, recording errors) and the Trace API, GraphQL September2025 with
+  graphql.org, Apollo and Shopify, JSON-RPC 2.0, and the Rust, Go, Python,
+  .NET, Java and Swift error-handling docs. Found broad agreement that a
+  valid negative outcome is not a fault (OpenTelemetry leaves server-side 4xx
+  and NOT_FOUND unset; only 5xx burns the SRE example SLO), and disagreement
+  on which wire slot carries not-found. Refute pass re-read the OpenTelemetry,
+  RFC 9110, gRPC, SRE, graphql.org, Rust and Python quotes. Next review:
+  2027-09-25.
+
+## 2026-09-23
+
+- Added [MCP model-facing text](mcp-model-facing-text.md), checked against
+  the MCP 2026-07-28 and 2025-11-25 schemas, the Claude, OpenAI, Gemini,
+  VS Code and Cursor documentation, and FastMCP 4.0.5 by probe. Covered
+  who reads each description field, Claude Code's 2,048-unit cut and
+  tool-search deferral, FastMCP's docstring parsing (the issue 4952 leak
+  and the unparsed resource docstring), pvl-core's instruction roles,
+  the markdown-vault-mcp surface baseline, and SEP-2640 skills over MCP
+  with FastMCP's skills provider probed on the wire. Refute pass re-fetched the
+  claims the skill depends on; the Cursor tool cap and the Claude Desktop
+  resource UI stay unverified. The same pass found the template scaffold's
+  own `ping`, `status` and `summarize` docstrings shipping developer
+  commentary and a framework link as their wire descriptions, and fixed
+  them there. Next review: 2027-03-23.
+
 ## 2026-09-21
 
 - Added [document field projection on lists and searches](paperless-document-fields-projection.md)

@@ -15,11 +15,10 @@ from paperless_mcp.server import make_server
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures" / "paperless"
 
-# `make_server()` fails fast without these two, and the template-owned tests
-# (`test_smoke.py`, `test_task_backend.py`, `test_health.py`) construct a server
-# with no env of their own, so they are preset for the whole suite rather than
-# in each test. The token is a literal the suite feeds to a mocked transport,
-# never a credential.
+# `ProjectConfig.from_env()` refuses to run without these two (`required=True`),
+# and most of this suite builds a server from the environment, so they are
+# preset for the whole suite rather than in each test.  The token is a literal
+# the suite feeds to a mocked transport, never a credential.
 REQUIRED_ENV = {
     "PAPERLESS_MCP_PAPERLESS_URL": "http://paperless.test",
     "PAPERLESS_MCP_API_TOKEN": "test-token-do-not-use-in-prod",
@@ -38,13 +37,12 @@ def _clear_env(monkeypatch: pytest.MonkeyPatch) -> None:
 
 @pytest.fixture
 def config_contract_env() -> dict[str, str]:
-    """Env vars the template's `test_config_contract.py` presets before it
-    constructs the config via an otherwise env-less ``ProjectConfig.from_env()``.
+    """Env vars every template-owned test presets before building from the env.
 
-    A domain whose ``from_env`` hard-requires a variable (a fail-fast startup
-    contract) should return it here, for example::
-
-        return {"PAPERLESS_MCP_SOURCE_DIR": "/tmp/vault"}
+    The two variables ``from_env`` reads with ``env(..., required=True)``, with
+    values a test can build with.  ``tests/test_config_contract.py`` fails,
+    naming the variable, while one is missing.  This project's own tests get
+    the same pair from the autouse ``_clear_env`` fixture above.
     """
     return dict(REQUIRED_ENV)
 

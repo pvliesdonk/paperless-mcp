@@ -37,6 +37,8 @@ import asyncio
 import logging
 from typing import TYPE_CHECKING
 
+from fastmcp_pvl_core import ConfigurationError
+
 from paperless_mcp.client import (
     AuthError,
     ConflictError,
@@ -92,10 +94,11 @@ def build_tool_context(config: ProjectConfig) -> ToolContext:
         closing it (:meth:`Service.stop` does, for the staged one).
 
     Raises:
-        ValueError: If the Paperless URL or the API token is unset.  This is
-            the server's fail-fast startup contract: registration is the first
-            thing ``make_server`` does that needs a client, so an operator who
-            forgot either variable is told which one by name.
+        ConfigurationError: If the Paperless URL or the API token is empty.
+            ``ProjectConfig.from_env`` already refuses both when unset
+            (``required=True``); this catches what that cannot: a config built
+            by hand and passed to ``make_server``, and a URL that normalises to
+            empty (``/``).
     """
     from paperless_mcp.tools._context import ToolContext
 
@@ -108,8 +111,8 @@ def build_tool_context(config: ProjectConfig) -> ToolContext:
         if not value
     ]
     if missing:
-        raise ValueError(
-            f"{', '.join(missing)}: required but not set. Set "
+        raise ConfigurationError(
+            f"{', '.join(missing)}: required but empty. Set "
             f"{_ENV_PREFIX}_PAPERLESS_URL to your Paperless-NGX API base URL "
             f"and {_ENV_PREFIX}_API_TOKEN to a service-account token."
         )

@@ -65,9 +65,11 @@ Detailed guidance lives in skills under `.agents/skills/` (portable; Claude Code
 - `config-contract` — before adding a config field, env var, Dockerfile extension point, mcpb install-screen entry, or release-manifest stamp.
 - `logging-standard` — before adding or changing a logging call.
 - `tool-registration` — before adding, renaming, or documenting an MCP tool, `get_server_info`, icons, or the public import surface.
+- `writing-model-facing-text` — before writing or changing a tool, parameter, resource or prompt description, or a server-instructions snippet.
+- `designing-tool-outcomes` — before writing or changing a tool that can fail, refuse, find nothing or hit a conflict: what it returns, raises and logs in each case.
 - `repository-protection` — before changing rulesets, required checks, or the bootstrap workflow.
 - `authoring-issues-prs` — when filing an issue or opening a PR.
-- `code-review` — before opening a PR, marking one ready, or pushing further commits to a branch with an open PR: self-review the cumulative diff.
+- `self-reviewing` — before opening a PR, marking one ready, or pushing further commits to a branch with an open PR: self-review the cumulative diff.
 - `applying-template-updates` — when working through the weekly template update PR (`copier/update` branch) or after running `copier update`.
 - `writing-release-notes` — when drafting a `docs/releases/` page.
 - `roadmapping` — when charting, refining or revisiting epics and release packages; before planning work that spans PRs.
@@ -104,7 +106,7 @@ Every PR must pass **all** of the following before merge. Do not open or push a 
    ```bash
    bash scripts/structural_gate.sh
    ```
-   The script derives its compare branch (nearest of `origin/main` and `origin/release/*`; override with `STRUCTURAL_GATE_BASE`) and runs `diff-quality --violations=ruff.check --options="--extend-select=C901,PLR0911,PLR0912,PLR0913,PLR0915,S" --fail-under=100` against it. `# noqa: C901` (etc.) with a one-line justification is the escape hatch for genuinely irreducible new code.
+   The script derives its compare branch (nearest of `origin/main`, `origin/release/*` and `origin/integration/*`; override with `STRUCTURAL_GATE_BASE`) and runs `diff-quality --violations=ruff.check --options="--extend-select=C901,PLR0911,PLR0912,PLR0913,PLR0915,S" --fail-under=100` against it. `# noqa: C901` (etc.) with a one-line justification is the escape hatch for genuinely irreducible new code.
 6. **Docs updated** — `README.md` and `docs/**` reflect any user-facing changes in the same commit
 7. **Manifest version lockstep** — `server.json`, `.claude-plugin/plugin/.claude-plugin/plugin.json`, and `.claude-plugin/plugin/.mcp.json` must all carry the same version: the latest *stable* release. A stable release PR stamps them atomically (knope invokes `scripts/stamp_manifests.py`); rc release PRs deliberately leave them untouched, because the versions they name are only published for stable releases. Manual touches require updating all three.
 
@@ -116,8 +118,9 @@ This project ships a `.pre-commit-config.yaml` that runs ruff (check + format), 
 - **Install once per clone:** `uv run pre-commit install`.
 - **Run on demand before pushing:** `uv run pre-commit run --all-files`. A green run is a precondition for gates #2 and #3 above.
 
-- **Structural gate runs at push time:** the `structural-diff-gate` hook (pre-push stage) runs `scripts/structural_gate.sh` automatically. `uv run pre-commit install` wires it via `default_install_hook_types`. A clean local push implies a clean CI `structure` job — CI runs the same script, pinning the compare branch to the PR's actual base, while the hook derives it (nearest of `origin/main` and `origin/release/*`), so backport branches targeting a release branch are measured against the right base locally too.
+- **Structural gate runs at push time:** the `structural-diff-gate` hook (pre-push stage) runs `scripts/structural_gate.sh` automatically. `uv run pre-commit install` wires it via `default_install_hook_types`. A clean local push implies a clean CI `structure` job — CI runs the same script, pinning the compare branch to the PR's actual base, while the hook derives it (nearest of `origin/main`, `origin/release/*` and `origin/integration/*`), so backport and integration-child branches are measured against the right base locally too.
 
+- **Template conformance runs at push time:** the `template-conformance` hook (pre-push stage) fails a push that adds content outside a sentinel block in a file `copier update` re-renders, compared with the branch's base. Move the content into the block the file declares. Its one sanctioned skip is drift a Decay issue tracks: `SKIP=template-conformance git push`.
 - **Never bypass with `--no-verify`.** A failing hook means the same check will fail in CI; fix the underlying issue rather than silencing it.
 
 Domain-specific additions (shellcheck, yamllint, project-specific linters, additional file checks) belong between the `DOMAIN-HOOKS` markers at the end of the config, never outside them; hooks inside that block on top of the shipped defaults survive `copier update`.
@@ -225,7 +228,7 @@ Shared infrastructure (auth providers, middleware stack, logging bootstrap, even
 - [`fastmcp-pvl-core`](https://github.com/pvliesdonk/fastmcp-pvl-core) — the Python library that provides `ServerConfig`, auth builders, middleware helpers, and the `make_serve_parser` / `configure_logging_from_env` / `run_http` / `normalise_http_path` CLI helpers.
 - [`fastmcp-server-template`](https://github.com/pvliesdonk/fastmcp-server-template) — the copier template this project was generated from. Ships the CI/release workflows, `knope.toml`, `Dockerfile`, `packaging/nfpm.yaml`, `packaging/mcpb/*`, `scripts/stamp_manifests.py`, server.py skeleton, and this very section of AGENTS.md.
 
-Fixes and improvements to shared code land in those repos and propagate here via `copier update` against the template's latest tag — run manually or via the weekly `.github/workflows/copier-update.yml` cron. Starter files listed in `_skip_if_exists` (e.g. `packaging/mcpb/*`, the `tools.py` / `resources.py` / `prompts.py` / `domain.py` scaffolds, `CHANGELOG.md`, `LICENSE`) are written once and require manual reconciliation on template updates; `AGENTS.md`, `README.md`, `.pre-commit-config.yaml`, `scripts/stamp_manifests.py`, `compose.yml`, `Dockerfile` and `pyproject.toml` are deliberately *not* among them — all seven are re-rendered on update, and only content inside their sentinel blocks survives (`DOMAIN-START` / `DOMAIN-END` in the two Markdown files, `DOMAIN-HOOKS` in the pre-commit config, `DOMAIN-MANIFESTS-HELPERS` / `DOMAIN-MANIFESTS` in the stamp script, the four `DOMAIN-COMPOSE-*` blocks in the compose file, the four `DOCKERFILE-*` blocks in the Dockerfile, and `PROJECT-DEPS` / `PROJECT-EXTRAS` / `PROJECT-LICENSE` / `PROJECT-LICENSE-CLASSIFIER` / `PROJECT-UV` / `PROJECT-RUFF-IGNORES` in `pyproject.toml`) — review `_skip_if_exists` in the template's `copier.yml` if you need to force-sync a file. Domain-specific code (tools, resources, prompts, and the fields and logic inside the `CONFIG-FIELDS-START` / `CONFIG-FIELDS-END`, `CONFIG-FROM-ENV-START` / `CONFIG-FROM-ENV-END`, and `CONFIG-VALIDATE-START` / `CONFIG-VALIDATE-END` sentinels) stays in this repo.
+Fixes and improvements to shared code land in those repos and propagate here via `copier update` against the template's latest tag — run manually or via the weekly `.github/workflows/copier-update.yml` cron. Starter files listed in `_skip_if_exists` (e.g. `packaging/mcpb/*`, the `tools.py` / `resources.py` / `prompts.py` / `domain.py` scaffolds, `CHANGELOG.md`, `LICENSE`) are written once and require manual reconciliation on template updates; `AGENTS.md`, `README.md`, `.pre-commit-config.yaml`, `scripts/stamp_manifests.py`, `compose.yml`, `Dockerfile` and `pyproject.toml` are deliberately *not* among them — all seven are re-rendered on update, and only content inside their sentinel blocks survives (`DOMAIN-START` / `DOMAIN-END` in the two Markdown files, `DOMAIN-HOOKS` in the pre-commit config, `DOMAIN-MANIFESTS-HELPERS` / `DOMAIN-MANIFESTS` in the stamp script, the four `DOMAIN-COMPOSE-*` blocks in the compose file, the four `DOCKERFILE-*` blocks in the Dockerfile, and `PROJECT-DEPS` / `PROJECT-EXTRAS` / `PROJECT-LICENSE` / `PROJECT-CLASSIFIERS` / `PROJECT-LICENSE-CLASSIFIER` / `PROJECT-UV` / `PROJECT-RUFF-IGNORES` in `pyproject.toml`) — review `_skip_if_exists` in the template's `copier.yml` if you need to force-sync a file. Content written into a re-rendered file outside its sentinel blocks is drift, not a customisation: `python scripts/check_template_conformance.py` lists every such line against the pinned template version. Domain-specific code (tools, resources, prompts, and the fields and logic inside the `CONFIG-FIELDS-START` / `CONFIG-FIELDS-END`, `CONFIG-FROM-ENV-START` / `CONFIG-FROM-ENV-END`, and `CONFIG-VALIDATE-START` / `CONFIG-VALIDATE-END` sentinels) stays in this repo.
 
 ## Contributing fixes upstream
 
@@ -247,9 +250,7 @@ If a conflict marker appears in a copier-update bot PR, the conflict itself ofte
 `ProjectConfig` fields between the `CONFIG-FIELDS` sentinels in
 `src/paperless_mcp/config.py`, discovered by the config-surface generator's AST
 scan. There is no second settings class and no `vars:` list in
-`config-presentation.domain.yml`. Rationale, and the two places the template's
-contract does not quite fit (a required field cannot be expressed; the config
-cannot reach `register_tools`), are in `docs/design/config.md`.
+`config-presentation.domain.yml`. The rationale is in `docs/design/config.md`.
 
 **`get_server_info` reports Paperless too.** The `DOMAIN-UPSTREAM` sentinel in
 `server.py` wires `upstream_version=lambda: _paperless_version()` with

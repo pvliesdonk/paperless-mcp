@@ -15,6 +15,18 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from fastmcp_pvl_core import (
+    # For CONFIG-VALIDATE, which raises it.  The redundant alias marks an
+    # explicit re-export, so ruff accepts the import whether or not a check
+    # uses it; a `noqa: F401` would become an unused directive (RUF100) the
+    # moment one does, and fixing that means editing outside the sentinels.
+    ConfigurationError as ConfigurationError,
+)
+
+# isort: split
+# (keeps the import above in its own statement, so adding a name to the one
+#  below never makes ruff re-sort the two — that fix would be outside the
+#  sentinels.)
+from fastmcp_pvl_core import (
     ServerConfig,
     TransferConfig,
     # Used by `_default_server_name` below, and re-exported so CONFIG-FROM-ENV
@@ -67,18 +79,15 @@ class ProjectConfig:
     # One flat field per Paperless env var, named exactly after the var's
     # suffix, so the config-surface generator pairs each field's metadata with
     # the matching literal ``env(...)`` read in ``from_env``.  ``paperless_url``
-    # and ``api_token`` are required in practice — ``build_tool_context``
-    # refuses to build a Paperless client without them — but they still carry a
-    # default here, because the template's own config-contract tests construct
-    # ``ProjectConfig()`` with no arguments and a field without a default makes
-    # that a ``TypeError``.  Their help text carries the requirement instead
-    # (pvliesdonk/fastmcp-server-template#621).
+    # and ``api_token`` must be set: ``from_env`` reads them with
+    # ``required=True``, which refuses an unset one at startup and marks both
+    # required in the generated docs.  The empty defaults only satisfy dataclass
+    # field ordering, so a direct ``ProjectConfig()`` still constructs.
     paperless_url: str = field(
         default="",
         metadata={
             "help": (
-                "Base URL of the Paperless-NGX REST API, without a trailing "
-                "slash. The server refuses to start without it."
+                "Base URL of the Paperless-NGX REST API, without a trailing slash."
             ),
             "tags": ("paperless", "readme"),
             "wizard": {"group": "Paperless"},
@@ -91,10 +100,7 @@ class ProjectConfig:
         default="",
         repr=False,
         metadata={
-            "help": (
-                "Paperless service-account token used for outbound API "
-                "requests. The server refuses to start without it."
-            ),
+            "help": ("Paperless service-account token used for outbound API requests."),
             "tags": ("paperless", "readme"),
             "wizard": {"group": "Paperless", "secret": True},
         },
@@ -156,7 +162,19 @@ class ProjectConfig:
     # CONFIG-FIELDS-END
 
     def __post_init__(self) -> None:
-        """Validate composed domain fields.  Raise ``ValueError`` when invalid.
+        """Validate composed domain fields.  Raise ``ConfigurationError`` when invalid.
+
+        ``ConfigurationError`` is what ``serve`` turns into its one-line
+        ``ERROR: configuration error: ...`` exit; any other exception,
+        ``ValueError`` included, escapes as a full traceback.  Name the
+        variable and the problem in the message.
+
+        This hook checks *values* — bounds, formats, cross-field rules.  A
+        variable that must be *set* belongs on ``env(..., required=True)`` in
+        CONFIG-FROM-ENV instead: that refuses at startup and marks the var
+        required in the generated docs.  Never refuse an empty required field
+        here — tests and programmatic callers construct ``ProjectConfig(...)``
+        directly, without the environment.
 
         Runs on EVERY construction path — ``from_env`` and a direct
         ``ProjectConfig(field=...)`` alike.  That is what makes this the right
@@ -183,17 +201,17 @@ class ProjectConfig:
             (self.paperless_public_url or "").rstrip("/") or self.paperless_url,
         )
         if not 0 < self.http_timeout_seconds <= 600:
-            raise ValueError(
+            raise ConfigurationError(
                 f"{_ENV_PREFIX}_HTTP_TIMEOUT_SECONDS must be > 0 and <= 600, "
                 f"got {self.http_timeout_seconds}"
             )
         if not 0 <= self.http_retries <= 10:
-            raise ValueError(
+            raise ConfigurationError(
                 f"{_ENV_PREFIX}_HTTP_RETRIES must be >= 0 and <= 10, "
                 f"got {self.http_retries}"
             )
         if not 1 <= self.default_page_size <= 100:
-            raise ValueError(
+            raise ConfigurationError(
                 f"{_ENV_PREFIX}_DEFAULT_PAGE_SIZE must be >= 1 and <= 100, "
                 f"got {self.default_page_size}"
             )
@@ -211,8 +229,8 @@ class ProjectConfig:
             # would be an edit outside every sentinel, so the numeric reads are
             # parsed inline; their bounds are enforced in ``__post_init__``.
             transfer=TransferConfig.from_env(_ENV_PREFIX),
-            paperless_url=env(_ENV_PREFIX, "PAPERLESS_URL") or "",
-            api_token=env(_ENV_PREFIX, "API_TOKEN") or "",
+            paperless_url=env(_ENV_PREFIX, "PAPERLESS_URL", required=True),
+            api_token=env(_ENV_PREFIX, "API_TOKEN", required=True),
             http_timeout_seconds=float(
                 env(_ENV_PREFIX, "HTTP_TIMEOUT_SECONDS") or 30.0
             ),
