@@ -24,7 +24,7 @@ calling a tool.
 | `create_upload_link` | Get an expiring HTTP link to upload a file, including Markdown, with optional metadata |
 | `update_document` | Patch document metadata; the response omits OCR content and has the same shape as `get_document` |
 | `delete_document` | Move a document to the Paperless trash, from which it can be restored until the trash is emptied |
-| `bulk_edit_documents` | Apply one operation to many documents. Operations cover metadata (correspondent, type, storage path, tags, custom fields, permissions), deletion and reprocessing, and PDF changes (rotate, merge, split, delete pages, edit, remove a password); the `parameters` description lists what each one takes. The change lands before the call returns, but Paperless queues the search-index rebuild, so `search_documents` may miss the edited documents for seconds to minutes while `list_documents` and `get_document` see them at once. Track the queued task with `list_tasks(task_type="bulk_update")` |
+| `bulk_edit_documents` | Apply one operation to many documents. Operations cover metadata (correspondent, type, storage path, tags, custom fields, permissions), deletion and reprocessing, and PDF changes (rotate, merge, split, delete pages, edit, remove a password); the `parameters` description lists what each one takes. Metadata operations land before the call returns, but Paperless then rebuilds the search index in the background, so `search_documents` may miss the edited documents for seconds to minutes while `list_documents` and `get_document` see them at once; track that rebuild with `list_tasks(task_type="bulk_update")`. Deletion, reprocessing and the PDF changes run as background tasks of their own. |
 | `get_document_metadata` | Retrieve file metadata: original filename, checksums, MIME type |
 | `get_document_thumbnail` | Retrieve the thumbnail image of a document |
 | `get_document_suggestions` | Retrieve the tags, correspondent and type Paperless suggests for a document |
@@ -180,7 +180,7 @@ Both tools include a `share_url` field of the form `<PAPERLESS_MCP_PAPERLESS_PUB
 
 | Tool | Description |
 |---|---|
-| `list_tasks` | List background Celery tasks, newest first. Paginates (`page`, `page_size` up to 100). Defaults to unacknowledged tasks only. Pass `include_acknowledged=True` to include acknowledged tasks, or `acknowledged=True` to return only acknowledged ones. Filter by kind of work with `task_type`, such as `task_type="bulk_update"` for the search-index rebuild `bulk_edit_documents` queues. |
+| `list_tasks` | List background Celery tasks, newest first. Paginates (`page`, `page_size` up to 100). Defaults to unacknowledged tasks only. Pass `include_acknowledged=True` to include acknowledged tasks, or `acknowledged=True` to return only acknowledged ones. Filter by kind of work with `task_type`, such as `task_type="bulk_update"` for the search-index rebuild that `bulk_edit_documents`' metadata operations queue. |
 | `get_task` | Get a task by UUID |
 | `wait_for_task` | Wait up to `timeout_seconds` (600 at most) for a task to finish. A task still running at the deadline, or an id Paperless does not know, is reported as an error telling the model what to call next |
 
