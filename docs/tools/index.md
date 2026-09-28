@@ -43,9 +43,10 @@ See [transfer configuration](../configuration.md#document-transfer-links).
 Call `create_download_link(ref='{"document_id":42,"variant":"content"}')` for
 full OCR text as a UTF-8 Markdown file. Other variants are `original` (the
 default), `archive` and `preview`. Asking for `archive` on a document without an
-archived PDF is refused when the link is created, not when it is used. The tool returns `url` and `expires_in_s`; GET the URL from a file
-client or pass it to the intended recipient. Downloading reads the current
-file, so changes after link creation are reflected in the response.
+archived PDF is refused when the link is created, not when it is used. The
+tool returns `url` and `expires_in_s`; GET the URL from a file client or pass
+it to the intended recipient. Downloading reads the current file, so changes
+after link creation are reflected in the response.
 
 Content exports have a YAML front-matter block with document ID, title, created
 timestamp, correspondent ID, document type ID and tag IDs. The OCR text follows
