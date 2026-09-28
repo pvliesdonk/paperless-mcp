@@ -151,14 +151,7 @@ def _config_with(server: ServerConfig) -> ProjectConfig:
 
 def test_tasks_url_reaches_the_backend(task_backend: _TaskBackendCapture) -> None:
     """An explicit `PAPERLESS_MCP_TASKS_URL` selects the Docket backend."""
-<<<<<<< before updating
-    config = replace(
-        ProjectConfig.from_env(),
-        server=ServerConfig(tasks_url="redis://tasks.test:6379/1"),
-    )
-=======
     config = _config_with(ServerConfig(tasks_url="redis://tasks.test:6379/1"))
->>>>>>> after updating
     make_server(config=config)
     assert task_backend.settings().url == "redis://tasks.test:6379/1"
 
@@ -172,13 +165,6 @@ def test_redis_kv_store_url_is_reused_for_tasks(
     than a default-constructed one: the derivation can only see `kv_store_url`
     if the config passed through.
     """
-<<<<<<< before updating
-    config = replace(
-        ProjectConfig.from_env(),
-        server=ServerConfig(kv_store_url="redis://kv.test:6379/0"),
-    )
-=======
     config = _config_with(ServerConfig(kv_store_url="redis://kv.test:6379/0"))
->>>>>>> after updating
     make_server(config=config)
     assert task_backend.settings().url == "redis://kv.test:6379/0"
