@@ -158,6 +158,8 @@ def make_server(
     # may use only INSTANCE, CAPABILITIES, and WORKFLOWS; pvl-core reserves the
     # shaped identity, operator routing/policy, and documentation roles.
     # ``finalize_instructions`` renders them once, after tool visibility.
+    # One argument per line with a trailing comma, which ruff keeps as it is at
+    # any length: the blurb may run to the validator's 100 characters (#704).
     instructions_for(mcp).identity(
         server_name,
         "Paperless-NGX over MCP: search, read, upload and tag documents; manage correspondents and types.",
