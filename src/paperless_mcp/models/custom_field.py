@@ -31,12 +31,33 @@ class CustomField(BaseModel):
 
 class CustomFieldCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    name: str = Field(..., min_length=1)
-    data_type: CustomFieldDataType
-    extra_data: Any | None = None
+    name: str = Field(..., min_length=1, description="Field name.")
+    data_type: CustomFieldDataType = Field(
+        description="Kind of value the field holds; fixed once created."
+    )
+    extra_data: Any | None = Field(
+        default=None,
+        description=(
+            'For select, required: {"select_options": [{"label": "Low"}, '
+            '{"label": "High"}]}; Paperless gives each option an id. For '
+            'monetary, optional: {"default_currency": "EUR"}. Omit for every '
+            "other type."
+        ),
+    )
 
 
 class CustomFieldPatch(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    name: str | None = None
-    extra_data: Any | None = None
+    name: str | None = Field(
+        default=None, description="New name; omit to keep the current one."
+    )
+    extra_data: Any | None = Field(
+        default=None,
+        description=(
+            "Omit to keep the current options. For select, select_options "
+            "replaces the whole list: list every option to keep with its id "
+            '({"id": "abc", "label": "Low"}), add new ones without an id, and '
+            "leave out the ones to delete, which also clears them from "
+            'documents. For monetary: {"default_currency": "EUR"}.'
+        ),
+    )

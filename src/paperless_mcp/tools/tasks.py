@@ -16,6 +16,7 @@ from paperless_mcp.models.task import Task, TaskStatus, TaskType
 from paperless_mcp.tools._context import ToolContext
 from paperless_mcp.tools._errors import paperless_errors
 from paperless_mcp.tools._metadata import tool_metadata
+from paperless_mcp.tools._params import Page, PageSize
 
 
 def register(mcp: FastMCP, ctx: ToolContext) -> None:
@@ -31,26 +32,22 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
     @tool_boundary
     @paperless_errors
     async def list_tasks(
-        page: Annotated[int, Field(ge=1)] = 1,
-        page_size: Annotated[int, Field(ge=1, le=100)] = ctx.default_page_size,
+        page: Page = 1,
+        page_size: PageSize = ctx.default_page_size,
         status: TaskStatus | None = None,
         task_type: TaskType | None = None,
         acknowledged: bool | None = None,
         include_acknowledged: bool = False,
     ) -> Paginated[Task]:
-        """List Paperless Celery tasks.
+        """List Paperless background tasks such as consuming uploads and reindexing; returns one page, newest first.
 
-        Defaults to unacknowledged tasks only (set ``include_acknowledged=True``
-        or ``acknowledged=True`` to see acknowledged ones).  Returns one page,
-        newest first.
-
-        Pass ``task_type`` to filter by the kind of work — ``"bulk_update"``
-        is the search-index rebuild that ``bulk_edit_documents`` queues, so
-        that tool's deferred indexing can be waited on with ``wait_for_task``.
-        Version 10 adds task_type, trigger_source, structured result_data,
-        related_document_ids and timing fields. Statuses retain their uppercase
-        spelling. Legacy task_name, type, result and related_document remain
-        compatibility projections; use the v10 fields for full detail.
+        Args:
+            status: Keep tasks in this state.
+            task_type: Keep tasks of this kind; bulk_update is the reindex that
+                bulk_edit_documents' metadata operations start.
+            acknowledged: Keep only acknowledged (true) or unacknowledged (false) tasks.
+            include_acknowledged: Also list tasks already acknowledged; by default
+                only unacknowledged ones are listed.
         """
         return await client.tasks.list(
             page=page,
@@ -65,7 +62,11 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
     @tool_boundary
     @paperless_errors
     async def get_task(task_uuid: str) -> Task | None:
-        """Fetch a task by UUID.  Returns ``None`` if no such task exists."""
+        """Get one background task by id, with its status and result; returns null if there is none.
+
+        Args:
+            task_uuid: Task id, as returned by upload_document or listed by list_tasks.
+        """
         return await client.tasks.get(task_uuid)
 
     @mcp.tool(**tool_metadata("wait_for_task"))
@@ -75,7 +76,12 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
         task_uuid: str,
         timeout_seconds: Annotated[float, Field(gt=0, le=600)] = 60.0,
     ) -> Task:
-        """Poll until the task reaches a terminal state or times out."""
+        """Wait for a background task to finish; returns the task with its final status and result.
+
+        Args:
+            task_uuid: Task id, as returned by upload_document or listed by list_tasks.
+            timeout_seconds: Longest time to wait, up to 600 seconds.
+        """
         try:
             return await client.tasks.wait_for(
                 task_uuid, timeout_seconds=timeout_seconds

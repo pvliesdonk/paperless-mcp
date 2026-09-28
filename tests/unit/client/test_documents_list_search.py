@@ -378,3 +378,24 @@ def test_listing_fields_are_the_3_1_3_document_schema_minus_content() -> None:
     schema = json.loads(gzip.decompress(_OPENAPI.read_bytes()))
     returned = set(schema["components"]["schemas"]["Document"]["properties"])
     assert set(_LISTING_FIELDS) - _WRITE_ONLY == returned - {"content"}
+
+
+@pytest.mark.asyncio
+async def test_list_filters_by_custom_field_with_a_declared_parameter(
+    _documents_page: dict[str, Any],
+    paperless_base_url: str,
+    paperless_api_token: str,
+) -> None:
+    """Paperless declares ``custom_fields__id__in``, not ``custom_fields__id``."""
+    async with respx.mock(base_url=paperless_base_url) as mock:
+        route = mock.get("/api/documents/").mock(
+            return_value=httpx.Response(200, json=_documents_page)
+        )
+        c = PaperlessClient(base_url=paperless_base_url, api_token=paperless_api_token)
+        try:
+            await c.documents.list(custom_field=7)
+        finally:
+            await c.aclose()
+    params = route.calls.last.request.url.params
+    assert params["custom_fields__id__in"] == "7"
+    assert "custom_fields__id" not in params

@@ -15,7 +15,7 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
 
     @mcp.resource(uri="config://paperless", mime_type="application/json")
     async def config_resource() -> str:
-        """Return server configuration as JSON."""
+        """The Paperless URL, public URL and default page size this server uses."""
         snapshot = {
             "paperless_url": client.http.base_url,
             "paperless_public_url": ctx.public_url,
@@ -25,35 +25,25 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
 
     @mcp.resource(uri="stats://paperless", mime_type="application/json")
     async def stats_resource() -> str:
-        """Return Paperless-NGX document statistics as JSON."""
+        """Archive-wide counts: documents, inbox, tags, correspondents and types."""
         stats = await client.system.statistics()
         return stats.model_dump_json()
 
     @mcp.resource(uri="remote-version://paperless", mime_type="application/json")
     async def remote_version_resource() -> str:
-        """Return the newest release of Paperless-NGX published upstream.
-
-        An update check, not an identity one: the newest release Paperless read
-        from GitHub and whether it is newer than the connected instance -- not
-        the version installed on that instance, which ``get_server_info``
-        reports.
-        """
+        """The newest release of Paperless-NGX, not the version installed here, and whether it is newer."""
         rv = await client.system.remote_version()
         return rv.model_dump_json()
 
     @mcp.resource(uri="tags://paperless", mime_type="application/json")
     async def tags_resource() -> str:
-        """Return all tags as a JSON array."""
+        """Every tag, with its id, name and colour."""
         items = [item async for item in client.http.paginate("/api/tags/")]
         return json.dumps(items)
 
     @mcp.resource(uri="correspondents://paperless", mime_type="application/json")
     async def correspondents_resource() -> str:
-        """Return all correspondents as a JSON array.
-
-        Each entry carries ``last_correspondence``, the date of the newest
-        document, or null when it has none.
-        """
+        """Every correspondent, with its id, name and the date of its newest document."""
         items = [
             item
             async for item in client.http.paginate(
@@ -64,24 +54,24 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
 
     @mcp.resource(uri="document-types://paperless", mime_type="application/json")
     async def document_types_resource() -> str:
-        """Return all document types as a JSON array."""
+        """Every document type, with its id and name."""
         items = [item async for item in client.http.paginate("/api/document_types/")]
         return json.dumps(items)
 
     @mcp.resource(uri="custom-fields://paperless", mime_type="application/json")
     async def custom_fields_resource() -> str:
-        """Return all custom fields as a JSON array."""
+        """Every custom field definition, with its id, name and type."""
         items = [item async for item in client.http.paginate("/api/custom_fields/")]
         return json.dumps(items)
 
     @mcp.resource(uri="storage-paths://paperless", mime_type="application/json")
     async def storage_paths_resource() -> str:
-        """Return all storage paths as a JSON array."""
+        """Every storage path, with its id, name and path template."""
         items = [item async for item in client.http.paginate("/api/storage_paths/")]
         return json.dumps(items)
 
     @mcp.resource(uri="saved-views://paperless", mime_type="application/json")
     async def saved_views_resource() -> str:
-        """Return all saved views as a JSON array."""
+        """Every saved view, with its id, name and filter rules."""
         items = [item async for item in client.http.paginate("/api/saved_views/")]
         return json.dumps(items)

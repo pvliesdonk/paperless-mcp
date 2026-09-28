@@ -423,7 +423,7 @@ async def test_core_transfer_surface(mcp: FastMCP) -> None:
             assert set(tool.input_schema["properties"]) == {"ref", "ttl_s"}
             assert tool.annotations and tool.annotations.title
             assert tool.icons
-            assert "Paperless ref is a JSON string" in (tool.description or "")
+            assert "ref is a JSON string" in (tool.description or "")
             result = await client.call_tool(name, {"ref": example})
             assert result.structured_content
 
