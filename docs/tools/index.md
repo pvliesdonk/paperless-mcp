@@ -38,7 +38,7 @@ calling a tool.
 ### File transfer links
 
 The two link tools require HTTP or SSE transport and `PAPERLESS_MCP_BASE_URL`.
-See [transfer configuration](../configuration.md#document-transfer-links).
+See [transfer configuration](../reference/configuration.md#document-transfer-links).
 
 Call `create_download_link(ref='{"document_id":42,"variant":"content"}')` for
 full OCR text as a UTF-8 Markdown file. Other variants are `original` (the
@@ -174,7 +174,7 @@ consumers that assumed these fields were always `bool` must handle `None`.
 Both tools include a `share_url` field of the form `<PAPERLESS_MCP_PAPERLESS_PUBLIC_URL>/share/<slug>`.
 `PAPERLESS_MCP_PAPERLESS_PUBLIC_URL` is used when set; otherwise it defaults to
 `PAPERLESS_MCP_PAPERLESS_URL` via the config layer (see
-[Configuration](../configuration.md) for the variable).
+[Configuration](../reference/configuration.md) for the variable).
 
 ## Task tools
 
