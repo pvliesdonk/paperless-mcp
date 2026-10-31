@@ -445,7 +445,7 @@ extraPaths = ["src"]
 #   PAPERLESS_MCP_BASE_URL = "https://example.invalid"
 # PROJECT-DOCS-CHECKS-START — kept across copier update
 [tool.docs-structure]
-strict = false
+strict = true
 
 # gen_reference.py builds the server for the HTTP transport. `from_env`
 # requires the Paperless pair, and the transfer-link tools register only with
