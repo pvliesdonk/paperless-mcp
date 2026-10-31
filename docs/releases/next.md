@@ -28,7 +28,9 @@ Compared with v3.0.0, a failed tool call now tells the model what to do next and
 
 **Clients:** reconnect to pick up the new descriptions. A client that sends
 `bulk_edit_documents` with `operation: "redo_ocr"` must send `reprocess`
-instead; nothing else in any tool's parameters changed.
+instead. `operation` on `bulk_edit_tags`, `bulk_edit_correspondents` and
+`bulk_edit_document_types` now accepts only `set_permissions` or `delete`, the
+two values Paperless acts on. No parameter was added, removed or renamed.
 
 **State:** none. The KV store, its default location and its format are
 unchanged.
