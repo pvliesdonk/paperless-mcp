@@ -16,6 +16,11 @@ supply the timing and result fields, so they stay `null` rather than being
 guessed from the result text, and its task arrays are paginated by this server
 into the same page shape. Status values keep Paperless's uppercase spelling.
 
+The `status` and `task_type` filters use the version 10 names on either
+version; on version 9 this server translates them to that version's spelling.
+A `task_type` filter only matches kinds the connected instance records, and
+not every kind exists on Paperless 2.x.
+
 The older `task_name`, `type`, `result`, `task_file_name` and
 `related_document` fields remain for compatibility. `related_document` names
 only the first related document; use `related_document_ids` for all of them.
