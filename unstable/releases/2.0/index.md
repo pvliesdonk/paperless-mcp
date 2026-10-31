@@ -16,11 +16,11 @@ Both routes sit outside the MCP mount, which is also what makes them unauthentic
 
 `PAPERLESS_MCP_HEALTH_DETAIL` controls how much they say. `status` returns the status alone; the default `standard` adds the server name and version on `/health` and a verdict per check on `/health/ready`; `full` adds a redacted reason for each check that raised and belongs only where the port is reachable from a trusted network. The shipped `compose.yml` and the image's own `HEALTHCHECK` both probe `/health` rather than `/health/ready`, deliberately, because restarting a container does not fix an unreachable backing store.
 
-The route prefix follows the mount: `PAPERLESS_MCP_HTTP_PATH` has a trailing `mcp` segment stripped, so the default `/mcp` gives `/health`, and a mount at `/paperless-mcp/mcp` gives `/paperless-mcp/health`. The shipped probes assume the default, so a non-default mount means moving both by hand. See [Docker deployment](https://pvliesdonk.github.io/paperless-mcp/unstable/deployment/docker/index.md) for the probe configuration.
+The route prefix follows the mount: `PAPERLESS_MCP_HTTP_PATH` has a trailing `mcp` segment stripped, so the default `/mcp` gives `/health`, and a mount at `/paperless-mcp/mcp` gives `/paperless-mcp/health`. The shipped probes assume the default, so a non-default mount means moving both by hand. See [Docker deployment](https://pvliesdonk.github.io/paperless-mcp/unstable/deploy/docker/index.md) for the probe configuration.
 
 ### Instructions you can shape instead of replace
 
-Two new variables let an operator add to the generated MCP instructions rather than overwrite them. `PAPERLESS_MCP_INSTANCE_DESCRIPTION` carries concise routing context that distinguishes this deployment from another one a client may also have mounted. `PAPERLESS_MCP_INSTRUCTIONS_EXTRA` carries deployment-specific behavioural policy, appended to the generated text. Neither has a default; both are documented in [Configuration](https://pvliesdonk.github.io/paperless-mcp/unstable/configuration/index.md).
+Two new variables let an operator add to the generated MCP instructions rather than overwrite them. `PAPERLESS_MCP_INSTANCE_DESCRIPTION` carries concise routing context that distinguishes this deployment from another one a client may also have mounted. `PAPERLESS_MCP_INSTRUCTIONS_EXTRA` carries deployment-specific behavioural policy, appended to the generated text. Neither has a default; both are documented in [Configuration](https://pvliesdonk.github.io/paperless-mcp/unstable/reference/configuration/index.md).
 
 The older `PAPERLESS_MCP_INSTRUCTIONS` still works and still replaces all generated text, but it is now deprecated, logs a warning at startup, and silently ignores both additive variables when it is set. If you set it only to append a sentence, the two variables above are what you actually wanted.
 
@@ -53,7 +53,7 @@ That block carries identity only, and deliberately holds no `update_available` k
 
 Nothing needs enabling. The version is read from the Paperless UI settings endpoint, reusing the connection the server already holds, and costs one extra request per call.
 
-**It does cost one permission.** The endpoint that publishes the installed version is gated on a model permission, so the token's Paperless user needs the view permission on UI settings. A narrow service account without it gets a `403`. That degrades to `{"version": null}` rather than failing the call, because the version is optional enrichment of a tool whose real job is reporting this server's build. Note that `{"version": null}` is also what you get when Paperless is down, when the URL is wrong, and when the token is rejected, so a null here means "could not ask," not "no version." Granting the permission is the fix if you want it populated; everything else the server does is unaffected either way. [Tools](https://pvliesdonk.github.io/paperless-mcp/unstable/tools/index.md) documents the full shape.
+**It does cost one permission.** The endpoint that publishes the installed version is gated on a model permission, so the token's Paperless user needs the view permission on UI settings. A narrow service account without it gets a `403`. That degrades to `{"version": null}` rather than failing the call, because the version is optional enrichment of a tool whose real job is reporting this server's build. Note that `{"version": null}` is also what you get when Paperless is down, when the URL is wrong, and when the token is rejected, so a null here means "could not ask," not "no version." Granting the permission is the fix if you want it populated; everything else the server does is unaffected either way. [Tools](https://pvliesdonk.github.io/paperless-mcp/unstable/reference/tools/index.md) documents the full shape.
 
 ### `get_remote_version` now says which question it answers
 
@@ -83,7 +83,7 @@ This release changes deployment defaults. The MCP tool and resource surface is u
 
 **Refresh the lock file before you build.** A stale lock file builds an image that fails at import time, because the image installs from the lock with `--frozen`.
 
-**If you used the shipped Traefik labels.** `compose.yml` no longer carries them and no longer builds from the checkout. The reverse-proxy configuration moved to an overlay you copy from [Docker deployment](https://pvliesdonk.github.io/paperless-mcp/unstable/deployment/docker/index.md). Worth knowing while you migrate: the labels never routed as shipped, because the file declared no network for Traefik to join.
+**If you used the shipped Traefik labels.** `compose.yml` no longer carries them and no longer builds from the checkout. The reverse-proxy configuration moved to an overlay you copy from [Docker deployment](https://pvliesdonk.github.io/paperless-mcp/unstable/deploy/docker/index.md). Worth knowing while you migrate: the labels never routed as shipped, because the file declared no network for Traefik to join.
 
 **If you set `PAPERLESS_MCP_PORT` for a container.** The image now pins `--port 8000`, so that variable no longer moves the listener and no error is raised. A container started with `-e PAPERLESS_MCP_PORT=9000 -p 9000:9000` serves on 8000 behind a mapping pointing at a closed port. Change the host side instead, as in `-p 9000:8000`. Outside a container the variable still works.
 

@@ -2,38 +2,73 @@
 
 > Paperless-NGX over MCP: search, read, upload and tag documents; manage correspondents and types.
 
-## Getting Started
+## Overview
 
-- [Home](https://pvliesdonk.github.io/paperless-mcp/unstable/index.md)
-- [Installation](https://pvliesdonk.github.io/paperless-mcp/unstable/installation/index.md)
-- [Configuration](https://pvliesdonk.github.io/paperless-mcp/unstable/configuration/index.md)
-- [Configuration Generator](https://pvliesdonk.github.io/paperless-mcp/unstable/configuration-generator/index.md)
+- [Overview](https://pvliesdonk.github.io/paperless-mcp/unstable/index.md): What Paperless MCP is, what it does, and where to start reading.
 
-## Guides
+## Security model
 
-- [Authentication](https://pvliesdonk.github.io/paperless-mcp/unstable/guides/authentication/index.md)
-- [Security Model](https://pvliesdonk.github.io/paperless-mcp/unstable/guides/security-model/index.md)
+- [Security model](https://pvliesdonk.github.io/paperless-mcp/unstable/security-model/index.md): What the server protects, what it can reach, and what stays the operator's responsibility.
 
-## MCP Interface
+## Get started
 
-- [Tools](https://pvliesdonk.github.io/paperless-mcp/unstable/tools/index.md)
-- [Resources](https://pvliesdonk.github.io/paperless-mcp/unstable/resources/index.md)
-- [Prompts](https://pvliesdonk.github.io/paperless-mcp/unstable/prompts/index.md)
+- [Overview](https://pvliesdonk.github.io/paperless-mcp/unstable/get-started/index.md): Pick your client and reach a first working call with Paperless MCP.
+- [Claude Desktop](https://pvliesdonk.github.io/paperless-mcp/unstable/get-started/claude-desktop/index.md): Connect Claude Desktop to Paperless MCP on your machine and make a first, read-only call.
+- [Claude Code](https://pvliesdonk.github.io/paperless-mcp/unstable/get-started/claude-code/index.md): Run Paperless MCP inside Claude Code through its plugin, or connect Claude Code to a server that already runs.
+- [A remote server](https://pvliesdonk.github.io/paperless-mcp/unstable/get-started/http-client/index.md): Connect claude.ai, Claude Code or another client to a Paperless MCP server that runs somewhere else.
+- [Installation](https://pvliesdonk.github.io/paperless-mcp/unstable/get-started/installation/index.md): Every way to install Paperless MCP, by where it runs, with a check of what you installed.
 
-## Deployment
+## Deploy
 
-- [Claude Desktop](https://pvliesdonk.github.io/paperless-mcp/unstable/deployment/claude-desktop/index.md)
-- [Docker](https://pvliesdonk.github.io/paperless-mcp/unstable/deployment/docker/index.md)
-- [Integration Branches](https://pvliesdonk.github.io/paperless-mcp/unstable/deployment/integration-branches/index.md)
-- [OIDC Authentication](https://pvliesdonk.github.io/paperless-mcp/unstable/deployment/oidc/index.md)
-- [Release Process](https://pvliesdonk.github.io/paperless-mcp/unstable/deployment/release-process/index.md)
-- [Repository Protection](https://pvliesdonk.github.io/paperless-mcp/unstable/deployment/repository-protection/index.md)
-- [Template Updates](https://pvliesdonk.github.io/paperless-mcp/unstable/deployment/template-updates/index.md)
+- [Overview](https://pvliesdonk.github.io/paperless-mcp/unstable/deploy/index.md): Run Paperless MCP for real: Docker or a system package, authentication, OIDC and its providers, a reverse proxy.
+- [Docker](https://pvliesdonk.github.io/paperless-mcp/unstable/deploy/docker/index.md): Run the server with Docker Compose, locally or behind a reverse proxy.
+- [systemd and packages](https://pvliesdonk.github.io/paperless-mcp/unstable/deploy/systemd/index.md): Run Paperless MCP as a systemd service from the .deb or .rpm package, from the environment file to upgrades.
+- [Authentication](https://pvliesdonk.github.io/paperless-mcp/unstable/deploy/authentication/index.md): Choose and configure an authentication mode for an HTTP deployment.
+- [OIDC](https://pvliesdonk.github.io/paperless-mcp/unstable/deploy/oidc/index.md): Which OIDC mode to run and how to configure it: the server as a resource server, or as the provider's registered client.
+- [OIDC providers](https://pvliesdonk.github.io/paperless-mcp/unstable/deploy/oidc-providers/index.md): Register Paperless MCP with Authelia, Keycloak or Google, or sign in through GitHub via a broker, and see which OIDC mode each allows.
+- [Reverse proxy](https://pvliesdonk.github.io/paperless-mcp/unstable/deploy/reverse-proxy/index.md): Put Paperless MCP behind a reverse proxy: TLS, its own hostname or a path prefix, and the routing rules OAuth discovery needs.
+- [Transfer links](https://pvliesdonk.github.io/paperless-mcp/unstable/deploy/transfer-links/index.md): One-time download and upload links: how a client uses them, and what the operator configures and exposes.
 
-## Release Notes
+## Use
 
-- [1.0](https://pvliesdonk.github.io/paperless-mcp/unstable/releases/1.0/index.md)
-- [2.0](https://pvliesdonk.github.io/paperless-mcp/unstable/releases/2.0/index.md)
-- [2.1](https://pvliesdonk.github.io/paperless-mcp/unstable/releases/2.1/index.md)
-- [3.0](https://pvliesdonk.github.io/paperless-mcp/unstable/releases/3.0/index.md)
+- [Overview](https://pvliesdonk.github.io/paperless-mcp/unstable/use/index.md): How to use this server's features for real tasks, and why they behave as they do.
+
+## Reference
+
+- [Configuration](https://pvliesdonk.github.io/paperless-mcp/unstable/reference/configuration/index.md): Every environment variable the server reads, with its type, default and effect.
+- [Configuration generator](https://pvliesdonk.github.io/paperless-mcp/unstable/reference/configuration-generator/index.md): Generate a configuration for your deployment in the browser.
+- [Overview](https://pvliesdonk.github.io/paperless-mcp/unstable/reference/tools/index.md): Every tool this server registers, by group.
+- [Documents](https://pvliesdonk.github.io/paperless-mcp/unstable/reference/tools/documents/index.md): Reference for the Documents group of tools.
+- [Tags](https://pvliesdonk.github.io/paperless-mcp/unstable/reference/tools/tags/index.md): Reference for the Tags group of tools.
+- [Correspondents](https://pvliesdonk.github.io/paperless-mcp/unstable/reference/tools/correspondents/index.md): Reference for the Correspondents group of tools.
+- [Document types](https://pvliesdonk.github.io/paperless-mcp/unstable/reference/tools/document_types/index.md): Reference for the Document types group of tools.
+- [Custom fields](https://pvliesdonk.github.io/paperless-mcp/unstable/reference/tools/custom_fields/index.md): Reference for the Custom fields group of tools.
+- [Storage paths](https://pvliesdonk.github.io/paperless-mcp/unstable/reference/tools/storage_paths/index.md): Reference for the Storage paths group of tools.
+- [Saved views](https://pvliesdonk.github.io/paperless-mcp/unstable/reference/tools/saved_views/index.md): Reference for the Saved views group of tools.
+- [Share links](https://pvliesdonk.github.io/paperless-mcp/unstable/reference/tools/share_links/index.md): Reference for the Share links group of tools.
+- [Tasks](https://pvliesdonk.github.io/paperless-mcp/unstable/reference/tools/tasks/index.md): Reference for the Tasks group of tools.
+- [System](https://pvliesdonk.github.io/paperless-mcp/unstable/reference/tools/system/index.md): Reference for the System group of tools.
+- [Server info](https://pvliesdonk.github.io/paperless-mcp/unstable/reference/tools/server_info/index.md): Reference for the Server info group of tools.
+- [Transfer](https://pvliesdonk.github.io/paperless-mcp/unstable/reference/tools/transfer/index.md): Reference for the Transfer group of tools.
+- [Resources](https://pvliesdonk.github.io/paperless-mcp/unstable/reference/resources/index.md): The resources and resource templates this server serves.
+- [Prompts](https://pvliesdonk.github.io/paperless-mcp/unstable/reference/prompts/index.md): The prompt templates this server offers to MCP clients.
+- [Command line](https://pvliesdonk.github.io/paperless-mcp/unstable/reference/cli/index.md): The `paperless-mcp` command line: commands, options and their environment variables.
+
+## Upgrade
+
+- [Overview](https://pvliesdonk.github.io/paperless-mcp/unstable/upgrade/index.md): The step for your channel, what a new release changes for your clients and your state, and where a release page answers those questions.
+- [Release notes](https://pvliesdonk.github.io/paperless-mcp/unstable/releases/index.md): Release notes for each minor series, with the steps to upgrade.
+- [1.0](https://pvliesdonk.github.io/paperless-mcp/unstable/releases/1.0/index.md): Release notes for the 1.0 series, with the steps to upgrade to it.
+- [2.0](https://pvliesdonk.github.io/paperless-mcp/unstable/releases/2.0/index.md): Release notes for the 2.0 series, with the steps to upgrade to it.
+- [2.1](https://pvliesdonk.github.io/paperless-mcp/unstable/releases/2.1/index.md): Release notes for the 2.1 series, with the steps to upgrade to it.
+- [3.0](https://pvliesdonk.github.io/paperless-mcp/unstable/releases/3.0/index.md): Release notes for the 3.0 series, with the steps to upgrade to it.
+
+## Contribute
+
+- [Overview](https://pvliesdonk.github.io/paperless-mcp/unstable/contribute/index.md): Set up a clone of Paperless MCP to contribute, and learn where a fix belongs.
+- [Documentation structure](https://pvliesdonk.github.io/paperless-mcp/unstable/contribute/docs-structure/index.md): Where each piece of documentation belongs, and who owns it.
+- [Release process](https://pvliesdonk.github.io/paperless-mcp/unstable/contribute/release-process/index.md): How a release is cut, published and promoted.
+- [Template updates](https://pvliesdonk.github.io/paperless-mcp/unstable/contribute/template-updates/index.md): How to work through a template update pull request.
+- [Repository protection](https://pvliesdonk.github.io/paperless-mcp/unstable/contribute/repository-protection/index.md): The branch and tag rules that decide what a release can ship from.
+- [Integration branches](https://pvliesdonk.github.io/paperless-mcp/unstable/contribute/integration-branches/index.md): How to run an epic on an integration branch and bring it to main in one pull request.
 

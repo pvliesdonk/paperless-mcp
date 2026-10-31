@@ -5,59 +5,155 @@
          <lastmod>2026-10-31</lastmod>
     </url>
     <url>
-         <loc>https://pvliesdonk.github.io/paperless-mcp/unstable/configuration-generator/</loc>
+         <loc>https://pvliesdonk.github.io/paperless-mcp/unstable/security-model/</loc>
          <lastmod>2026-10-31</lastmod>
     </url>
     <url>
-         <loc>https://pvliesdonk.github.io/paperless-mcp/unstable/configuration/</loc>
+         <loc>https://pvliesdonk.github.io/paperless-mcp/unstable/contribute/</loc>
          <lastmod>2026-10-31</lastmod>
     </url>
     <url>
-         <loc>https://pvliesdonk.github.io/paperless-mcp/unstable/installation/</loc>
+         <loc>https://pvliesdonk.github.io/paperless-mcp/unstable/contribute/docs-structure/</loc>
          <lastmod>2026-10-31</lastmod>
     </url>
     <url>
-         <loc>https://pvliesdonk.github.io/paperless-mcp/unstable/prompts/</loc>
+         <loc>https://pvliesdonk.github.io/paperless-mcp/unstable/contribute/integration-branches/</loc>
          <lastmod>2026-10-31</lastmod>
     </url>
     <url>
-         <loc>https://pvliesdonk.github.io/paperless-mcp/unstable/resources/</loc>
+         <loc>https://pvliesdonk.github.io/paperless-mcp/unstable/contribute/release-process/</loc>
          <lastmod>2026-10-31</lastmod>
     </url>
     <url>
-         <loc>https://pvliesdonk.github.io/paperless-mcp/unstable/deployment/claude-desktop/</loc>
+         <loc>https://pvliesdonk.github.io/paperless-mcp/unstable/contribute/repository-protection/</loc>
          <lastmod>2026-10-31</lastmod>
     </url>
     <url>
-         <loc>https://pvliesdonk.github.io/paperless-mcp/unstable/deployment/docker/</loc>
+         <loc>https://pvliesdonk.github.io/paperless-mcp/unstable/contribute/template-updates/</loc>
          <lastmod>2026-10-31</lastmod>
     </url>
     <url>
-         <loc>https://pvliesdonk.github.io/paperless-mcp/unstable/deployment/integration-branches/</loc>
+         <loc>https://pvliesdonk.github.io/paperless-mcp/unstable/deploy/</loc>
          <lastmod>2026-10-31</lastmod>
     </url>
     <url>
-         <loc>https://pvliesdonk.github.io/paperless-mcp/unstable/deployment/oidc/</loc>
+         <loc>https://pvliesdonk.github.io/paperless-mcp/unstable/deploy/authentication/</loc>
          <lastmod>2026-10-31</lastmod>
     </url>
     <url>
-         <loc>https://pvliesdonk.github.io/paperless-mcp/unstable/deployment/release-process/</loc>
+         <loc>https://pvliesdonk.github.io/paperless-mcp/unstable/deploy/docker/</loc>
          <lastmod>2026-10-31</lastmod>
     </url>
     <url>
-         <loc>https://pvliesdonk.github.io/paperless-mcp/unstable/deployment/repository-protection/</loc>
+         <loc>https://pvliesdonk.github.io/paperless-mcp/unstable/deploy/oidc-providers/</loc>
          <lastmod>2026-10-31</lastmod>
     </url>
     <url>
-         <loc>https://pvliesdonk.github.io/paperless-mcp/unstable/deployment/template-updates/</loc>
+         <loc>https://pvliesdonk.github.io/paperless-mcp/unstable/deploy/oidc/</loc>
          <lastmod>2026-10-31</lastmod>
     </url>
     <url>
-         <loc>https://pvliesdonk.github.io/paperless-mcp/unstable/guides/authentication/</loc>
+         <loc>https://pvliesdonk.github.io/paperless-mcp/unstable/deploy/reverse-proxy/</loc>
          <lastmod>2026-10-31</lastmod>
     </url>
     <url>
-         <loc>https://pvliesdonk.github.io/paperless-mcp/unstable/guides/security-model/</loc>
+         <loc>https://pvliesdonk.github.io/paperless-mcp/unstable/deploy/systemd/</loc>
+         <lastmod>2026-10-31</lastmod>
+    </url>
+    <url>
+         <loc>https://pvliesdonk.github.io/paperless-mcp/unstable/deploy/transfer-links/</loc>
+         <lastmod>2026-10-31</lastmod>
+    </url>
+    <url>
+         <loc>https://pvliesdonk.github.io/paperless-mcp/unstable/get-started/</loc>
+         <lastmod>2026-10-31</lastmod>
+    </url>
+    <url>
+         <loc>https://pvliesdonk.github.io/paperless-mcp/unstable/get-started/claude-code/</loc>
+         <lastmod>2026-10-31</lastmod>
+    </url>
+    <url>
+         <loc>https://pvliesdonk.github.io/paperless-mcp/unstable/get-started/claude-desktop/</loc>
+         <lastmod>2026-10-31</lastmod>
+    </url>
+    <url>
+         <loc>https://pvliesdonk.github.io/paperless-mcp/unstable/get-started/http-client/</loc>
+         <lastmod>2026-10-31</lastmod>
+    </url>
+    <url>
+         <loc>https://pvliesdonk.github.io/paperless-mcp/unstable/get-started/installation/</loc>
+         <lastmod>2026-10-31</lastmod>
+    </url>
+    <url>
+         <loc>https://pvliesdonk.github.io/paperless-mcp/unstable/reference/cli/</loc>
+         <lastmod>2026-10-31</lastmod>
+    </url>
+    <url>
+         <loc>https://pvliesdonk.github.io/paperless-mcp/unstable/reference/configuration-generator/</loc>
+         <lastmod>2026-10-31</lastmod>
+    </url>
+    <url>
+         <loc>https://pvliesdonk.github.io/paperless-mcp/unstable/reference/configuration/</loc>
+         <lastmod>2026-10-31</lastmod>
+    </url>
+    <url>
+         <loc>https://pvliesdonk.github.io/paperless-mcp/unstable/reference/prompts/</loc>
+         <lastmod>2026-10-31</lastmod>
+    </url>
+    <url>
+         <loc>https://pvliesdonk.github.io/paperless-mcp/unstable/reference/resources/</loc>
+         <lastmod>2026-10-31</lastmod>
+    </url>
+    <url>
+         <loc>https://pvliesdonk.github.io/paperless-mcp/unstable/reference/tools/</loc>
+         <lastmod>2026-10-31</lastmod>
+    </url>
+    <url>
+         <loc>https://pvliesdonk.github.io/paperless-mcp/unstable/reference/tools/correspondents/</loc>
+         <lastmod>2026-10-31</lastmod>
+    </url>
+    <url>
+         <loc>https://pvliesdonk.github.io/paperless-mcp/unstable/reference/tools/custom_fields/</loc>
+         <lastmod>2026-10-31</lastmod>
+    </url>
+    <url>
+         <loc>https://pvliesdonk.github.io/paperless-mcp/unstable/reference/tools/document_types/</loc>
+         <lastmod>2026-10-31</lastmod>
+    </url>
+    <url>
+         <loc>https://pvliesdonk.github.io/paperless-mcp/unstable/reference/tools/documents/</loc>
+         <lastmod>2026-10-31</lastmod>
+    </url>
+    <url>
+         <loc>https://pvliesdonk.github.io/paperless-mcp/unstable/reference/tools/saved_views/</loc>
+         <lastmod>2026-10-31</lastmod>
+    </url>
+    <url>
+         <loc>https://pvliesdonk.github.io/paperless-mcp/unstable/reference/tools/server_info/</loc>
+         <lastmod>2026-10-31</lastmod>
+    </url>
+    <url>
+         <loc>https://pvliesdonk.github.io/paperless-mcp/unstable/reference/tools/share_links/</loc>
+         <lastmod>2026-10-31</lastmod>
+    </url>
+    <url>
+         <loc>https://pvliesdonk.github.io/paperless-mcp/unstable/reference/tools/storage_paths/</loc>
+         <lastmod>2026-10-31</lastmod>
+    </url>
+    <url>
+         <loc>https://pvliesdonk.github.io/paperless-mcp/unstable/reference/tools/system/</loc>
+         <lastmod>2026-10-31</lastmod>
+    </url>
+    <url>
+         <loc>https://pvliesdonk.github.io/paperless-mcp/unstable/reference/tools/tags/</loc>
+         <lastmod>2026-10-31</lastmod>
+    </url>
+    <url>
+         <loc>https://pvliesdonk.github.io/paperless-mcp/unstable/reference/tools/tasks/</loc>
+         <lastmod>2026-10-31</lastmod>
+    </url>
+    <url>
+         <loc>https://pvliesdonk.github.io/paperless-mcp/unstable/reference/tools/transfer/</loc>
          <lastmod>2026-10-31</lastmod>
     </url>
     <url>
@@ -81,7 +177,11 @@
          <lastmod>2026-10-31</lastmod>
     </url>
     <url>
-         <loc>https://pvliesdonk.github.io/paperless-mcp/unstable/tools/</loc>
+         <loc>https://pvliesdonk.github.io/paperless-mcp/unstable/upgrade/</loc>
+         <lastmod>2026-10-31</lastmod>
+    </url>
+    <url>
+         <loc>https://pvliesdonk.github.io/paperless-mcp/unstable/use/</loc>
          <lastmod>2026-10-31</lastmod>
     </url>
 </urlset>

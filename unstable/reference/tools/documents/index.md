@@ -1,0 +1,284 @@
+# Documents
+
+`get_document`, `list_documents`, `search_documents` and `update_document` include a `web_url` pointing to the document in the Paperless web interface, such as `https://paperless.example.com/documents/42/`. It's built from `PAPERLESS_MCP_PAPERLESS_PUBLIC_URL` when that's set, and from the API URL otherwise.
+
+To download a document's file, or its full text as one Markdown file, use `create_download_link` on the [transfer](https://pvliesdonk.github.io/paperless-mcp/unstable/reference/tools/transfer/index.md) page; the [transfer links](https://pvliesdonk.github.io/paperless-mcp/unstable/deploy/transfer-links/index.md) page covers the variants.
+
+## `list_documents`
+
+**List Documents.** Read-only. Idempotent. Reaches outside the server.
+
+List documents filtered by their metadata; returns one page of metadata.
+
+Use `search_documents` to find documents by the words in them. Results leave out each document's text, note text and custom field values; `get_document_content` and `get_document` return them.
+
+**Parameters**
+
+| Name            | Type                       | Default | Description                                                                                                                                                                                                                   |
+| --------------- | -------------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `page`          | `integer`                  | `1`     | Page number, starting at 1.                                                                                                                                                                                                   |
+| `page_size`     | `integer`                  | `25`    | Results per page, up to 100.                                                                                                                                                                                                  |
+| `ordering`      | `string \| null`           | `null`  | Field to sort by: created, added, modified, title, `archive_serial_number`, `correspondent__name`, `document_type__name` or `page_count`; prefix it with - to sort descending (-created). Omit for Paperless's default order. |
+| `tags`          | `array of integer \| null` | `null`  | Keep documents that carry any of these tag ids.                                                                                                                                                                               |
+| `correspondent` | `integer \| null`          | `null`  | Keep documents from this correspondent id.                                                                                                                                                                                    |
+| `document_type` | `integer \| null`          | `null`  | Keep documents of this document type id.                                                                                                                                                                                      |
+| `storage_path`  | `integer \| null`          | `null`  | Keep documents in this storage path id.                                                                                                                                                                                       |
+| `custom_field`  | `integer \| null`          | `null`  | Keep documents that have this custom field.                                                                                                                                                                                   |
+
+**Returns**
+
+`object`
+
+## `search_documents`
+
+**Search Documents.** Read-only. Idempotent. Reaches outside the server.
+
+Search the full text and metadata of documents; returns one page, best match first.
+
+Use `list_documents` to filter by tag, correspondent or type alone. Results leave out each document's text, note text and custom field values; `get_document_content` and `get_document` return them.
+
+**Parameters**
+
+| Name        | Type              | Default  | Description                                                                                                                                                                                                                                                          |
+| ----------- | ----------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `query`     | `string`          | required | Words a document must contain, in any order, across its text, title, correspondent, type and tags. Also accepts the operators `AND` and `OR`, field terms such as tag:unpaid or created:[2024 to 2025], and notes.note:word for note text. Pass "" with `more_like`. |
+| `page`      | `integer`         | `1`      | Page number, starting at 1.                                                                                                                                                                                                                                          |
+| `page_size` | `integer`         | `25`     | Results per page, up to 100.                                                                                                                                                                                                                                         |
+| `more_like` | `integer \| null` | `null`   | Document id; return documents similar to it instead.                                                                                                                                                                                                                 |
+
+**Returns**
+
+`object`
+
+## `get_document`
+
+**Get Document.** Read-only. Idempotent. Reaches outside the server.
+
+Get one document's metadata, notes and custom field values, without its text.
+
+Use `get_document_content` for the text.
+
+**Parameters**
+
+| Name          | Type      | Default  | Description            |
+| ------------- | --------- | -------- | ---------------------- |
+| `document_id` | `integer` | required | Paperless document id. |
+
+**Returns**
+
+`object`
+
+## `get_document_content`
+
+**Get Document Text.** Read-only. Idempotent. Reaches outside the server.
+
+Read a document's text, up to 20,000 characters per call.
+
+A longer document comes back in sections. Each section opens with a marker that gives its character range out of the full length, and the offset where the next section starts. Text that fits comes back whole, with no marker.
+
+**Parameters**
+
+| Name          | Type      | Default  | Description                                                                                |
+| ------------- | --------- | -------- | ------------------------------------------------------------------------------------------ |
+| `document_id` | `integer` | required | Paperless document id.                                                                     |
+| `max_chars`   | `integer` | `20000`  | Most characters to return in this call.                                                    |
+| `offset`      | `integer` | `0`      | Character position to start from; pass the offset a marker names to read the next section. |
+
+**Returns**
+
+`string`
+
+## `get_document_thumbnail`
+
+**Get Document Thumbnail.** Read-only. Idempotent. Reaches outside the server.
+
+Get a small image of a document's first page.
+
+**Parameters**
+
+| Name          | Type      | Default  | Description            |
+| ------------- | --------- | -------- | ---------------------- |
+| `document_id` | `integer` | required | Paperless document id. |
+
+**Returns**
+
+Nothing.
+
+## `get_document_metadata`
+
+**Get Document File Details.** Read-only. Idempotent. Reaches outside the server.
+
+Get a document's file details: original and archived file names, sizes, checksums and MIME type.
+
+**Parameters**
+
+| Name          | Type      | Default  | Description            |
+| ------------- | --------- | -------- | ---------------------- |
+| `document_id` | `integer` | required | Paperless document id. |
+
+**Returns**
+
+`object`
+
+## `get_document_notes`
+
+**List Document Notes.** Read-only. Idempotent. Reaches outside the server.
+
+List the notes on a document, with their full text.
+
+**Parameters**
+
+| Name          | Type      | Default  | Description            |
+| ------------- | --------- | -------- | ---------------------- |
+| `document_id` | `integer` | required | Paperless document id. |
+
+**Returns**
+
+`array of object`
+
+## `get_document_history`
+
+**Get Document Audit Log.** Read-only. Idempotent. Reaches outside the server.
+
+List the changes made to a document: who changed which field, and when.
+
+**Parameters**
+
+| Name          | Type      | Default  | Description            |
+| ------------- | --------- | -------- | ---------------------- |
+| `document_id` | `integer` | required | Paperless document id. |
+
+**Returns**
+
+`array of object`
+
+## `get_document_suggestions`
+
+**Suggest Tags, Correspondent and Type.** Read-only. Idempotent. Reaches outside the server.
+
+Get Paperless's suggested tags, correspondent, document type and dates for a document.
+
+**Parameters**
+
+| Name          | Type      | Default  | Description            |
+| ------------- | --------- | -------- | ---------------------- |
+| `document_id` | `integer` | required | Paperless document id. |
+
+**Returns**
+
+`object`
+
+## `update_document`
+
+**Update Document.** Changes state, not destructive. Idempotent. Reaches outside the server.
+
+Change a document's metadata; returns the updated document without its text.
+
+Use `bulk_edit_documents` to change many documents at once.
+
+**Parameters**
+
+| Name          | Type      | Default  | Description                |
+| ------------- | --------- | -------- | -------------------------- |
+| `document_id` | `integer` | required | Paperless document id.     |
+| `patch`       | `object`  | required | Only the fields to change. |
+
+**Returns**
+
+`object`
+
+## `delete_document`
+
+**Move Document to Trash.** Destructive. Idempotent. Reaches outside the server.
+
+Move a document to Paperless's trash, where a user can restore it until the trash is emptied.
+
+**Parameters**
+
+| Name          | Type      | Default  | Description            |
+| ------------- | --------- | -------- | ---------------------- |
+| `document_id` | `integer` | required | Paperless document id. |
+
+**Returns**
+
+`null`
+
+## `upload_document`
+
+**Upload Document.** Changes state, not destructive. Reaches outside the server.
+
+Upload a file for Paperless to consume; returns the consume task's id.
+
+The document appears once the task finishes; `wait_for_task` waits for it and its result names the new document. For large files, use `create_upload_link` where it is available.
+
+**Parameters**
+
+| Name                    | Type                       | Default  | Description                                                  |
+| ----------------------- | -------------------------- | -------- | ------------------------------------------------------------ |
+| `filename`              | `string`                   | required | File name, with the extension that tells Paperless its type. |
+| `content_base64`        | `string`                   | required | The file's bytes, base64-encoded.                            |
+| `title`                 | `string \| null`           | `null`   | Title; omit to let Paperless derive one.                     |
+| `correspondent`         | `integer \| null`          | `null`   | Correspondent id.                                            |
+| `document_type`         | `integer \| null`          | `null`   | Document type id.                                            |
+| `tags`                  | `array of integer \| null` | `null`   | Tag ids to add.                                              |
+| `created`               | `string \| null`           | `null`   | Creation date, YYYY-MM-DD or ISO 8601.                       |
+| `archive_serial_number` | `string \| null`           | `null`   | Archive serial number, a whole number.                       |
+| `custom_fields`         | `array of integer \| null` | `null`   | Custom field ids to attach, without values.                  |
+
+**Returns**
+
+`object`
+
+## `bulk_edit_documents`
+
+**Bulk Edit Documents.** Destructive. Reaches outside the server.
+
+Apply one operation to many documents at once; returns OK once Paperless accepts it.
+
+Metadata operations (set\_\*, `add_tag`, `remove_tag`, `modify_tags`, `modify_custom_fields`, `set_permissions`) are applied before the reply: `list_documents` and `get_document` show them at once, `search_documents` only after the `bulk_update` reindex task in `list_tasks`. delete, reprocess and the PDF operations run as their own background tasks.
+
+**Parameters**
+
+| Name         | Type                                                                                                                                                                                                                                              | Default  | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `operation`  | `set_correspondent \| set_document_type \| set_storage_path \| add_tag \| remove_tag \| modify_tags \| delete \| reprocess \| set_permissions \| merge \| split \| rotate \| delete_pages \| modify_custom_fields \| edit_pdf \| remove_password` | required | What to do to every document in ids.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `ids`        | `array of integer`                                                                                                                                                                                                                                | required | Ids of the objects to change.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `parameters` | `object \| null`                                                                                                                                                                                                                                  | `null`   | Arguments for the operation: `set_correspondent` {"correspondent": id}, `set_document_type` {"`document_type`": id}, `set_storage_path` {"`storage_path`": id}, `add_tag` and `remove_tag` {"tag": id}, `modify_tags` {"`add_tags`": [ids], "`remove_tags`": [ids]}, `modify_custom_fields` {"`add_custom_fields`": [ids] or {"": value}, "`remove_custom_fields`": [ids]}, `set_permissions` {"`set_permissions`": {"view": {"users": [ids], "groups": [ids]}, "change": {…}}, "owner": id, "merge": bool}, rotate {"degrees": 90}, merge {"`metadata_document_id`": id, "`delete_originals`": bool}, and on a single document: split {"pages": "1,2-3"}, `delete_pages` {"pages": [2, 3]}, `edit_pdf` {"operations": [{"page": 1, "rotate": 90, "doc": 0}]} (pages left out are dropped; doc numbers the output file), `remove_password` {"password": text}. delete and reprocess take none. |
+
+**Returns**
+
+`object`
+
+## `add_document_note`
+
+**Add Document Note.** Changes state, not destructive. Reaches outside the server.
+
+Add a note to a document; returns the new note with its id.
+
+**Parameters**
+
+| Name          | Type      | Default  | Description            |
+| ------------- | --------- | -------- | ---------------------- |
+| `document_id` | `integer` | required | Paperless document id. |
+| `note`        | `string`  | required | Text of the note.      |
+
+**Returns**
+
+`object`
+
+## `delete_document_note`
+
+**Delete Document Note.** Destructive. Idempotent. Reaches outside the server.
+
+Delete one note from a document.
+
+**Parameters**
+
+| Name          | Type      | Default  | Description                                |
+| ------------- | --------- | -------- | ------------------------------------------ |
+| `document_id` | `integer` | required | Paperless document id.                     |
+| `note_id`     | `integer` | required | Id of the note, from `get_document_notes`. |
+
+**Returns**
+
+`null`

@@ -1,0 +1,43 @@
+# Transfer
+
+## `create_download_link`
+
+**Create Download Link.** Read-only.
+
+Create a download URL for a file; returns url and `expires_in_s`.
+
+Use it to hand a file to the user or another program instead of returning its bytes in a tool result.
+
+ref is a JSON string naming a document and the file to serve, such as `{"document_id":42,"variant":"content"}`. variant is original (the file as uploaded, the default), archive (the searchable PDF), preview (the rendition Paperless displays) or content (the full text as Markdown, with the metadata as front matter).
+
+**Parameters**
+
+| Name    | Type             | Default  | Description                                                                                                                          |
+| ------- | ---------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `ref`   | `string`         | required | The file to serve, in this server's reference format.                                                                                |
+| `ttl_s` | `number \| null` | `null`   | Link lifetime in seconds; omit for the server's default. A value above the server's maximum is capped, and zero or less is rejected. |
+
+**Returns**
+
+`object`
+
+## `create_upload_link`
+
+**Create Upload Link.** Changes state, not destructive. Tags: `write`.
+
+Create an upload URL for a file; returns url and `expires_in_s`.
+
+Use it to receive a file's bytes instead of passing them as a tool argument.
+
+ref is a JSON string with a plain file name and optional metadata, such as `{"filename":"scan.pdf","metadata":{"title":"Scan","tags":[2]}}`; metadata takes title, correspondent, `document_type`, tags, created, `archive_serial_number` and `custom_fields`. PUT the file's raw bytes to the `url`; the answer carries the consume `task_id` for `wait_for_task`, and resending the same bytes returns the same `task_id`. Front matter in a Markdown file stays part of the file, not the metadata.
+
+**Parameters**
+
+| Name    | Type             | Default  | Description                                                                                                                          |
+| ------- | ---------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `ref`   | `string`         | required | Where to store the uploaded file, in this server's reference format.                                                                 |
+| `ttl_s` | `number \| null` | `null`   | Link lifetime in seconds; omit for the server's default. A value above the server's maximum is capped, and zero or less is rejected. |
+
+**Returns**
+
+`object`
