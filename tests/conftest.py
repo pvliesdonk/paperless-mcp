@@ -25,6 +25,18 @@ REQUIRED_ENV = {
 }
 
 
+def pytest_configure(config: pytest.Config) -> None:
+    """Register this project's markers.
+
+    Registered here rather than in ``pyproject.toml``'s ``markers`` list, which
+    is template-owned with no project seam (pvliesdonk/fastmcp-server-template#618).
+    ``--strict-markers`` accepts a marker registered either way.
+    """
+    config.addinivalue_line(
+        "markers", "integration: live Paperless-NGX integration tests (opt-in)"
+    )
+
+
 @pytest.fixture(autouse=True)
 def _clear_env(monkeypatch: pytest.MonkeyPatch) -> None:
     """Strip all ``PAPERLESS_MCP_*`` env vars, then preset the required pair."""
@@ -45,6 +57,15 @@ def config_contract_env() -> dict[str, str]:
     the same pair from the autouse ``_clear_env`` fixture above.
     """
     return dict(REQUIRED_ENV)
+
+
+# Optional: literal substitutions ``tests/test_published_examples.py`` applies
+# to a ```` ```python { .run } ```` block before running it, so a published
+# example keeps its placeholder paths and still runs against a fixture::
+#
+#     @pytest.fixture
+#     def docs_example_substitutions(tmp_path: Path) -> dict[str, str]:
+#         return {"/path/to/data": str(tmp_path)}
 
 
 @pytest.fixture

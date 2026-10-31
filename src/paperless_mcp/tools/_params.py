@@ -29,7 +29,7 @@ DocumentOrdering = Annotated[
     Field(
         description=(
             "Field to sort by: created, added, modified, title, "
-            "archive_serial_number, correspondent__name, document_type__name "
+            "archive_serial_number, `correspondent__name`, `document_type__name` "
             "or page_count; prefix it with - to sort descending (-created). "
             "Omit for Paperless's default order."
         )
@@ -56,7 +56,7 @@ ObjectBulkParameters = Annotated[
     Field(
         description=(
             "For set_permissions: owner (a user id or null), permissions "
-            '({"view": {"users": [ids], "groups": [ids]}, "change": {...}}) and '
+            '({"view": {"users": [ids], "groups": [ids]}, "change": {…}}) and '
             "merge (true adds to the current permissions instead of replacing "
             "them). Omit for delete."
         )

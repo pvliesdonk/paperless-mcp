@@ -72,3 +72,12 @@ traceback
 LLM
 LLM's
 LLMs
+
+# --- Paperless-NGX terminology ---
+Paperless's
+reindex
+reindexing
+# `url` is a field name in fastmcp-pvl-core's transfer-link tool docstrings,
+# which this project cannot edit; drop it once pvliesdonk/fastmcp-pvl-core#527
+# code-formats it.
+url
