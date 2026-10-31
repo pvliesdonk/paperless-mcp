@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Paperless-NGX over MCP: search, read, upload and tag documents; manage correspondents and types.">
+        <meta name="description" content="Release notes for the 2.1 series, with the steps to upgrade to it.">
       
       
       
@@ -19,7 +19,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-ProperDocs 1.6.7, mkdocs-material-9.8.0">
     
     
       
@@ -27,10 +27,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -1195,11 +1195,11 @@ caller cannot construct a call that returns nothing and asks to continue.</p>
 there is nowhere to pass a cap, and it still returns the full text.
 <code>get_document(include_content=True)</code> is also still uncapped, tracked as
 <a href="https://github.com/pvliesdonk/paperless-mcp/issues/149">#149</a>.
-<a href="../../tools/">Tools</a> and <a href="../../resources/">Resources</a> document both.</p>
+<a href="../reference/tools/index.md">Tools</a> and <a href="../reference/resources.md">Resources</a> document both.</p>
 <h2 id="every-tool-carries-a-title">Every tool carries a title<a class="headerlink" href="#every-tool-carries-a-title" title="Permanent link">&para;</a></h2>
 <p>Each registered tool now has an <code>annotations.title</code>: a human-readable label
 that clients supporting titles display in place of the machine name. The tables
-in <a href="../../tools/">Tools</a> still list machine names, which is what you pass
+in <a href="../reference/tools/index.md">Tools</a> still list machine names, which is what you pass
 when calling a tool.</p>
 <p>Most titles restate the name in prose. A few say what the tool does instead:
 <code>get_remote_version</code> is titled <strong>Check for Paperless Updates</strong>, and
@@ -1240,7 +1240,7 @@ any of it shipped, on the grounds that <code>resources/read</code> is
 a model cannot fetch a resource on its own initiative, and almost every
 resource has a tool twin it can call instead. Naming the URI family would have
 described an action the model cannot take.
-<a href="../../configuration/">Configuration</a> covers the instruction variables.</p>
+<a href="../reference/configuration.md">Configuration</a> covers the instruction variables.</p>
 <h2 id="a-bulk-edit-says-that-indexing-is-deferred">A bulk edit says that indexing is deferred<a class="headerlink" href="#a-bulk-edit-says-that-indexing-is-deferred" title="Permanent link">&para;</a></h2>
 <p><code>bulk_edit_documents</code> now states what happens after it answers <code>OK</code>. Paperless
 writes the field change inside the request and then queues the search-index
@@ -1262,7 +1262,7 @@ documents an individual edit touched, so the most recent task is the available
 handle rather than an exact match.</p>
 <p>The <code>bulk_edit_tags</code>, <code>bulk_edit_correspondents</code> and <code>bulk_edit_document_types</code>
 tools are unchanged, because the endpoint behind them applies its work inline
-and queues nothing. <a href="../../tools/">Tools</a> documents both descriptions.</p>
+and queues nothing. <a href="../reference/tools/index.md">Tools</a> documents both descriptions.</p>
 <h2 id="upgrading">Upgrading<a class="headerlink" href="#upgrading" title="Permanent link">&para;</a></h2>
 <p>Nothing in this release requires an operator to change configuration. No
 environment variable changed, and no deployment layout changed.</p>
@@ -1285,6 +1285,9 @@ see it. For Python consumers, <code>TaskType</code> is a new export from
 
 
 
+
+  
+  
 
 
 
@@ -1336,10 +1339,10 @@ see it. For Python consumers, <code>TaskType</code> is a new export from
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "search.suggest", "search.highlight", "content.code.copy", "content.tabs.link"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "latest", "provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "search.suggest", "search.highlight", "content.code.copy", "content.tabs.link"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "latest", "provider": "mike"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.c21346df.min.js"></script>
       
         <script src="../../javascripts/config-wizard/wizard.js" type="module"></script>
       

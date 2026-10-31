@@ -6,7 +6,7 @@ Compared with v2.1.0, this release keeps large OCR and binary files out of ordin
 
 HTTP and SSE deployments can move document files and full OCR text through expiring capability links instead of putting them into an MCP response. Set `PAPERLESS_MCP_BASE_URL` to the public server root and route `/transfer/` at the reverse proxy. The server then registers the generic `create_download_link(ref, ttl_s)` and `create_upload_link(ref, ttl_s)` tools. Download references select an original, archive, preview, or OCR Markdown variant. Upload references carry a filename and optional Paperless metadata; the response contains a Paperless task ID for `get_task`.
 
-The links came from the need to handle scanned PDFs and long OCR text without placing whole files in model context ([#111](https://github.com/pvliesdonk/paperless-mcp/issues/111), [#112](https://github.com/pvliesdonk/paperless-mcp/issues/112)). A persistent `PAPERLESS_MCP_KV_STORE_URL` keeps upload receipts across restarts. The transfer design documents replay handling, access checks at redemption, the upload limit, and the requirement to route `/transfer/` ([document transfer design](https://pvliesdonk.github.io/paperless-mcp/3.0/design/document-transfers/index.md)).
+The links came from the need to handle scanned PDFs and long OCR text without placing whole files in model context ([#111](https://github.com/pvliesdonk/paperless-mcp/issues/111), [#112](https://github.com/pvliesdonk/paperless-mcp/issues/112)). A persistent `PAPERLESS_MCP_KV_STORE_URL` keeps upload receipts across restarts. The transfer design documents replay handling, access checks at redemption, the upload limit, and the requirement to route `/transfer/` ([document transfer design](https://github.com/pvliesdonk/paperless-mcp/blob/main/docs/design/document-transfers.md)).
 
 The final tool names and schemas come from pvl-core's registrar. The earlier domain-specific names were replaced before this release by the core Path 1 registrar ([#155](https://github.com/pvliesdonk/paperless-mcp/pull/155), [#159](https://github.com/pvliesdonk/paperless-mcp/pull/159)); those intermediate names were never in a stable release.
 
@@ -38,7 +38,7 @@ This server now follows [fastmcp-server-template v9.0.0](https://github.com/pvli
 
 Malformed operator configuration now raises one `ConfigurationError` line and stops the server. An explicitly selected auth mode with no provider also refuses to start. The new `PAPERLESS_MCP_SHUTDOWN_GRACE_S` setting controls the HTTP drain window and defaults to three seconds. pvl-core v9 also keeps operator URL credentials out of app origins and error messages ([v9.0.0 release notes](https://github.com/pvliesdonk/fastmcp-pvl-core/releases/tag/v9.0.0)).
 
-The repository now carries a security policy. Bootstrap can enable private vulnerability reporting and Dependabot alerts; it can also request secret-scanning push protection where the repository plan supports it. The project and its published package metadata now use the MIT license ([LICENSE](https://pvliesdonk.github.io/paperless-mcp/3.0/LICENSE)).
+The repository now carries a security policy. Bootstrap can enable private vulnerability reporting and Dependabot alerts; it can also request secret-scanning push protection where the repository plan supports it. The project and its published package metadata now use the MIT license ([LICENSE](https://github.com/pvliesdonk/paperless-mcp/blob/main/LICENSE)).
 
 ## Upgrading
 

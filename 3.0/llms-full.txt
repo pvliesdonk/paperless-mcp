@@ -1564,13 +1564,13 @@ Paperless MCP carried its shared server runtime forward from `fastmcp-pvl-core` 
 
 **The [configuration generator](https://pvliesdonk.github.io/paperless-mcp/latest/configuration-generator/)** is a browser page that asks a few questions about your deployment and produces a ready-to-use configuration. Everything runs client-side, and nothing typed into it is sent anywhere. Secret fields such as your Paperless API token are excluded from any shareable link ([#76](https://github.com/pvliesdonk/paperless-mcp/issues/76)).
 
-**A Claude Code plugin channel** lets Claude Code install and run the server directly. Every stable release publishes a marketplace entry that installs the released PyPI package via `uvx`, and every release (plus every merge to `main`) also attaches a standalone `paperless-mcp-plugin-<version>.zip` that can be loaded for a single session with `claude --plugin-url <url>`, a way to try a release candidate without installing anything ([#82](https://github.com/pvliesdonk/paperless-mcp/issues/82); see [Testing a candidate's Claude Code plugin](https://pvliesdonk.github.io/paperless-mcp/3.0/deployment/release-process/#testing-a-candidates-claude-code-plugin)). The plugin's install screen collects your Paperless URL and API token, plus optional HTTP timeout, retry count, default page size, and public URL overrides.
+**A Claude Code plugin channel** lets Claude Code install and run the server directly. Every stable release publishes a marketplace entry that installs the released PyPI package via `uvx`, and every release (plus every merge to `main`) also attaches a standalone `paperless-mcp-plugin-<version>.zip` that can be loaded for a single session with `claude --plugin-url <url>`, a way to try a release candidate without installing anything ([#82](https://github.com/pvliesdonk/paperless-mcp/issues/82); see [Testing a candidate's Claude Code plugin](https://pvliesdonk.github.io/paperless-mcp/3.0/releases/contribute/release-process.md#testing-a-candidates-claude-code-plugin)). The plugin's install screen collects your Paperless URL and API token, plus optional HTTP timeout, retry count, default page size, and public URL overrides.
 
-Both additions are new distribution/setup surfaces; as of this release [the installation guide](https://pvliesdonk.github.io/paperless-mcp/3.0/installation/index.md) still documents only the PyPI, Docker, and from-source paths.
+Both additions are new distribution/setup surfaces; as of this release [the installation guide](https://pvliesdonk.github.io/paperless-mcp/3.0/releases/get-started/installation.md) still documents only the PyPI, Docker, and from-source paths.
 
 ## Operator tool visibility controls
 
-The same runtime upgrade adds `PAPERLESS_MCP_TOOLS_ALLOW` and `PAPERLESS_MCP_TOOLS_DENY`, letting an operator expose only a chosen set of tools or hide specific ones from a given instance, useful for running a read-heavy or narrowly scoped deployment without a custom build. See [Configuration](https://pvliesdonk.github.io/paperless-mcp/3.0/configuration/#server) for both variables.
+The same runtime upgrade adds `PAPERLESS_MCP_TOOLS_ALLOW` and `PAPERLESS_MCP_TOOLS_DENY`, letting an operator expose only a chosen set of tools or hide specific ones from a given instance, useful for running a read-heavy or narrowly scoped deployment without a custom build. See [Configuration](https://pvliesdonk.github.io/paperless-mcp/3.0/releases/reference/configuration.md#server) for both variables.
 
 ## Retiring `create_download_link`
 
@@ -1580,7 +1580,7 @@ Because the tool never worked in any released version, no working capability is 
 
 ## Upgrading
 
-No operator action is required. `create_download_link`'s removal is not classified as breaking: the tool never functioned in any prior release, so there is no reachable behavior for an upgrade to take away. The `fastmcp-pvl-core` upgrade broadens the general server configuration surface inherited from the shared runtime. See `.env.example` and [Configuration](https://pvliesdonk.github.io/paperless-mcp/3.0/configuration/index.md) for the current reference.
+No operator action is required. `create_download_link`'s removal is not classified as breaking: the tool never functioned in any prior release, so there is no reachable behavior for an upgrade to take away. The `fastmcp-pvl-core` upgrade broadens the general server configuration surface inherited from the shared runtime. See `.env.example` and [Configuration](https://pvliesdonk.github.io/paperless-mcp/3.0/releases/reference/configuration.md) for the current reference.
 
 # 2.0
 
@@ -1600,11 +1600,11 @@ Both routes sit outside the MCP mount, which is also what makes them unauthentic
 
 `PAPERLESS_MCP_HEALTH_DETAIL` controls how much they say. `status` returns the status alone; the default `standard` adds the server name and version on `/health` and a verdict per check on `/health/ready`; `full` adds a redacted reason for each check that raised and belongs only where the port is reachable from a trusted network. The shipped `compose.yml` and the image's own `HEALTHCHECK` both probe `/health` rather than `/health/ready`, deliberately, because restarting a container does not fix an unreachable backing store.
 
-The route prefix follows the mount: `PAPERLESS_MCP_HTTP_PATH` has a trailing `mcp` segment stripped, so the default `/mcp` gives `/health`, and a mount at `/paperless-mcp/mcp` gives `/paperless-mcp/health`. The shipped probes assume the default, so a non-default mount means moving both by hand. See [Docker deployment](https://pvliesdonk.github.io/paperless-mcp/3.0/deployment/docker/index.md) for the probe configuration.
+The route prefix follows the mount: `PAPERLESS_MCP_HTTP_PATH` has a trailing `mcp` segment stripped, so the default `/mcp` gives `/health`, and a mount at `/paperless-mcp/mcp` gives `/paperless-mcp/health`. The shipped probes assume the default, so a non-default mount means moving both by hand. See [Docker deployment](https://pvliesdonk.github.io/paperless-mcp/3.0/releases/deploy/docker.md) for the probe configuration.
 
 ### Instructions you can shape instead of replace
 
-Two new variables let an operator add to the generated MCP instructions rather than overwrite them. `PAPERLESS_MCP_INSTANCE_DESCRIPTION` carries concise routing context that distinguishes this deployment from another one a client may also have mounted. `PAPERLESS_MCP_INSTRUCTIONS_EXTRA` carries deployment-specific behavioural policy, appended to the generated text. Neither has a default; both are documented in [Configuration](https://pvliesdonk.github.io/paperless-mcp/3.0/configuration/index.md).
+Two new variables let an operator add to the generated MCP instructions rather than overwrite them. `PAPERLESS_MCP_INSTANCE_DESCRIPTION` carries concise routing context that distinguishes this deployment from another one a client may also have mounted. `PAPERLESS_MCP_INSTRUCTIONS_EXTRA` carries deployment-specific behavioural policy, appended to the generated text. Neither has a default; both are documented in [Configuration](https://pvliesdonk.github.io/paperless-mcp/3.0/releases/reference/configuration.md).
 
 The older `PAPERLESS_MCP_INSTRUCTIONS` still works and still replaces all generated text, but it is now deprecated, logs a warning at startup, and silently ignores both additive variables when it is set. If you set it only to append a sentence, the two variables above are what you actually wanted.
 
@@ -1637,7 +1637,7 @@ That block carries identity only, and deliberately holds no `update_available` k
 
 Nothing needs enabling. The version is read from the Paperless UI settings endpoint, reusing the connection the server already holds, and costs one extra request per call.
 
-**It does cost one permission.** The endpoint that publishes the installed version is gated on a model permission, so the token's Paperless user needs the view permission on UI settings. A narrow service account without it gets a `403`. That degrades to `{"version": null}` rather than failing the call, because the version is optional enrichment of a tool whose real job is reporting this server's build. Note that `{"version": null}` is also what you get when Paperless is down, when the URL is wrong, and when the token is rejected, so a null here means "could not ask," not "no version." Granting the permission is the fix if you want it populated; everything else the server does is unaffected either way. [Tools](https://pvliesdonk.github.io/paperless-mcp/3.0/tools/index.md) documents the full shape.
+**It does cost one permission.** The endpoint that publishes the installed version is gated on a model permission, so the token's Paperless user needs the view permission on UI settings. A narrow service account without it gets a `403`. That degrades to `{"version": null}` rather than failing the call, because the version is optional enrichment of a tool whose real job is reporting this server's build. Note that `{"version": null}` is also what you get when Paperless is down, when the URL is wrong, and when the token is rejected, so a null here means "could not ask," not "no version." Granting the permission is the fix if you want it populated; everything else the server does is unaffected either way. [Tools](https://pvliesdonk.github.io/paperless-mcp/3.0/releases/reference/tools/index.md) documents the full shape.
 
 ### `get_remote_version` now says which question it answers
 
@@ -1667,7 +1667,7 @@ This release changes deployment defaults. The MCP tool and resource surface is u
 
 **Refresh the lock file before you build.** A stale lock file builds an image that fails at import time, because the image installs from the lock with `--frozen`.
 
-**If you used the shipped Traefik labels.** `compose.yml` no longer carries them and no longer builds from the checkout. The reverse-proxy configuration moved to an overlay you copy from [Docker deployment](https://pvliesdonk.github.io/paperless-mcp/3.0/deployment/docker/index.md). Worth knowing while you migrate: the labels never routed as shipped, because the file declared no network for Traefik to join.
+**If you used the shipped Traefik labels.** `compose.yml` no longer carries them and no longer builds from the checkout. The reverse-proxy configuration moved to an overlay you copy from [Docker deployment](https://pvliesdonk.github.io/paperless-mcp/3.0/releases/deploy/docker.md). Worth knowing while you migrate: the labels never routed as shipped, because the file declared no network for Traefik to join.
 
 **If you set `PAPERLESS_MCP_PORT` for a container.** The image now pins `--port 8000`, so that variable no longer moves the listener and no error is raised. A container started with `-e PAPERLESS_MCP_PORT=9000 -p 9000:9000` serves on 8000 behind a mapping pointing at a closed port. Change the host side instead, as in `-p 9000:8000`. Outside a container the variable still works.
 
@@ -1700,11 +1700,11 @@ Two ways to read past the cap:
 
 `max_chars` must be greater than zero and `offset` cannot be negative, so a caller cannot construct a call that returns nothing and asks to continue.
 
-Two paths deliberately stay uncapped. The `paperless://documents/{document_id}/content` resource takes no arguments, so there is nowhere to pass a cap, and it still returns the full text. `get_document(include_content=True)` is also still uncapped, tracked as [#149](https://github.com/pvliesdonk/paperless-mcp/issues/149). [Tools](https://pvliesdonk.github.io/paperless-mcp/3.0/tools/index.md) and [Resources](https://pvliesdonk.github.io/paperless-mcp/3.0/resources/index.md) document both.
+Two paths deliberately stay uncapped. The `paperless://documents/{document_id}/content` resource takes no arguments, so there is nowhere to pass a cap, and it still returns the full text. `get_document(include_content=True)` is also still uncapped, tracked as [#149](https://github.com/pvliesdonk/paperless-mcp/issues/149). [Tools](https://pvliesdonk.github.io/paperless-mcp/3.0/releases/reference/tools/index.md) and [Resources](https://pvliesdonk.github.io/paperless-mcp/3.0/releases/reference/resources.md) document both.
 
 ## Every tool carries a title
 
-Each registered tool now has an `annotations.title`: a human-readable label that clients supporting titles display in place of the machine name. The tables in [Tools](https://pvliesdonk.github.io/paperless-mcp/3.0/tools/index.md) still list machine names, which is what you pass when calling a tool.
+Each registered tool now has an `annotations.title`: a human-readable label that clients supporting titles display in place of the machine name. The tables in [Tools](https://pvliesdonk.github.io/paperless-mcp/3.0/releases/reference/tools/index.md) still list machine names, which is what you pass when calling a tool.
 
 Most titles restate the name in prose. A few say what the tool does instead: `get_remote_version` is titled **Check for Paperless Updates**, and `get_document_metadata` is titled **Get Document File Details**. No tool was renamed, and no title replaces a name a caller uses.
 
@@ -1720,7 +1720,7 @@ The generated instructions now state which Paperless the server is connected to,
 
 The URL comes from `PAPERLESS_MCP_PAPERLESS_PUBLIC_URL`, or from `PAPERLESS_MCP_PAPERLESS_URL` when the public variable is unset. That is the same value the `web_url` and `share_url` fields in tool results are built from, so the instructions and those links always name one host. Both variables already existed; nothing new is required to configure.
 
-The instructions deliberately say nothing about the `paperless://` resource URIs. The issue asked for those too, and its author withdrew that half before any of it shipped, on the grounds that `resources/read` is "a client-to-server request" ([correction on #114](https://github.com/pvliesdonk/paperless-mcp/issues/114#issuecomment-5718846776)): a model cannot fetch a resource on its own initiative, and almost every resource has a tool twin it can call instead. Naming the URI family would have described an action the model cannot take. [Configuration](https://pvliesdonk.github.io/paperless-mcp/3.0/configuration/index.md) covers the instruction variables.
+The instructions deliberately say nothing about the `paperless://` resource URIs. The issue asked for those too, and its author withdrew that half before any of it shipped, on the grounds that `resources/read` is "a client-to-server request" ([correction on #114](https://github.com/pvliesdonk/paperless-mcp/issues/114#issuecomment-5718846776)): a model cannot fetch a resource on its own initiative, and almost every resource has a tool twin it can call instead. Naming the URI family would have described an action the model cannot take. [Configuration](https://pvliesdonk.github.io/paperless-mcp/3.0/releases/reference/configuration.md) covers the instruction variables.
 
 ## A bulk edit says that indexing is deferred
 
@@ -1730,7 +1730,7 @@ The instructions deliberately say nothing about the `paperless://` resource URIs
 
 `list_tasks` gained a `task_type` filter so the queued work can be found: `list_tasks(task_type="bulk_update")` returns the rebuild tasks, newest first, and `wait_for_task` waits for one to finish. Records carry no link back to the documents an individual edit touched, so the most recent task is the available handle rather than an exact match.
 
-The `bulk_edit_tags`, `bulk_edit_correspondents` and `bulk_edit_document_types` tools are unchanged, because the endpoint behind them applies its work inline and queues nothing. [Tools](https://pvliesdonk.github.io/paperless-mcp/3.0/tools/index.md) documents both descriptions.
+The `bulk_edit_tags`, `bulk_edit_correspondents` and `bulk_edit_document_types` tools are unchanged, because the endpoint behind them applies its work inline and queues nothing. [Tools](https://pvliesdonk.github.io/paperless-mcp/3.0/releases/reference/tools/index.md) documents both descriptions.
 
 ## Upgrading
 
@@ -1748,7 +1748,7 @@ Compared with v2.1.0, this release keeps large OCR and binary files out of ordin
 
 HTTP and SSE deployments can move document files and full OCR text through expiring capability links instead of putting them into an MCP response. Set `PAPERLESS_MCP_BASE_URL` to the public server root and route `/transfer/` at the reverse proxy. The server then registers the generic `create_download_link(ref, ttl_s)` and `create_upload_link(ref, ttl_s)` tools. Download references select an original, archive, preview, or OCR Markdown variant. Upload references carry a filename and optional Paperless metadata; the response contains a Paperless task ID for `get_task`.
 
-The links came from the need to handle scanned PDFs and long OCR text without placing whole files in model context ([#111](https://github.com/pvliesdonk/paperless-mcp/issues/111), [#112](https://github.com/pvliesdonk/paperless-mcp/issues/112)). A persistent `PAPERLESS_MCP_KV_STORE_URL` keeps upload receipts across restarts. The transfer design documents replay handling, access checks at redemption, the upload limit, and the requirement to route `/transfer/` ([document transfer design](https://pvliesdonk.github.io/paperless-mcp/3.0/design/document-transfers/index.md)).
+The links came from the need to handle scanned PDFs and long OCR text without placing whole files in model context ([#111](https://github.com/pvliesdonk/paperless-mcp/issues/111), [#112](https://github.com/pvliesdonk/paperless-mcp/issues/112)). A persistent `PAPERLESS_MCP_KV_STORE_URL` keeps upload receipts across restarts. The transfer design documents replay handling, access checks at redemption, the upload limit, and the requirement to route `/transfer/` ([document transfer design](https://github.com/pvliesdonk/paperless-mcp/blob/main/docs/design/document-transfers.md)).
 
 The final tool names and schemas come from pvl-core's registrar. The earlier domain-specific names were replaced before this release by the core Path 1 registrar ([#155](https://github.com/pvliesdonk/paperless-mcp/pull/155), [#159](https://github.com/pvliesdonk/paperless-mcp/pull/159)); those intermediate names were never in a stable release.
 
@@ -1780,7 +1780,7 @@ This server now follows [fastmcp-server-template v9.0.0](https://github.com/pvli
 
 Malformed operator configuration now raises one `ConfigurationError` line and stops the server. An explicitly selected auth mode with no provider also refuses to start. The new `PAPERLESS_MCP_SHUTDOWN_GRACE_S` setting controls the HTTP drain window and defaults to three seconds. pvl-core v9 also keeps operator URL credentials out of app origins and error messages ([v9.0.0 release notes](https://github.com/pvliesdonk/fastmcp-pvl-core/releases/tag/v9.0.0)).
 
-The repository now carries a security policy. Bootstrap can enable private vulnerability reporting and Dependabot alerts; it can also request secret-scanning push protection where the repository plan supports it. The project and its published package metadata now use the MIT license ([LICENSE](https://pvliesdonk.github.io/paperless-mcp/3.0/LICENSE)).
+The repository now carries a security policy. Bootstrap can enable private vulnerability reporting and Dependabot alerts; it can also request secret-scanning push protection where the repository plan supports it. The project and its published package metadata now use the MIT license ([LICENSE](https://github.com/pvliesdonk/paperless-mcp/blob/main/LICENSE)).
 
 ## Upgrading
 

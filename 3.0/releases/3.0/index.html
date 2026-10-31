@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Paperless-NGX over MCP: search, read, upload and tag documents; manage correspondents and types.">
+        <meta name="description" content="Release notes for the 3.0 series, with the steps to upgrade to it.">
       
       
       
@@ -19,7 +19,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-ProperDocs 1.6.7, mkdocs-material-9.8.0">
     
     
       
@@ -27,10 +27,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -1177,7 +1177,7 @@ Download references select an original, archive, preview, or OCR Markdown
 variant. Upload references carry a filename and optional Paperless metadata;
 the response contains a Paperless task ID for <code>get_task</code>.</p>
 <p>The links came from the need to handle scanned PDFs and long OCR text without
-placing whole files in model context (<a href="https://github.com/pvliesdonk/paperless-mcp/issues/111">#111</a>, <a href="https://github.com/pvliesdonk/paperless-mcp/issues/112">#112</a>). A persistent <code>PAPERLESS_MCP_KV_STORE_URL</code> keeps upload receipts across restarts. The transfer design documents replay handling, access checks at redemption, the upload limit, and the requirement to route <code>/transfer/</code> (<a href="../../design/document-transfers/">document transfer design</a>).</p>
+placing whole files in model context (<a href="https://github.com/pvliesdonk/paperless-mcp/issues/111">#111</a>, <a href="https://github.com/pvliesdonk/paperless-mcp/issues/112">#112</a>). A persistent <code>PAPERLESS_MCP_KV_STORE_URL</code> keeps upload receipts across restarts. The transfer design documents replay handling, access checks at redemption, the upload limit, and the requirement to route <code>/transfer/</code> (<a href="https://github.com/pvliesdonk/paperless-mcp/blob/main/docs/design/document-transfers.md">document transfer design</a>).</p>
 <p>The final tool names and schemas come from pvl-core's registrar. The earlier
 domain-specific names were replaced before this release by the core Path 1
 registrar (<a href="https://github.com/pvliesdonk/paperless-mcp/pull/155">#155</a>, <a href="https://github.com/pvliesdonk/paperless-mcp/pull/159">#159</a>); those intermediate names were never in a stable release.</p>
@@ -1247,7 +1247,7 @@ operator URL credentials out of app origins and error messages (<a href="https:/
 vulnerability reporting and Dependabot alerts; it can also request
 secret-scanning push protection where the repository plan supports it. The
 project and its published package metadata now use the MIT license
-(<a href="../../LICENSE">LICENSE</a>).</p>
+(<a href="https://github.com/pvliesdonk/paperless-mcp/blob/main/LICENSE">LICENSE</a>).</p>
 <h2 id="upgrading">Upgrading<a class="headerlink" href="#upgrading" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Replace <code>FASTMCP_LOG_LEVEL</code> with <code>PAPERLESS_MCP_LOG_LEVEL</code>. The old name is
@@ -1274,6 +1274,9 @@ project and its published package metadata now use the MIT license
 
 
 
+
+  
+  
 
 
 
@@ -1325,10 +1328,10 @@ project and its published package metadata now use the MIT license
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "search.suggest", "search.highlight", "content.code.copy", "content.tabs.link"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "latest", "provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "search.suggest", "search.highlight", "content.code.copy", "content.tabs.link"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "latest", "provider": "mike"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.c21346df.min.js"></script>
       
         <script src="../../javascripts/config-wizard/wizard.js" type="module"></script>
       

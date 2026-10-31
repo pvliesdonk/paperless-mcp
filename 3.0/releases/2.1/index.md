@@ -17,11 +17,11 @@ Two ways to read past the cap:
 
 `max_chars` must be greater than zero and `offset` cannot be negative, so a caller cannot construct a call that returns nothing and asks to continue.
 
-Two paths deliberately stay uncapped. The `paperless://documents/{document_id}/content` resource takes no arguments, so there is nowhere to pass a cap, and it still returns the full text. `get_document(include_content=True)` is also still uncapped, tracked as [#149](https://github.com/pvliesdonk/paperless-mcp/issues/149). [Tools](https://pvliesdonk.github.io/paperless-mcp/3.0/tools/index.md) and [Resources](https://pvliesdonk.github.io/paperless-mcp/3.0/resources/index.md) document both.
+Two paths deliberately stay uncapped. The `paperless://documents/{document_id}/content` resource takes no arguments, so there is nowhere to pass a cap, and it still returns the full text. `get_document(include_content=True)` is also still uncapped, tracked as [#149](https://github.com/pvliesdonk/paperless-mcp/issues/149). [Tools](https://pvliesdonk.github.io/paperless-mcp/3.0/releases/reference/tools/index.md) and [Resources](https://pvliesdonk.github.io/paperless-mcp/3.0/releases/reference/resources.md) document both.
 
 ## Every tool carries a title
 
-Each registered tool now has an `annotations.title`: a human-readable label that clients supporting titles display in place of the machine name. The tables in [Tools](https://pvliesdonk.github.io/paperless-mcp/3.0/tools/index.md) still list machine names, which is what you pass when calling a tool.
+Each registered tool now has an `annotations.title`: a human-readable label that clients supporting titles display in place of the machine name. The tables in [Tools](https://pvliesdonk.github.io/paperless-mcp/3.0/releases/reference/tools/index.md) still list machine names, which is what you pass when calling a tool.
 
 Most titles restate the name in prose. A few say what the tool does instead: `get_remote_version` is titled **Check for Paperless Updates**, and `get_document_metadata` is titled **Get Document File Details**. No tool was renamed, and no title replaces a name a caller uses.
 
@@ -37,7 +37,7 @@ The generated instructions now state which Paperless the server is connected to,
 
 The URL comes from `PAPERLESS_MCP_PAPERLESS_PUBLIC_URL`, or from `PAPERLESS_MCP_PAPERLESS_URL` when the public variable is unset. That is the same value the `web_url` and `share_url` fields in tool results are built from, so the instructions and those links always name one host. Both variables already existed; nothing new is required to configure.
 
-The instructions deliberately say nothing about the `paperless://` resource URIs. The issue asked for those too, and its author withdrew that half before any of it shipped, on the grounds that `resources/read` is "a client-to-server request" ([correction on #114](https://github.com/pvliesdonk/paperless-mcp/issues/114#issuecomment-5718846776)): a model cannot fetch a resource on its own initiative, and almost every resource has a tool twin it can call instead. Naming the URI family would have described an action the model cannot take. [Configuration](https://pvliesdonk.github.io/paperless-mcp/3.0/configuration/index.md) covers the instruction variables.
+The instructions deliberately say nothing about the `paperless://` resource URIs. The issue asked for those too, and its author withdrew that half before any of it shipped, on the grounds that `resources/read` is "a client-to-server request" ([correction on #114](https://github.com/pvliesdonk/paperless-mcp/issues/114#issuecomment-5718846776)): a model cannot fetch a resource on its own initiative, and almost every resource has a tool twin it can call instead. Naming the URI family would have described an action the model cannot take. [Configuration](https://pvliesdonk.github.io/paperless-mcp/3.0/releases/reference/configuration.md) covers the instruction variables.
 
 ## A bulk edit says that indexing is deferred
 
@@ -47,7 +47,7 @@ The instructions deliberately say nothing about the `paperless://` resource URIs
 
 `list_tasks` gained a `task_type` filter so the queued work can be found: `list_tasks(task_type="bulk_update")` returns the rebuild tasks, newest first, and `wait_for_task` waits for one to finish. Records carry no link back to the documents an individual edit touched, so the most recent task is the available handle rather than an exact match.
 
-The `bulk_edit_tags`, `bulk_edit_correspondents` and `bulk_edit_document_types` tools are unchanged, because the endpoint behind them applies its work inline and queues nothing. [Tools](https://pvliesdonk.github.io/paperless-mcp/3.0/tools/index.md) documents both descriptions.
+The `bulk_edit_tags`, `bulk_edit_correspondents` and `bulk_edit_document_types` tools are unchanged, because the endpoint behind them applies its work inline and queues nothing. [Tools](https://pvliesdonk.github.io/paperless-mcp/3.0/releases/reference/tools/index.md) documents both descriptions.
 
 ## Upgrading
 
