@@ -50,7 +50,9 @@ Claude calls the server's `get_server_info` tool, which reads the server's versi
 ### What to know about this server
 
 <!-- DOMAIN-HTTP-CLIENT-EXTRA-START -->
-<!-- What a remote client of this server should know first: the first read-only task to try, and any feature that needs a particular credential or client; kept across copier update. -->
+A first task that only reads: "List the five documents most recently added to Paperless." Whatever you can do then is bounded by the Paperless token the server runs with, not by your own Paperless account.
+
+Over HTTP, `create_download_link` and `create_upload_link` move whole files outside the conversation when the operator has set a public base URL; [transfer links](../deploy/transfer-links.md) covers using one.
 <!-- DOMAIN-HTTP-CLIENT-EXTRA-END -->
 
 ## Next

@@ -158,5 +158,5 @@ curl -s https://mcp.example.com/.well-known/oauth-protected-resource/myservice/m
 Both must reach this server, and the `resource` field in the JSON must read `https://mcp.example.com/myservice/mcp`. A `resource` naming a different service is the shared-hostname problem above, not an incorrect `BASE_URL`.
 
 <!-- DOMAIN-REVERSE-PROXY-EXTRA-START -->
-<!-- What this server adds behind a proxy (a route it serves outside the mount, a header it needs, an upload size limit to raise); kept across copier update. -->
+Transfer links accept uploads up to `PAPERLESS_MCP_TRANSFER_MAX_UPLOAD_BYTES`, 100 MiB by default. A proxy whose request-body limit is lower (`client_max_body_size` in NGINX defaults to 1 MiB) refuses larger uploads before they reach the server; raise it on the `/transfer/` route.
 <!-- DOMAIN-REVERSE-PROXY-EXTRA-END -->

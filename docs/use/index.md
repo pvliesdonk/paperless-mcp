@@ -10,5 +10,5 @@ This section is for readers who already run the server and want more out of it: 
 For what the server can reach and change while you use it, see the [security model](../security-model.md).
 
 <!-- DOMAIN-USE-INTRO-START -->
-<!-- One or two sentences on what this server's pages here cover; kept across copier update. -->
+This server adds no workflows of its own. Each tool is one Paperless-NGX operation, listed in the [tools reference](../reference/tools/index.md). What documents, tags and correspondents are is the subject of the [Paperless-NGX documentation](https://docs.paperless-ngx.com/).
 <!-- DOMAIN-USE-INTRO-END -->
