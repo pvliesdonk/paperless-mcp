@@ -13,13 +13,19 @@ Paperless-NGX over MCP: search, read, upload and tag documents; manage correspon
 **[Documentation](https://pvliesdonk.github.io/paperless-mcp/)** | **[Config wizard](https://pvliesdonk.github.io/paperless-mcp/latest/reference/configuration-generator/)** | **[PyPI](https://pypi.org/project/pvliesdonk-paperless-mcp/)** | **[Docker](https://github.com/pvliesdonk/paperless-mcp/pkgs/container/paperless-mcp)**
 
 <!-- DOMAIN-README-PITCH-START -->
-- **File transfer links:** Download document files and full OCR Markdown over HTTP. Upload files, including Markdown, through the same transfer route. Set `PAPERLESS_MCP_BASE_URL` to enable the tools. File bytes stay outside model context. See [file transfer links](docs/deploy/transfer-links.md).
-- **Document search & retrieval:** full-text and filtered list queries against Paperless-NGX, plus access to extracted OCR text, metadata, and thumbnails.
-- **Tag, correspondent, document-type, custom-field management:** full CRUD and bulk-edit for every classification dimension Paperless exposes.
-- **Document lifecycle** supports uploads, field changes, notes, audit history, and AI-suggested tags/correspondents/types.
-- **Operational introspection** covers saved views, storage paths, share links, background tasks (with `wait_for_task`), statistics, and an upstream release check for Paperless-NGX.
-- **MCP tools:** 49 LLM-visible tools with `Lucide` icons; see `src/paperless_mcp/tools/`.
-- **MCP resources:** 16 URIs exposing bounded document previews and domain collections; see `src/paperless_mcp/resources/`.
+This server gives an MCP client (Claude Desktop, Claude Code, claude.ai or any other) the API of an existing [Paperless-NGX](https://docs.paperless-ngx.com/) instance: one tool per Paperless operation, with the instance's own permissions. It adds no document store and no workflow of its own; what a task does with the tools is up to the model.
+
+- **Documents:** full-text and filtered search, metadata, notes, history, thumbnails, and the OCR text in bounded sections.
+- **Organising:** create, change, delete and bulk-edit tags, correspondents, document types and custom fields, and bulk operations on documents.
+- **Files:** upload documents for Paperless to consume and wait on the task; over HTTP, one-time [transfer links](docs/deploy/transfer-links.md) move whole files outside the model's context.
+- **The instance:** statistics, saved views, storage paths, share links, background tasks and the installed and newest Paperless versions.
+
+With the server connected, a client can handle requests such as:
+
+- **"Find last quarter's invoices from ACME."** The model searches with a correspondent filter, then reads each match's text.
+- **"Tag these three documents as 'reviewed' and move them to the Accounting correspondent."** One bulk edit.
+- **"Upload this PDF and wait until OCR finishes."** An upload, then a wait on its consume task, so the answer comes once the document is indexed.
+- **"What changed on document 4213 in the last week?"** The document's audit log.
 <!-- DOMAIN-README-PITCH-END -->
 
 ## Does it fit?
@@ -27,14 +33,9 @@ Paperless-NGX over MCP: search, read, upload and tag documents; manage correspon
 What the server can reach, what it changes and who gets in is set out in the [security model](docs/security-model.md); the block below says who it serves and where it stops.
 
 <!-- DOMAIN-README-FIT-START -->
-With this server mounted in an MCP client (Claude, etc.), you can:
-
-- **"Find last quarter's invoices from ACME."** Composes `search_documents` with a correspondent filter, then reads bounded previews with `get_document_content`.
-- **"Tag these three documents as 'reviewed' and move them to the Accounting correspondent."** Uses `bulk_edit_documents` in a single call.
-- **"Upload this PDF and wait until OCR finishes."** Composes `upload_document` + `wait_for_task` so the assistant only reports back once the document is indexed.
-- **"What changed on document 4213 in the last week?"** Reads `paperless://documents/4213/history` and summarises the audit trail.
-
-Every tool and resource is listed in the documentation site: [Tools](https://pvliesdonk.github.io/paperless-mcp/latest/reference/tools/) and [Resources](https://pvliesdonk.github.io/paperless-mcp/latest/reference/resources/). The Paperless variables the server reads are in [Configuration](https://pvliesdonk.github.io/paperless-mcp/latest/reference/configuration/).
+- **For:** people who already keep their documents in Paperless-NGX and want an MCP client to search, read, file and organise them.
+- **Reaches:** one Paperless-NGX instance over its REST API, with one API token; the [security model](docs/security-model.md) lists what that token lets the tools read and change.
+- **Limits:** the tools can do only what the token's Paperless user may do. They don't administer Paperless (users, mail rules, workflows), and the text they read is Paperless's own OCR.
 <!-- DOMAIN-README-FIT-END -->
 
 ## Quick start
@@ -66,7 +67,7 @@ docker run --rm -p 8000:8000 --env-file .env ghcr.io/pvliesdonk/paperless-mcp:la
 A `compose.yml` ships at the repository root and runs as-is: copy `.env.example` to `.env`, then `docker compose up -d`. [Deploy](docs/deploy/index.md) covers authentication, OIDC, a reverse proxy and system packages (`.deb`/`.rpm` on the releases page). The server answers `/health` and `/health/ready` outside the MCP mount, and its `get_server_info` tool reports the running version.
 
 <!-- DOMAIN-README-EXTRAS-START -->
-- `pip install pvliesdonk-paperless-mcp[docs]`: installs `mkdocs-material` and `mkdocstrings[python]` for building the documentation site locally (`uv run mkdocs serve`).
+- `uv tool install "pvliesdonk-paperless-mcp[debug]"` adds `debugpy`, for attaching a debugger to a running server.
 <!-- DOMAIN-README-EXTRAS-END -->
 
 ## Configuration

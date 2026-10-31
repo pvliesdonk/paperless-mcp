@@ -113,5 +113,5 @@ Then configure and start as above. Python 3.11 or newer with the `venv` module i
 - `systemd-analyze verify /usr/lib/systemd/system/paperless-mcp.service` checks the unit after an edit.
 
 <!-- DOMAIN-SYSTEMD-EXTRA-START -->
-<!-- What this server needs on a package install: data paths to open with ReadWritePaths, the variables that must be set before the first start, services it reaches; kept across copier update. -->
+Set `PAPERLESS_MCP_PAPERLESS_URL` and `PAPERLESS_MCP_API_TOKEN` in the environment file before the first start; the server refuses to start without them. It reaches that Paperless instance and nothing else. With transfer links on, set `PAPERLESS_MCP_KV_STORE_URL=file:///var/lib/paperless-mcp/state` as well, so link tokens and upload receipts live in the state directory the unit already lets the service write, and survive a restart.
 <!-- DOMAIN-SYSTEMD-EXTRA-END -->

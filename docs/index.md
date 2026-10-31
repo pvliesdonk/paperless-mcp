@@ -21,11 +21,25 @@ What the server can reach, what it changes and who gets in is set out in the [se
 <!-- DOMAIN-INDEX-FEATURES-START -->
 ## Features
 
-- _Add features specific to your server here._
+Paperless MCP gives an MCP client the API of an existing Paperless-NGX instance, one tool per operation, with that instance's permissions:
+
+- **Documents:** full-text and filtered search, metadata, notes, history, thumbnails, and the OCR text in bounded sections.
+- **Organising:** tags, correspondents, document types and custom fields, one at a time or in bulk.
+- **Files:** uploads, and over HTTP one-time [transfer links](deploy/transfer-links.md) for whole files.
+- **The instance:** statistics, saved views, storage paths, share links and background tasks.
+
+Every tool is listed in the [tools reference](reference/tools/index.md).
 <!-- DOMAIN-INDEX-FEATURES-END -->
 
 <!-- DOMAIN-INDEX-USE-CASES-START -->
 ## What you can do
 
-- _Add usage examples here._
+With the server connected, a client can handle requests such as:
+
+- "Find last quarter's invoices from ACME."
+- "Tag these three documents as 'reviewed' and move them to the Accounting correspondent."
+- "Upload this PDF and wait until OCR finishes."
+- "What changed on document 4213 in the last week?"
+
+The model picks the tools; the server adds no workflow of its own.
 <!-- DOMAIN-INDEX-USE-CASES-END -->

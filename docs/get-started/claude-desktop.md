@@ -62,8 +62,24 @@ Claude Desktop passes every value as written, so paths are absolute (`~` is not 
 ### What this server needs
 
 <!-- DOMAIN-CLAUDE-DESKTOP-START -->
-<!-- Add domain-specific Claude Desktop configuration examples here.
-     Kept across copier update. -->
+The server starts only once it knows which Paperless instance to call and with which token. Put both in `env`; a token from the Paperless profile page of a user with only the permissions you want Claude to have is the safe choice:
+
+```json { .config data-expect="paperless_url='https://paperless.example.com'" }
+{
+  "mcpServers": {
+    "paperless-mcp": {
+      "command": "/Users/me/.local/bin/paperless-mcp",
+      "args": ["serve"],
+      "env": {
+        "PAPERLESS_MCP_PAPERLESS_URL": "https://paperless.example.com",
+        "PAPERLESS_MCP_API_TOKEN": "your-paperless-api-token"
+      }
+    }
+  }
+}
+```
+
+After the version check in step 4, a first task that only reads: "List the five documents most recently added to Paperless."
 <!-- DOMAIN-CLAUDE-DESKTOP-END -->
 
 ## 3. Restart Claude Desktop

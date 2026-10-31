@@ -65,7 +65,18 @@ Claude calls the server's `get_server_info` tool, which reads the server's versi
 ### Your first task
 
 <!-- DOMAIN-CLAUDE-CODE-FIRST-TASK-START -->
-<!-- The first task to give Claude Code with this server, read-only where the server has such a mode, and the `--env` settings it needs; kept across copier update. -->
+The command form needs the Paperless instance and a token as environment variables:
+
+```bash
+claude mcp add --transport stdio paperless-mcp \
+  --env PAPERLESS_MCP_PAPERLESS_URL=https://paperless.example.com \
+  --env PAPERLESS_MCP_API_TOKEN=your-paperless-api-token \
+  -- paperless-mcp serve
+```
+
+Then a task that only reads:
+
+> List the five documents most recently added to Paperless.
 <!-- DOMAIN-CLAUDE-CODE-FIRST-TASK-END -->
 
 ## Next
