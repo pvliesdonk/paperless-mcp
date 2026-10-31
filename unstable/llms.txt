@@ -62,6 +62,7 @@
 - [2.0](https://pvliesdonk.github.io/paperless-mcp/unstable/releases/2.0/index.md): Release notes for the 2.0 series, with the steps to upgrade to it.
 - [2.1](https://pvliesdonk.github.io/paperless-mcp/unstable/releases/2.1/index.md): Release notes for the 2.1 series, with the steps to upgrade to it.
 - [3.0](https://pvliesdonk.github.io/paperless-mcp/unstable/releases/3.0/index.md): Release notes for the 3.0 series, with the steps to upgrade to it.
+- [4.0](https://pvliesdonk.github.io/paperless-mcp/unstable/releases/4.0/index.md): Release notes for the 4.0 series, with the steps to upgrade to it.
 
 ## Contribute
 
