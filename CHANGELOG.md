@@ -5,6 +5,19 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 <!-- version list -->
 
+## 4.0.0-rc.0 (2026-10-31)
+
+### Breaking Changes
+
+- update template to v10.3.0 and fastmcp-pvl-core 10.1 (#194)
+
+### Bug Fixes
+
+- classify each tool outcome by who has to act (#195)
+- send bulk edits in the shape Paperless accepts (#196)
+- describe every parameter and state each tool's contract (#197)
+- lock patched fastmcp, dnspython, opentelemetry-api and msgpack (#221)
+
 ## 3.0.0 (2026-09-21)
 
 ### Breaking Changes
