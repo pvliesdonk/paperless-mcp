@@ -51,4 +51,27 @@ A link pasted into a chat or written to a log is a live credential until it is u
 
 <!-- DOMAIN-TRANSFER-EXTRA-START -->
 <!-- What a `ref` is for this server (a path, an id), which destinations an upload may name, and any overwrite rule; kept across copier update. -->
+### Paperless documents
+
+A download link names a document and one of its files. `original` (the
+default) is the file as uploaded, `archive` the searchable PDF Paperless made,
+`preview` the rendition its web interface shows, and `content` the full text as
+a UTF-8 Markdown file. Asking for `archive` on a document without an archived
+PDF is refused when the link is created. A download reads the current file, so
+a change after the link was created shows in what it serves.
+
+A `content` file opens with YAML front matter: the document id, title,
+created timestamp, correspondent id, document type id and tag ids. The text
+follows unchanged.
+
+An upload link creates a new document, consumed like any Paperless upload. It
+takes PDF and every other file type the instance accepts, Markdown included,
+with its bytes and file name kept. Metadata goes in the link's reference:
+`title`, `correspondent`, `document_type`, `tags`, `created`,
+`archive_serial_number` and `custom_fields`. Front matter inside a Markdown
+file stays part of the file. The answer to an upload carries the consume task's id
+for `wait_for_task`. Sending the same bytes to the link again returns the same
+task id. A `409` also answers bytes that differ from an earlier upload on the
+link, or an earlier result the server can't confirm; check the Paperless tasks
+before creating another link.
 <!-- DOMAIN-TRANSFER-EXTRA-END -->

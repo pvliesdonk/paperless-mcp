@@ -27,4 +27,20 @@ None.
 
 <!-- DOMAIN-EXAMPLE-get_server_info-START -->
 <!-- A worked example for this tool; kept across regeneration. -->
+The `paperless` block carries the version installed on the connected instance:
+
+```json
+{
+  "server_name": "paperless-mcp",
+  "server_version": "1.0.2",
+  "core_version": "7.2.0",
+  "paperless": {"version": "2.14.7"}
+}
+```
+
+When Paperless can't answer, the block is `{"version": null}` and the rest of
+the response is unaffected. That happens when Paperless is down, the URL is
+wrong or the token is rejected. It also happens when the token's Paperless user
+lacks the "view" permission on UI settings, which is where Paperless publishes
+its version. Nothing else this server does needs that permission.
 <!-- DOMAIN-EXAMPLE-get_server_info-END -->

@@ -9,6 +9,12 @@ kind: reference
 
 <!-- DOMAIN-INTRO-START -->
 <!-- A short orientation for this page; task guidance belongs under Use. Kept across regeneration. -->
+Two tools report a Paperless version, and they answer different questions:
+
+| Question | Tool | Example answer |
+|---|---|---|
+| Which Paperless is this server connected to? | [`get_server_info`](server_info.md#get_server_info) | `2.14.7` |
+| Is there a newer Paperless release to upgrade to? | `get_remote_version` | `2.20.14`, `update_available: true` |
 <!-- DOMAIN-INTRO-END -->
 
 ## `get_statistics`

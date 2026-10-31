@@ -9,6 +9,9 @@ kind: reference
 
 <!-- DOMAIN-INTRO-START -->
 <!-- A short orientation for this page; task guidance belongs under Use. Kept across regeneration. -->
+Collection resources return JSON. The `tasks://paperless` resource returns the
+first page of unacknowledged background tasks as a JSON array; use the
+`list_tasks` tool for further pages or a filter.
 <!-- DOMAIN-INTRO-END -->
 
 ## Reading a resource

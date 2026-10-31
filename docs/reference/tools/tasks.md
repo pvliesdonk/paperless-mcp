@@ -9,6 +9,16 @@ kind: reference
 
 <!-- DOMAIN-INTRO-START -->
 <!-- A short orientation for this page; task guidance belongs under Use. Kept across regeneration. -->
+On payload version 10, task pages come from Paperless directly and carry
+`task_type`, `trigger_source`, `result_data`, `related_document_ids`,
+`date_started`, `duration_seconds` and `wait_time_seconds`. Version 9 can't
+supply the timing and result fields, so they stay `null` rather than being
+guessed from the result text, and its task arrays are paginated by this server
+into the same page shape. Status values keep Paperless's uppercase spelling.
+
+The older `task_name`, `type`, `result`, `task_file_name` and
+`related_document` fields remain for compatibility. `related_document` names
+only the first related document; use `related_document_ids` for all of them.
 <!-- DOMAIN-INTRO-END -->
 
 ## `list_tasks`

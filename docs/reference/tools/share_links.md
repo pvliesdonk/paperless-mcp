@@ -9,6 +9,9 @@ kind: reference
 
 <!-- DOMAIN-INTRO-START -->
 <!-- A short orientation for this page; task guidance belongs under Use. Kept across regeneration. -->
+Each link carries a `share_url` of the form `<public URL>/share/<slug>`, built
+from `PAPERLESS_MCP_PAPERLESS_PUBLIC_URL` when that's set, and from the API URL
+otherwise.
 <!-- DOMAIN-INTRO-END -->
 
 ## `list_share_links`
