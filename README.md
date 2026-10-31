@@ -13,7 +13,7 @@ Paperless-NGX over MCP: search, read, upload and tag documents; manage correspon
 **[Documentation](https://pvliesdonk.github.io/paperless-mcp/)** | **[Config wizard](https://pvliesdonk.github.io/paperless-mcp/latest/reference/configuration-generator/)** | **[PyPI](https://pypi.org/project/pvliesdonk-paperless-mcp/)** | **[Docker](https://github.com/pvliesdonk/paperless-mcp/pkgs/container/paperless-mcp)**
 
 <!-- DOMAIN-README-PITCH-START -->
-- **File transfer links:** Download document files and full OCR Markdown over HTTP. Upload files, including Markdown, through the same transfer route. Set `PAPERLESS_MCP_BASE_URL` to enable the tools. File bytes stay outside model context. See [file transfer links](docs/tools/index.md#file-transfer-links).
+- **File transfer links:** Download document files and full OCR Markdown over HTTP. Upload files, including Markdown, through the same transfer route. Set `PAPERLESS_MCP_BASE_URL` to enable the tools. File bytes stay outside model context. See [file transfer links](docs/deploy/transfer-links.md).
 - **Document search & retrieval:** full-text and filtered list queries against Paperless-NGX, plus access to extracted OCR text, metadata, and thumbnails.
 - **Tag, correspondent, document-type, custom-field management:** full CRUD and bulk-edit for every classification dimension Paperless exposes.
 - **Document lifecycle** supports uploads, field changes, notes, audit history, and AI-suggested tags/correspondents/types.
@@ -34,7 +34,7 @@ With this server mounted in an MCP client (Claude, etc.), you can:
 - **"Upload this PDF and wait until OCR finishes."** Composes `upload_document` + `wait_for_task` so the assistant only reports back once the document is indexed.
 - **"What changed on document 4213 in the last week?"** Reads `paperless://documents/4213/history` and summarises the audit trail.
 
-Every tool and resource is listed in the documentation site: [Tools](https://pvliesdonk.github.io/paperless-mcp/latest/tools/) and [Resources](https://pvliesdonk.github.io/paperless-mcp/latest/resources/). The Paperless variables the server reads are in [Configuration](https://pvliesdonk.github.io/paperless-mcp/latest/configuration/).
+Every tool and resource is listed in the documentation site: [Tools](https://pvliesdonk.github.io/paperless-mcp/latest/reference/tools/) and [Resources](https://pvliesdonk.github.io/paperless-mcp/latest/reference/resources/). The Paperless variables the server reads are in [Configuration](https://pvliesdonk.github.io/paperless-mcp/latest/reference/configuration/).
 <!-- DOMAIN-README-FIT-END -->
 
 ## Quick start
@@ -99,7 +99,7 @@ Every variable the server reads, the shared ones included, is in the [configurat
 - **Read-only deployments use tool visibility, not a domain switch.** Set `PAPERLESS_MCP_TOOLS_DENY` (or `PAPERLESS_MCP_TOOLS_ALLOW`) to hide the mutating tools, including `create_upload_link` when transfers are enabled. The template applies visibility last in `make_server`, so hidden tools leave `tools/list` and are rejected on `tools/call`. Clients cannot invoke a write that will be refused, and the rule lives in one place for every server built on this template.
 - **HTTP layer retries idempotent reads only.** `PAPERLESS_MCP_HTTP_RETRIES` applies to GETs on 5xx/network errors; writes never retry automatically, to avoid double-applying bulk edits or uploads.
 - **Tool icons come from `Lucide`.** Every tool carries a `Lucide` icon hint so MCP clients that render icons (Claude Desktop) get a coherent visual surface. See `src/paperless_mcp/tools/_icons.py`.
-- **Paperless API compatibility:** requests prefer payload version 10, with automatic version 9 fallback for Paperless 2.x after an explicit version rejection. Tasks include structured results and timing data while retaining the legacy fields. Saved-view visibility flags can now be `null`; Python consumers must handle that value. See [task tools](docs/tools/index.md#task-tools).
+- **Paperless API compatibility:** requests prefer payload version 10, with automatic version 9 fallback for Paperless 2.x after an explicit version rejection. Tasks include structured results and timing data while retaining the legacy fields. Saved-view visibility flags can now be `null`; Python consumers must handle that value. See [task tools](docs/reference/tools/tasks.md).
 - **Models accept unknown upstream fields.** `Pydantic` models use lenient validation for list-endpoint responses so newer Paperless-NGX versions do not break the client (the `Document.some_future_paperless_field` test pins this behaviour).
 - **No prompts ship in v1.** `prompts.py` is intentionally empty; prompts land as concrete user-workflow patterns emerge in practice.
 <!-- DOMAIN-README-DESIGN-END -->

@@ -9,6 +9,8 @@ kind: reference
 
 <!-- DOMAIN-INTRO-START -->
 <!-- A short orientation for this page; task guidance belongs under Use. Kept across regeneration. -->
+`show_on_dashboard` and `show_in_sidebar` are `null` when Paperless omits them,
+as payload version 10 does. The values are unknown, not false.
 <!-- DOMAIN-INTRO-END -->
 
 ## `list_saved_views`

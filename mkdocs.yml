@@ -78,6 +78,7 @@ plugins:
         deployment/repository-protection.md: contribute/repository-protection.md
         deployment/integration-branches.md: contribute/integration-branches.md
         # PROJECT-REDIRECTS-START — this project's moved pages; kept across copier update
+        resources.md: reference/resources.md
         # PROJECT-REDIRECTS-END
   # Generates llms.txt + llms-full.txt for the README badge.
   # The sections are filled from `nav:` at build time by
@@ -192,7 +193,4 @@ nav:
       # PROJECT-NAV-CONTRIBUTE-START — kept across copier update
       # PROJECT-NAV-CONTRIBUTE-END
   # PROJECT-NAV-UNSORTED-START — entries the nav migration could not place; move each into a section above
-  - MCP Interface:
-      - Tools: tools/index.md
-      - Resources: resources.md
   # PROJECT-NAV-UNSORTED-END

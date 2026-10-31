@@ -9,6 +9,16 @@ kind: reference
 
 <!-- DOMAIN-INTRO-START -->
 <!-- A short orientation for this page; task guidance belongs under Use. Kept across regeneration. -->
+The shape of `extra_data` in `create_custom_field` and `update_custom_field`
+depends on the field's type:
+
+| Type | `extra_data` | Notes |
+|---|---|---|
+| `string`, `longtext`, `integer`, `boolean`, `float`, `date`, `url`, `documentlink` | unused | Omit it or pass `null`. |
+| `monetary` | `{"default_currency": "USD"}` | An optional ISO 4217 currency code; Paperless also accepts `null` or no value. |
+| `select` | `{"select_options": [{"label": "Low"}, {"label": "Medium"}]}` | Required on create. Paperless gives each option a stable `id`; on update, reuse the existing ids to keep documents' values. A patch without `extra_data`, such as a rename, keeps the current options: the server reads them and sends them back. |
+
+Paperless rejects any other shape with a 400.
 <!-- DOMAIN-INTRO-END -->
 
 ## `list_custom_fields`

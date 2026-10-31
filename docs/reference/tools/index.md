@@ -9,6 +9,32 @@ kind: reference
 
 <!-- DOMAIN-INTRO-START -->
 <!-- A short orientation for this page; task guidance belongs under Use. Kept across regeneration. -->
+The tools reach Paperless with the token this server is configured with, so
+they see and change only what that token's Paperless user may.
+
+**Pages.** Every list tool returns one page, with `next` and `previous` as
+bare `page=N` markers, or `null` at either end. Pass `page=N` to fetch
+another. The markers never carry the Paperless host name.
+
+**Paperless versions.** Requests prefer Paperless payload version 10. When
+Paperless rejects that version, the client session falls back to version 9 for
+Paperless 2.x. An authentication, permission or other failure never triggers
+the fallback. After upgrading a connected 2.x instance, restart this server to
+select version 10 again.
+
+**Errors.** A tool that cannot deliver its result returns a tool error written
+for the model: what went wrong and which call to make next. How it is logged
+depends on who has to act:
+
+| Paperless answered | The model is told | Logged at |
+|---|---|---|
+| 400, 403, another 4xx, or 404 for an id the call passed | what to change, or that the account may not do this | `INFO` |
+| 409 | to read the object again and retry with its current values | `INFO` |
+| 429, 5xx, or no answer | the request was fine; retry in a minute | `WARNING` |
+| 401, 404 for a call without an id, or a reply the server cannot parse | the request was fine; tell the user | `ERROR` |
+
+Only the last row needs an operator. Anything else that fails inside a tool is
+logged once as `tool_failed` at `ERROR` with its traceback.
 <!-- DOMAIN-INTRO-END -->
 
 Every tool runs with the server's own privileges; the [security model](../../security-model.md) says what that reaches.

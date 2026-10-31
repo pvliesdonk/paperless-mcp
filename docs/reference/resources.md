@@ -9,6 +9,14 @@ kind: reference
 
 <!-- DOMAIN-INTRO-START -->
 <!-- A short orientation for this page; task guidance belongs under Use. Kept across regeneration. -->
+Collection resources return JSON. The `tasks://paperless` resource returns the
+first page of unacknowledged background tasks as a JSON array; use the
+`list_tasks` tool for further pages or a filter.
+
+No resource returns a document's original or archived file. A resource is read
+into the model's context, so whole files would put their bytes there; on an
+HTTP deployment, `create_download_link` hands out those files instead (see
+[Transfer links](../deploy/transfer-links.md)).
 <!-- DOMAIN-INTRO-END -->
 
 ## Reading a resource

@@ -254,11 +254,11 @@ in server memory; the upload cap does not limit download memory use.
 Use one server process per transfer store. For restart persistence, configure
 `PAPERLESS_MCP_KV_STORE_URL` with a persistent backend for tokens and upload
 receipts. Concurrent replicas sharing that store cannot guarantee duplicate
-prevention. To disable uploads, include `create_document_upload_link` alongside
+prevention. To disable uploads, include `create_upload_link` alongside
 other write tools in `PAPERLESS_MCP_TOOLS_DENY`, or use an allow list containing
 only the tools you want. Previously issued links also respect these settings.
 
-See [file transfer links](../tools/index.md#file-transfer-links) for downloads,
+See [file transfer links](../deploy/transfer-links.md) for downloads,
 Markdown uploads and task tracking.
 
 <!-- DOMAIN-CONFIG-VARS-END -->

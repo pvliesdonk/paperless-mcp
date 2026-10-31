@@ -9,6 +9,15 @@ kind: reference
 
 <!-- DOMAIN-INTRO-START -->
 <!-- A short orientation for this page; task guidance belongs under Use. Kept across regeneration. -->
+`get_document`, `list_documents`, `search_documents` and `update_document`
+include a `web_url` pointing to the document in the Paperless web interface,
+such as `https://paperless.example.com/documents/42/`. It's built from
+`PAPERLESS_MCP_PAPERLESS_PUBLIC_URL` when that's set, and from the API URL
+otherwise.
+
+To download a document's file, or its full text as one Markdown file, use
+`create_download_link` on the [transfer](transfer.md) page; the
+[transfer links](../../deploy/transfer-links.md) page covers the variants.
 <!-- DOMAIN-INTRO-END -->
 
 ## `list_documents`

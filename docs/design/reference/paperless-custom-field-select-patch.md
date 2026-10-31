@@ -35,7 +35,7 @@ options it does not mention are not in question. That is
 - Covers: `PATCH /api/custom_fields/{id}/` on `select` and `monetary` fields
   and what the serializer requires of `extra_data`.
 - Does not cover: creation payloads (see the per-type table in
-  `docs/tools/index.md`) or how document values reference option ids.
+  `docs/reference/tools/custom_fields.md`) or how document values reference option ids.
 - Depended on by: `CustomFieldsClient.update` in
   `src/paperless_mcp/client/custom_fields.py`.
 
