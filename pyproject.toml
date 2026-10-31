@@ -78,7 +78,7 @@ dependencies = [
     # #343).  The cap matters as much as the floor here: the config-surface
     # generator resolves this whole constraint, and only 9.0.0's
     # SHUTDOWN_GRACE_S help text keeps the generated table in
-    # docs/configuration.md clear of ai-tells' MicDrop rule (#639).
+    # docs/reference/configuration.md clear of ai-tells' MicDrop rule (#639).
     #
     # 8.0.0 was the previous floor, for the logging topology and the HTTP
     # seam: pvl-core owns the root logger, configure_logging_from_env takes
@@ -195,6 +195,7 @@ docs = [
     "mkdocs-material>=9.7.6",
     "mkdocstrings[python]>=0.28",
     "mkdocs-llmstxt>=0.5",
+    "mkdocs-redirects>=1.2",
 ]
 
 browser = [
@@ -223,7 +224,7 @@ Changelog = "https://github.com/pvliesdonk/paperless-mcp/blob/main/CHANGELOG.md"
 # would have stopped neither, so it buys the look of a guard without one.
 # Patch releases stay open; a minor bump is a deliberate edit here, paired
 # with a publisher that accepts whatever the new minor emits.
-requires = ["hatchling>=1.33,<1.34"]
+requires = ["hatchling>=1.32,<1.33"]
 build-backend = "hatchling.build"
 
 [tool.uv]
@@ -234,9 +235,10 @@ build-backend = "hatchling.build"
 # and `override-dependencies` are invisible to Renovate, so its update-lockfile
 # fallback cannot rewrite a deliberate cap the way it can one expressed in
 # `[project]` (#508) — and `scripts/check_pins.py` fails CI unless every entry
-# carries `# until: <issue URL>`, and again once that issue closes, so a pin
-# here cannot quietly outlive its reason.  Keep one bound per package: the same
-# script rejects a package bounded both here and in `[project]`.
+# carries `# until: <issue URL>`, and warns on every CI run once that issue
+# closes, so a pin here cannot quietly outlive its reason.  Keep one bound per
+# package: the same script rejects a package bounded both here and in
+# `[project]`.
 #
 #   constraint-dependencies = [
 #     "numpy<2.5",  # until: https://github.com/<org>/<repo>/issues/123
@@ -296,8 +298,14 @@ ignore = ["E501"]
 # and S603 subprocess exceptions as the stamper, and the same reason — the
 # file is template-owned, so a hit reddens the adopter's diff-gate (#524).
 "scripts/migrate_agent_instructions.py" = ["S603", "S607"]
+# migrate_docs_nav.py reads `git show HEAD:mkdocs.yml` the same way, as a
+# list and never a shell; same exceptions, same reason (#713).
+"scripts/migrate_docs_nav.py" = ["S603", "S607"]
+"scripts/migrate_docs_pages.py" = ["S603", "S607"]
 "scripts/check_pins.py" = ["S310"]  # urlopen on a validated api.github.com URL
 "scripts/report_seeded_changes.py" = ["S603", "S606", "S607"]
+# The self-review hook resolves commits with fixed-argv `git rev-parse`.
+"scripts/check_self_review.py" = ["S603", "S607"]
 "scripts/check_template_conformance.py" = ["S603", "S607"]
 
 # PROJECT-RUFF-IGNORES-START — replace, extend, or override the entries below
@@ -346,6 +354,8 @@ ignore = ["E501"]
 # The aggregator's documented structural suppressions are exercised only by the
 # diff gate, whose custom rule selection is not enabled in the normal lint run.
 "scripts/copier_update_aggregator.py" = ["RUF100"]
+# The published-examples test runs the documented Python blocks: exec is the point.
+"tests/test_published_examples.py" = ["S102"]
 # PROJECT-RUFF-IGNORES-END
 
 [tool.ruff.lint.isort]
@@ -375,7 +385,6 @@ testpaths = ["tests"]
 addopts = ["--strict-markers", "-ra"]
 asyncio_mode = "auto"
 markers = [
-    "integration: live Paperless-NGX integration tests (opt-in)",
     "browser: end-to-end test that drives a headless browser (requires the 'browser' dependency group + 'playwright install chromium')",
 ]
 
@@ -423,3 +432,26 @@ pythonVersion = "3.11"
 # src-layout editable installs use a .pth shim that Pyright does not execute;
 # point Pyright at src/ directly so IDE import resolution matches runtime.
 extraPaths = ["src"]
+
+# Documentation tooling settings, project-owned. Set strict = true once
+# `python scripts/check_docs_structure.py` reports no warnings, so that new
+# documentation debt fails CI (docs/contribute/docs-structure.md, Checks).
+# Variables scripts/gen_reference.py sets before building the server, for a
+# `from_env` that requires them (the scaffold requires none), go in a
+# `[tool.docs-reference.env]` table inside the block.  It builds the server
+# for the http transport, so a project wiring transfer links needs BASE_URL:
+#   [tool.docs-reference.env]
+#   PAPERLESS_MCP_UPSTREAM_URL = "https://example.invalid"
+#   PAPERLESS_MCP_BASE_URL = "https://example.invalid"
+# PROJECT-DOCS-CHECKS-START — kept across copier update
+[tool.docs-structure]
+strict = false
+
+# gen_reference.py builds the server for the HTTP transport. `from_env`
+# requires the Paperless pair, and the transfer-link tools register only with
+# a public base URL. None of these is contacted at build time.
+[tool.docs-reference.env]
+PAPERLESS_MCP_PAPERLESS_URL = "https://paperless.example.invalid"
+PAPERLESS_MCP_API_TOKEN = "docs-reference-placeholder"
+PAPERLESS_MCP_BASE_URL = "https://mcp.example.invalid"
+# PROJECT-DOCS-CHECKS-END

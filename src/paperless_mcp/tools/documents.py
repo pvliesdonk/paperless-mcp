@@ -111,10 +111,11 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
         values; get_document_content and get_document return them.
 
         Args:
-            query: Words that must all appear, in any order, in a document's
-                text, title, correspondent, type or tags. Also accepts AND and
-                OR, field terms such as tag:unpaid or created:[2024 to 2025],
-                and notes.note:word for note text. Pass "" with more_like.
+            query: Words a document must contain, in any order, across its
+                text, title, correspondent, type and tags. Also accepts the
+                operators `AND` and `OR`, field terms such as tag:unpaid or
+                created:[2024 to 2025], and notes.note:word for note text.
+                Pass "" with more_like.
             more_like: Document id; return documents similar to it instead.
         """
         result = await client.documents.search(
@@ -151,9 +152,10 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
     ) -> str:
         """Read a document's text, up to 20,000 characters per call.
 
-        A longer document comes back in sections: each opens with a marker
-        naming the range returned, the full length and the offset of the next
-        section. Text that fits is returned whole, with no marker.
+        A longer document comes back in sections. Each section opens with a
+        marker that gives its character range out of the full length, and the
+        offset where the next section starts. Text that fits comes back whole,
+        with no marker.
 
         Args:
             max_chars: Most characters to return in this call.
@@ -311,7 +313,7 @@ def register(mcp: FastMCP, ctx: ToolContext) -> None:
                 [ids]}, modify_custom_fields {"add_custom_fields": [ids] or
                 {"<id>": value}, "remove_custom_fields": [ids]}, set_permissions
                 {"set_permissions": {"view": {"users": [ids], "groups": [ids]},
-                "change": {...}}, "owner": id, "merge": bool}, rotate
+                "change": {…}}, "owner": id, "merge": bool}, rotate
                 {"degrees": 90}, merge {"metadata_document_id": id,
                 "delete_originals": bool}, and on a single document: split
                 {"pages": "1,2-3"}, delete_pages {"pages": [2, 3]}, edit_pdf
