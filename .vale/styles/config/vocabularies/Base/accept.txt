@@ -81,3 +81,8 @@ reindexing
 # which this project cannot edit; drop it once pvliesdonk/fastmcp-pvl-core#527
 # code-formats it.
 url
+# --- Container and runtime terms (release notes) ---
+CPython
+loopback
+tini
+trixie
