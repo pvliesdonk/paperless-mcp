@@ -33,6 +33,7 @@ instead of reaching into ``paperless_mcp.client`` directly.
 
 from __future__ import annotations
 
+<<<<<<< before updating
 import asyncio
 import logging
 from typing import TYPE_CHECKING
@@ -251,12 +252,21 @@ def upstream_version_provider(
         return {"version": installed}
 
     return _paperless_version
+=======
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from paperless_mcp.config import ProjectConfig
+>>>>>>> after updating
 
 
 class Service:
     """Owns the staged Paperless client for the duration of the server lifespan."""
 
-    def __init__(self) -> None:
+    def __init__(self, config: ProjectConfig) -> None:
+        # The server lifespan passes the config make_server was built with;
+        # read settings from it, not from the environment.
+        self.config = config
         self._ready = False
         self._context: ToolContext | None = None
 
